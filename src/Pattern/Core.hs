@@ -29,6 +29,10 @@
 -- Leaf pattern (node):
 --
 -- >>> leaf = Pattern { value = "node1", elements = [] }
+-- >>> value leaf
+-- "node1"
+-- >>> elements leaf
+-- []
 --
 -- Pattern with children:
 --
@@ -37,6 +41,15 @@
 -- Nested patterns:
 --
 -- >>> nested = Pattern { value = "root", elements = [Pattern { value = "level1", elements = [Pattern { value = "level2", elements = [] }] }] }
+--
+-- Leaf patterns with different value types:
+--
+-- >>> leafString = Pattern { value = "text", elements = [] }
+-- >>> leafInt = Pattern { value = 42, elements = [] }
+-- >>> value leafString
+-- "text"
+-- >>> value leafInt
+-- 42
 module Pattern.Core where
 
 -- | A recursive tree structure that stores a value and contains zero or more
