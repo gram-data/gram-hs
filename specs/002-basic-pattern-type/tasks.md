@@ -1,0 +1,257 @@
+# Tasks: Basic Pattern Type
+
+**Input**: Design documents from `/specs/002-basic-pattern-type/`
+**Prerequisites**: plan.md ✅, spec.md ✅, research.md ✅, data-model.md ✅, contracts/ ✅
+
+**Tests**: Included - unit tests for pattern construction and inspection as specified in research.md
+
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: Can run in parallel (different files, no dependencies)
+- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
+- Include exact file paths in descriptions
+
+## Path Conventions
+
+- **Single project**: `src/`, `tests/` at repository root
+- Source: `src/Pattern/Core.hs`
+- Tests: `tests/Spec/Pattern/CoreSpec.hs`
+
+---
+
+## Phase 1: Setup (Project Verification)
+
+**Purpose**: Verify existing project structure and configuration
+
+- [ ] T001 Verify project structure matches plan.md in repository root
+- [ ] T002 Verify pattern.cabal configuration includes required dependencies (base, QuickCheck, hspec)
+- [ ] T003 Verify src/Pattern/Core.hs stub exists and is ready for implementation
+- [ ] T004 Verify tests/Spec/Pattern/CoreSpec.hs stub exists and is ready for tests
+
+---
+
+## Phase 2: Foundational (Pattern Type Definition)
+
+**Purpose**: Core Pattern type definition that MUST be complete before ANY user story can be implemented
+
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+
+- [ ] T005 Define Pattern data type with record syntax in src/Pattern/Core.hs
+- [ ] T006 Add basic Haddock module documentation explaining recursive tree structure in src/Pattern/Core.hs
+- [ ] T007 Add Haddock documentation to Pattern data constructor in src/Pattern/Core.hs
+- [ ] T008 Add Haddock documentation to value field accessor in src/Pattern/Core.hs
+- [ ] T009 Add Haddock documentation to elements field accessor in src/Pattern/Core.hs
+- [ ] T010 Verify Pattern type compiles successfully with `cabal build`
+
+**Checkpoint**: Pattern type defined with basic documentation - user story implementation can now begin
+
+---
+
+## Phase 3: User Story 1 - Create Leaf Patterns (Priority: P1) 🎯 MVP
+
+**Goal**: Enable creation of leaf patterns (patterns with no children) that store values and can be inspected.
+
+**Independent Test**: Can be fully tested by creating a pattern with a single value and no child elements, then verifying that the pattern stores the value correctly and reports having no child elements.
+
+### Tests for User Story 1
+
+> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+
+- [ ] T011 [P] [US1] Add test for creating leaf pattern with string value in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T012 [P] [US1] Add test for creating leaf pattern with integer value in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T013 [P] [US1] Add test for creating leaf pattern with custom type value in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T014 [P] [US1] Add test for verifying value field accessor returns correct value in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T015 [P] [US1] Add test for verifying elements field accessor returns empty list for leaf pattern in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T016 [P] [US1] Add test for edge case: leaf pattern with empty list of children in tests/Spec/Pattern/CoreSpec.hs
+
+### Implementation for User Story 1
+
+- [ ] T017 [US1] Verify Pattern constructor works for leaf patterns (no implementation needed - uses Phase 2 definition)
+- [ ] T018 [US1] Run tests and verify all leaf pattern tests pass
+- [ ] T019 [US1] Add example usage in Haddock comments showing leaf pattern creation in src/Pattern/Core.hs
+
+**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently - developers can create and inspect leaf patterns
+
+---
+
+## Phase 4: User Story 2 - Create Patterns with Children (Priority: P1)
+
+**Goal**: Enable creation of patterns that contain child patterns, enabling recursive tree structure for representing hierarchical relationships.
+
+**Independent Test**: Can be fully tested by creating a pattern with a value and a list of child patterns, then verifying that the pattern stores both the value and correctly references all child patterns.
+
+### Tests for User Story 2
+
+> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+
+- [ ] T020 [P] [US2] Add test for creating pattern with single child in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T021 [P] [US2] Add test for creating pattern with multiple children in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T022 [P] [US2] Add test for verifying value field accessor returns correct value for pattern with children in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T023 [P] [US2] Add test for verifying elements field accessor returns correct child list in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T024 [P] [US2] Add test for verifying child elements are accessible in correct order in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T025 [P] [US2] Add test for edge case: pattern with zero children (should behave like leaf) in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T026 [P] [US2] Add test for edge case: deeply nested patterns (multiple levels) in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T027 [P] [US2] Add test for edge case: pattern containing pattern containing pattern (arbitrary depth) in tests/Spec/Pattern/CoreSpec.hs
+
+### Implementation for User Story 2
+
+- [ ] T028 [US2] Verify Pattern constructor works for patterns with children (no implementation needed - uses Phase 2 definition)
+- [ ] T029 [US2] Run tests and verify all pattern-with-children tests pass
+- [ ] T030 [US2] Add example usage in Haddock comments showing pattern with children creation in src/Pattern/Core.hs
+- [ ] T031 [US2] Add example usage showing nested pattern structure in Haddock comments in src/Pattern/Core.hs
+
+**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - developers can create leaf patterns and patterns with children
+
+---
+
+## Phase 5: User Story 3 - Document Pattern Structure (Priority: P2)
+
+**Goal**: Provide comprehensive documentation explaining how patterns form a recursive tree structure, enabling developers to understand and use the Pattern type correctly.
+
+**Independent Test**: Can be fully tested by reviewing the documentation and verifying it clearly explains the recursive tree structure, how values are stored, and how child elements form the hierarchy.
+
+### Implementation for User Story 3
+
+- [ ] T032 [US3] Enhance module-level Haddock documentation with detailed recursive tree structure explanation in src/Pattern/Core.hs
+- [ ] T033 [US3] Add comprehensive Haddock documentation explaining how values are associated with pattern nodes in src/Pattern/Core.hs
+- [ ] T034 [US3] Add comprehensive Haddock documentation explaining how child elements form tree hierarchy in src/Pattern/Core.hs
+- [ ] T035 [US3] Add Haddock examples showing leaf pattern construction in src/Pattern/Core.hs
+- [ ] T036 [US3] Add Haddock examples showing pattern with children construction in src/Pattern/Core.hs
+- [ ] T037 [US3] Add Haddock examples showing nested pattern structure in src/Pattern/Core.hs
+- [ ] T038 [US3] Add Haddock documentation explaining type parameter v and type consistency in src/Pattern/Core.hs
+- [ ] T039 [US3] Verify documentation builds correctly with `cabal haddock`
+- [ ] T040 [US3] Review documentation against acceptance scenarios in spec.md
+
+**Checkpoint**: At this point, all user stories should be complete - Pattern type is defined, tested, and fully documented
+
+---
+
+## Phase 6: Polish & Cross-Cutting Concerns
+
+**Purpose**: Final validation and improvements
+
+- [ ] T041 [P] Run all tests and verify 100% pass rate with `cabal test`
+- [ ] T042 [P] Verify Pattern type compiles without warnings with `cabal build`
+- [ ] T043 [P] Verify Haddock documentation generates successfully with `cabal haddock`
+- [ ] T044 [P] Validate quickstart.md examples work correctly
+- [ ] T045 [P] Review code against Constitution requirements (Code Quality, Testing Standards)
+- [ ] T046 [P] Verify all acceptance scenarios from spec.md are satisfied
+- [ ] T047 [P] Verify all functional requirements (FR-001 through FR-008) are met
+- [ ] T048 [P] Verify all success criteria (SC-001 through SC-006) are achieved
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+- **Setup (Phase 1)**: No dependencies - can start immediately
+- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
+- **User Stories (Phase 3-5)**: All depend on Foundational phase completion
+  - User Story 1 (Phase 3) can start immediately after Foundational
+  - User Story 2 (Phase 4) can start immediately after Foundational (independent of US1)
+  - User Story 3 (Phase 5) enhances documentation, can start after Foundational but benefits from US1/US2 examples
+- **Polish (Phase 6)**: Depends on all desired user stories being complete
+
+### User Story Dependencies
+
+- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
+- **User Story 2 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories (independent of US1)
+- **User Story 3 (P2)**: Can start after Foundational (Phase 2) - Enhances documentation, benefits from US1/US2 examples but not required
+
+### Within Each User Story
+
+- Tests MUST be written and FAIL before implementation verification
+- Core implementation uses Pattern type from Phase 2 (no new implementation needed)
+- Tests verify functionality works correctly
+- Examples added to documentation
+- Story complete before moving to next priority
+
+### Parallel Opportunities
+
+- All Setup tasks (T001-T004) can run in parallel
+- All Foundational documentation tasks (T006-T009) can run in parallel
+- Once Foundational phase completes, User Stories 1 and 2 can start in parallel (if team capacity allows)
+- All tests for User Story 1 (T011-T016) marked [P] can run in parallel
+- All tests for User Story 2 (T020-T027) marked [P] can run in parallel
+- Documentation tasks in User Story 3 (T032-T038) can mostly run in parallel
+- All Polish tasks (T041-T048) marked [P] can run in parallel
+
+---
+
+## Parallel Example: User Story 1
+
+```bash
+# Launch all tests for User Story 1 together:
+Task: "Add test for creating leaf pattern with string value in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for creating leaf pattern with integer value in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for creating leaf pattern with custom type value in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for verifying value field accessor returns correct value in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for verifying elements field accessor returns empty list for leaf pattern in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for edge case: leaf pattern with empty list of children in tests/Spec/Pattern/CoreSpec.hs"
+```
+
+---
+
+## Parallel Example: User Story 2
+
+```bash
+# Launch all tests for User Story 2 together:
+Task: "Add test for creating pattern with single child in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for creating pattern with multiple children in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for verifying value field accessor returns correct value for pattern with children in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for verifying elements field accessor returns correct child list in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for verifying child elements are accessible in correct order in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for edge case: pattern with zero children (should behave like leaf) in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for edge case: deeply nested patterns (multiple levels) in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for edge case: pattern containing pattern containing pattern (arbitrary depth) in tests/Spec/Pattern/CoreSpec.hs"
+```
+
+---
+
+## Implementation Strategy
+
+### MVP First (User Story 1 Only)
+
+1. Complete Phase 1: Setup (verification)
+2. Complete Phase 2: Foundational (Pattern type definition) - **CRITICAL - blocks all stories**
+3. Complete Phase 3: User Story 1 (leaf patterns)
+4. **STOP and VALIDATE**: Test User Story 1 independently - verify leaf pattern creation and inspection
+5. Deploy/demo if ready
+
+### Incremental Delivery
+
+1. Complete Setup + Foundational → Pattern type ready
+2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
+3. Add User Story 2 → Test independently → Deploy/Demo
+4. Add User Story 3 → Complete documentation → Deploy/Demo
+5. Each story adds value without breaking previous stories
+
+### Parallel Team Strategy
+
+With multiple developers:
+
+1. Team completes Setup + Foundational together
+2. Once Foundational is done:
+   - Developer A: User Story 1 (leaf patterns)
+   - Developer B: User Story 2 (patterns with children)
+   - Developer C: User Story 3 (documentation) - can start after Foundational
+3. Stories complete and integrate independently
+
+---
+
+## Notes
+
+- [P] tasks = different files, no dependencies
+- [Story] label maps task to specific user story for traceability
+- Each user story should be independently completable and testable
+- Verify tests fail before implementing (tests are written first)
+- Commit after each task or logical group
+- Stop at any checkpoint to validate story independently
+- Pattern type definition (Phase 2) is foundational - all user stories depend on it
+- User Stories 1 and 2 are independent - can be implemented in parallel after Phase 2
+- User Story 3 enhances documentation but can start anytime after Phase 2
+- All implementation uses the Pattern type from Phase 2 - no new type definitions needed in user stories
+
