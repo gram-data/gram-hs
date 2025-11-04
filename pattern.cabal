@@ -48,8 +48,7 @@ test-suite pattern-test
         base >=4.17.0.0 && <5,
         pattern,
         QuickCheck ^>=2.14,
-        hspec ^>=2.10,
-        hspec-quickcheck ^>=0.1.0
+        hspec ^>=2.11
 
     hs-source-dirs:   tests
     default-language: Haskell2010

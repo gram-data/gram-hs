@@ -3,6 +3,6 @@
 
 packages: .
 
--- Require GHC 9.8.4 (matches available HLS binary)
-with-compiler: ghc-9.8.4
+-- Use GHC 9.10.3 (latest stable version with good tooling support)
+with-compiler: ghc-9.10.3
 
