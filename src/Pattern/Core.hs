@@ -6,15 +6,15 @@
 -- == Conceptual Model: Patterns as Decorated Sequences
 --
 -- Conceptually, a Pattern is a decorated sequence: the elements form the pattern
--- itself, and the value provides decoration (metadata) about that pattern.
+-- itself, and the value provides decoration about that pattern.
 -- For example, the pattern "A B B A" with decoration "Enclosed rhyme" represents
 -- a specific sequence pattern (A B B A) that is classified as an "Enclosed rhyme".
 -- The Pattern type represents such decorated sequences where:
 --
 -- * @elements@ - The pattern itself, represented as a sequence of elements
--- * @value@ - Decoration or metadata about what kind of pattern it is
+-- * @value@ - Decoration about what kind of pattern it is
 --
--- The elements ARE the pattern; they are not children or subordinate to the value.
+-- The elements ARE the pattern; they are not subordinate to the value.
 -- While implemented using a recursive tree structure, the primary semantic is that
 -- elements form the pattern sequence itself. Each element in the sequence is itself
 -- a Pattern, enabling arbitrarily nested and complex pattern structures.
@@ -37,7 +37,7 @@
 --
 -- == Values and Pattern Decoration
 --
--- Each Pattern instance decorates a sequence of elements with metadata:
+-- Each Pattern instance decorates a sequence of elements with a value:
 --
 -- * The @value@ field stores decoration about what kind of pattern it is. This can be any type @v@,
 --   such as a string identifier, an integer, a custom data type, etc.
@@ -152,7 +152,7 @@ module Pattern.Core where
 -- | A recursive structure representing a decorated sequence pattern.
 --
 -- Conceptually, a Pattern is a decorated sequence: the elements form the pattern
--- itself, and the value provides decoration (metadata) about that pattern.
+-- itself, and the value provides decoration about that pattern.
 -- For example, the pattern "A B B A" with decoration "Enclosed rhyme" represents
 -- a specific sequence pattern (A B B A) that is classified as an "Enclosed rhyme".
 -- The Pattern type represents such decorated sequences where each element is itself
@@ -202,7 +202,7 @@ module Pattern.Core where
 -- >>> graph = Pattern { value = "myGraph", elements = [nodeA, nodeB, relationship] }
 --
 data Pattern v = Pattern 
-  { -- | The decoration or metadata associated with this pattern.
+  { -- | The decoration (value) associated with this pattern.
     --
     -- The @value@ field stores decoration about what kind of pattern it is.
     -- This can be any type @v@, such as a string identifier, an integer, or a

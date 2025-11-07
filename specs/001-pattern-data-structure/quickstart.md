@@ -222,10 +222,10 @@ prop_nodeHasNoRelationships p =
 ```haskell
 -- Pattern match on Pattern structure
 case somePattern of
-  Pattern v [] -> -- This is a leaf node
-  Pattern v [child] -> -- Single child
+  Pattern v [] -> -- This is an empty pattern
+  Pattern v [elem] -> -- Single element
   Pattern v [left, right] -> -- Possibly a relationship
-  Pattern v children -> -- Multiple children (subgraph)
+  Pattern v elems -> -- Multiple elements (subgraph)
 ```
 
 ### Transforming Patterns

@@ -16,7 +16,7 @@ data Pattern v = Pattern
 
 **Key Insight**: The `elements` field IS the pattern - it contains the sequence that defines the pattern. The `value` field provides decoration about what kind of pattern it is. For example, the pattern "A B B A" with decoration "Enclosed rhyme" represents a specific sequence pattern (A B B A) that is classified as an "Enclosed rhyme".
 
-While implemented using a recursive tree structure, the primary semantic is that elements form the pattern sequence itself, not that they are children of a node. The tree structure is an implementation detail that supports the sequence representation.
+While implemented using a recursive tree structure, the primary semantic is that elements form the pattern sequence itself. The tree structure is an implementation detail that supports the sequence representation.
 
 ## Graph Elements
 

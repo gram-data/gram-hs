@@ -33,7 +33,7 @@ A Haskell library providing a generalized representation of graph elements using
 
 ## Core Concept: Patterns as Decorated Sequences
 
-A Pattern is conceptually a **decorated sequence**: the elements form the pattern itself, and the value provides decoration (metadata) about that pattern. For example, the pattern "A B B A" with decoration "Enclosed rhyme" represents a specific sequence pattern (A B B A) that is classified as an "Enclosed rhyme".
+A Pattern is conceptually a **decorated sequence**: the elements form the pattern itself, and the value provides decoration about that pattern. For example, the pattern "A B B A" with decoration "Enclosed rhyme" represents a specific sequence pattern (A B B A) that is classified as an "Enclosed rhyme".
 
 ```haskell
 data Pattern v = Pattern 
@@ -44,7 +44,7 @@ data Pattern v = Pattern
 
 **Key Insight**: The `elements` field IS the pattern - it contains the sequence that defines the pattern. The `value` field provides decoration about what kind of pattern it is. Each element in the sequence is itself a Pattern, enabling recursive nesting while maintaining the decorated sequence semantic.
 
-While implemented using a recursive tree structure, the primary semantic is that elements form the pattern sequence itself (not that they are children of a node). This enables:
+While implemented using a recursive tree structure, the primary semantic is that elements form the pattern sequence itself. This enables:
 - Intuitive pattern matching (the pattern is the sequence)
 - Clear length semantics (number of elements in the pattern)
 - Natural composition operations

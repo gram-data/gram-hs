@@ -55,15 +55,15 @@
 
 ### Implementation for User Story 2
 
-- [ ] T011 [P] [US2] Update terminology in src/Pattern/Core.hs: replace "metadata" with "value" in all Haddock comments
-- [ ] T012 [P] [US2] Update terminology in src/Pattern/Core.hs: replace "children"/"child patterns" with "elements" in all Haddock comments
-- [ ] T013 [P] [US2] Update terminology in DESIGN.md: use "value" instead of "metadata", "elements" instead of "children"
-- [ ] T014 [P] [US2] Update terminology in README.md: verify and update to use "value" and "elements" consistently
-- [ ] T015 [P] [US2] Update terminology in specs/001-pattern-data-structure/data-model.md: use "value" and "elements" consistently
-- [ ] T016 [P] [US2] Update terminology in specs/001-pattern-data-structure/contracts/type-signatures.md: use "value" and "elements" consistently
-- [ ] T017 [P] [US2] Update terminology in specs/002-basic-pattern-type/data-model.md: use "value" and "elements" consistently
-- [ ] T018 [P] [US2] Update terminology in specs/002-basic-pattern-type/contracts/type-signatures.md: use "value" and "elements" consistently
-- [ ] T019 [US2] Verify terminology consistency by searching all documentation files for deprecated terms ("metadata", "children", "child patterns")
+- [x] T011 [P] [US2] Update terminology in src/Pattern/Core.hs: replace "metadata" with "value" in all Haddock comments
+- [x] T012 [P] [US2] Update terminology in src/Pattern/Core.hs: replace "children"/"child patterns" with "elements" in all Haddock comments
+- [x] T013 [P] [US2] Update terminology in DESIGN.md: use "value" instead of "metadata", "elements" instead of "children"
+- [x] T014 [P] [US2] Update terminology in README.md: verify and update to use "value" and "elements" consistently
+- [x] T015 [P] [US2] Update terminology in specs/001-pattern-data-structure/data-model.md: use "value" and "elements" consistently
+- [x] T016 [P] [US2] Update terminology in specs/001-pattern-data-structure/contracts/type-signatures.md: use "value" and "elements" consistently
+- [x] T017 [P] [US2] Update terminology in specs/002-basic-pattern-type/data-model.md: use "value" and "elements" consistently
+- [x] T018 [P] [US2] Update terminology in specs/002-basic-pattern-type/contracts/type-signatures.md: use "value" and "elements" consistently
+- [x] T019 [US2] Verify terminology consistency by searching all documentation files for deprecated terms ("metadata", "children", "child patterns")
 
 **Checkpoint**: At this point, all documentation should use "value" and "elements" consistently. User Story 2 should be fully complete and independently verifiable.
 
@@ -128,7 +128,27 @@
 
 ---
 
-## Phase 7: Polish & Cross-Cutting Concerns
+## Phase 7: User Story 6 - Create Idiomatic Examples Collection (Priority: P2)
+
+**Goal**: Create a comprehensive collection of idiomatic examples demonstrating correct usage of the Pattern library with consistent terminology
+
+**Independent Test**: Review the examples file. Verify that all examples use consistent terminology ("value", "elements", "empty pattern"), demonstrate correct usage patterns, and serve as clear documentation for library users.
+
+### Implementation for User Story 6
+
+- [ ] T049 [US6] Create examples/examples.md file with comprehensive idiomatic examples
+- [ ] T050 [P] [US6] Add examples for creating empty patterns with different value types
+- [ ] T051 [P] [US6] Add examples for creating patterns with elements
+- [ ] T052 [P] [US6] Add examples for accessing pattern values and elements
+- [ ] T053 [P] [US6] Add examples for nested patterns and sequences
+- [ ] T054 [P] [US6] Add examples demonstrating sequence-based conceptual model
+- [ ] T055 [US6] Verify all examples use consistent terminology and compile correctly
+
+**Checkpoint**: At this point, a comprehensive examples file should exist demonstrating idiomatic usage with consistent terminology. User Story 6 should be fully complete and independently verifiable.
+
+---
+
+## Phase 8: Polish & Cross-Cutting Concerns
 
 **Purpose**: Final validation and consistency checks across all updated documentation
 
@@ -164,7 +184,8 @@
 - **User Story 3 (Phase 4)**: Can start after Preparation - independent variant definitions, but benefits from US1/US2 completion
 - **User Story 4 (Phase 5)**: Can start after Preparation - independent status updates, but benefits from US1/US2/US3 completion
 - **User Story 5 (Phase 6)**: Can start after Preparation - independent relationship clarification, but benefits from US1 completion
-- **Polish (Phase 7)**: Depends on all user stories being complete
+- **User Story 6 (Phase 7)**: Can start after US1/US2 completion - examples should use consistent terminology and definitions
+- **Polish (Phase 8)**: Depends on all user stories being complete
 
 ### User Story Dependencies
 
@@ -173,6 +194,7 @@
 - **User Story 3 (P2)**: Can start after Preparation - Independent variant definitions, but benefits from US1/US2 completion
 - **User Story 4 (P2)**: Can start after Preparation - Independent status updates, but benefits from US1/US2/US3 completion
 - **User Story 5 (P3)**: Can start after Preparation - Independent relationship clarification, but benefits from US1 completion
+- **User Story 6 (P2)**: Can start after US1/US2 completion - Examples should demonstrate consistent terminology and definitions
 
 ### Within Each User Story
 
@@ -235,7 +257,8 @@ Task: "Update terminology in specs/002-basic-pattern-type/contracts/type-signatu
 4. Add User Story 3 → Clarify variant definitions → Validate
 5. Add User Story 4 → Align implementation status → Validate
 6. Add User Story 5 → Clarify sequence-tree relationship → Validate
-7. Complete Polish → Final consistency checks → Feature complete
+7. Add User Story 6 → Create idiomatic examples collection → Validate
+8. Complete Polish → Final consistency checks → Feature complete
 
 ### Parallel Team Strategy
 
@@ -248,7 +271,9 @@ With multiple developers:
    - Developer C: User Story 3 (Variants) - Can start after US1 or in parallel
 3. After US1 complete:
    - All developers can work on US2-US5 in parallel (different files)
-4. Complete Polish phase together
+4. After US1/US2 complete:
+   - Developer D: User Story 6 (Examples) - Can start once terminology is consistent
+5. Complete Polish phase together
 
 ---
 
@@ -266,7 +291,7 @@ With multiple developers:
 
 ## Task Summary
 
-**Total Tasks**: 48
+**Total Tasks**: 54
 
 **Tasks per User Story**:
 - User Story 1: 6 tasks (T005-T010)
@@ -274,6 +299,7 @@ With multiple developers:
 - User Story 3: 5 tasks (T020-T024)
 - User Story 4: 10 tasks (T025-T034)
 - User Story 5: 5 tasks (T035-T039)
+- User Story 6: 7 tasks (T049-T055)
 - Preparation: 4 tasks (T001-T004)
 - Polish: 9 tasks (T040-T048)
 

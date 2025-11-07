@@ -17,151 +17,151 @@ spec = do
       describe "Creating empty patterns with different value types" $ do
         
         it "creates an empty pattern with string value" $ do
-          let leaf = Pattern { value = "node1", elements = [] }
-          value leaf `shouldBe` "node1"
-          elements leaf `shouldBe` ([] :: [Pattern String])
+          let empty = Pattern { value = "node1", elements = [] }
+          value empty `shouldBe` "node1"
+          elements empty `shouldBe` ([] :: [Pattern String])
         
         it "creates an empty pattern with integer value" $ do
-          let leaf = Pattern { value = 42, elements = [] }
-          value leaf `shouldBe` (42 :: Int)
-          elements leaf `shouldBe` ([] :: [Pattern Int])
+          let empty = Pattern { value = 42, elements = [] }
+          value empty `shouldBe` (42 :: Int)
+          elements empty `shouldBe` ([] :: [Pattern Int])
         
         it "creates an empty pattern with custom type value" $ do
           let person = Person "Alice" 30
-          let leaf = Pattern { value = person, elements = [] }
-          value leaf `shouldBe` person
-          elements leaf `shouldBe` ([] :: [Pattern Person])
+          let empty = Pattern { value = person, elements = [] }
+          value empty `shouldBe` person
+          elements empty `shouldBe` ([] :: [Pattern Person])
       
       describe "Value field accessor" $ do
         
         it "returns the correct value for an empty pattern with string" $ do
-          let leaf = Pattern { value = "test", elements = [] }
-          value leaf `shouldBe` "test"
+          let empty = Pattern { value = "test", elements = [] }
+          value empty `shouldBe` "test"
         
         it "returns the correct value for an empty pattern with integer" $ do
-          let leaf = Pattern { value = 100, elements = [] }
-          value leaf `shouldBe` (100 :: Int)
+          let empty = Pattern { value = 100, elements = [] }
+          value empty `shouldBe` (100 :: Int)
         
         it "returns the correct value for an empty pattern with custom type" $ do
           let person = Person "Bob" 25
-          let leaf = Pattern { value = person, elements = [] }
-          value leaf `shouldBe` person
+          let empty = Pattern { value = person, elements = [] }
+          value empty `shouldBe` person
       
       describe "Elements field accessor" $ do
         
         it "returns empty list for empty pattern" $ do
-          let leaf = Pattern { value = "leaf", elements = [] }
-          elements leaf `shouldBe` ([] :: [Pattern String])
+          let empty = Pattern { value = "empty", elements = [] }
+          elements empty `shouldBe` ([] :: [Pattern String])
         
         it "returns empty list for empty pattern with different value types" $ do
-          let leafInt = Pattern { value = 42, elements = [] }
-          let leafString = Pattern { value = "test", elements = [] }
-          elements leafInt `shouldBe` ([] :: [Pattern Int])
-          elements leafString `shouldBe` ([] :: [Pattern String])
+          let emptyInt = Pattern { value = 42, elements = [] }
+          let emptyString = Pattern { value = "test", elements = [] }
+          elements emptyInt `shouldBe` ([] :: [Pattern Int])
+          elements emptyString `shouldBe` ([] :: [Pattern String])
       
       describe "Edge cases" $ do
         
         it "empty pattern with explicitly empty list of elements behaves correctly" $ do
-          let leaf = Pattern { value = "node", elements = [] }
-          value leaf `shouldBe` "node"
-          elements leaf `shouldBe` ([] :: [Pattern String])
-          null (elements leaf) `shouldBe` True
+          let empty = Pattern { value = "node", elements = [] }
+          value empty `shouldBe` "node"
+          elements empty `shouldBe` ([] :: [Pattern String])
+          null (elements empty) `shouldBe` True
         
         it "multiple empty patterns with same value type can be created independently" $ do
-          let leaf1 = Pattern { value = "node1", elements = [] }
-          let leaf2 = Pattern { value = "node2", elements = [] }
-          value leaf1 `shouldBe` "node1"
-          value leaf2 `shouldBe` "node2"
-          elements leaf1 `shouldBe` ([] :: [Pattern String])
-          elements leaf2 `shouldBe` ([] :: [Pattern String])
+          let empty1 = Pattern { value = "node1", elements = [] }
+          let empty2 = Pattern { value = "node2", elements = [] }
+          value empty1 `shouldBe` "node1"
+          value empty2 `shouldBe` "node2"
+          elements empty1 `shouldBe` ([] :: [Pattern String])
+          elements empty2 `shouldBe` ([] :: [Pattern String])
         
         it "empty patterns with different value types are type-safe" $ do
-          let leafString = Pattern { value = "text", elements = [] }
-          let leafInt = Pattern { value = 123, elements = [] }
-          value leafString `shouldBe` "text"
-          value leafInt `shouldBe` (123 :: Int)
+          let emptyString = Pattern { value = "text", elements = [] }
+          let emptyInt = Pattern { value = 123, elements = [] }
+          value emptyString `shouldBe` "text"
+          value emptyInt `shouldBe` (123 :: Int)
           -- Type system ensures they cannot be mixed
     
-    describe "Patterns with Children (User Story 2)" $ do
+    describe "Patterns with Elements (User Story 2)" $ do
       
-      describe "Creating patterns with children" $ do
+      describe "Creating patterns with elements" $ do
         
-        it "creates a pattern with single child" $ do
-          let child = Pattern { value = "child", elements = [] }
-          let parent = Pattern { value = "parent", elements = [child] }
-          value parent `shouldBe` "parent"
-          length (elements parent) `shouldBe` 1
-          head (elements parent) `shouldBe` child
+        it "creates a pattern with single element" $ do
+          let elem = Pattern { value = "elem", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem] }
+          value pattern `shouldBe` "pattern"
+          length (elements pattern) `shouldBe` 1
+          head (elements pattern) `shouldBe` elem
         
-        it "creates a pattern with multiple children" $ do
-          let child1 = Pattern { value = "child1", elements = [] }
-          let child2 = Pattern { value = "child2", elements = [] }
-          let child3 = Pattern { value = "child3", elements = [] }
-          let parent = Pattern { value = "parent", elements = [child1, child2, child3] }
-          value parent `shouldBe` "parent"
-          length (elements parent) `shouldBe` 3
-          elements parent `shouldBe` [child1, child2, child3]
+        it "creates a pattern with multiple elements" $ do
+          let elem1 = Pattern { value = "elem1", elements = [] }
+          let elem2 = Pattern { value = "elem2", elements = [] }
+          let elem3 = Pattern { value = "elem3", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          value pattern `shouldBe` "pattern"
+          length (elements pattern) `shouldBe` 3
+          elements pattern `shouldBe` [elem1, elem2, elem3]
       
-      describe "Value field accessor for patterns with children" $ do
+      describe "Value field accessor for patterns with elements" $ do
         
-        it "returns the correct value for pattern with single child" $ do
-          let child = Pattern { value = "child", elements = [] }
-          let parent = Pattern { value = "parent", elements = [child] }
-          value parent `shouldBe` "parent"
+        it "returns the correct value for pattern with single element" $ do
+          let elem = Pattern { value = "elem", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem] }
+          value pattern `shouldBe` "pattern"
         
-        it "returns the correct value for pattern with multiple children" $ do
-          let child1 = Pattern { value = "c1", elements = [] }
-          let child2 = Pattern { value = "c2", elements = [] }
-          let parent = Pattern { value = "root", elements = [child1, child2] }
-          value parent `shouldBe` "root"
+        it "returns the correct value for pattern with multiple elements" $ do
+          let elem1 = Pattern { value = "e1", elements = [] }
+          let elem2 = Pattern { value = "e2", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem1, elem2] }
+          value pattern `shouldBe` "pattern"
         
-        it "returns the correct value for pattern with integer value and children" $ do
-          let child = Pattern { value = 10, elements = [] }
-          let parent = Pattern { value = 100, elements = [child] }
-          value parent `shouldBe` (100 :: Int)
+        it "returns the correct value for pattern with integer value and elements" $ do
+          let elem = Pattern { value = 10, elements = [] }
+          let pattern = Pattern { value = 100, elements = [elem] }
+          value pattern `shouldBe` (100 :: Int)
       
-      describe "Elements field accessor for patterns with children" $ do
+      describe "Elements field accessor for patterns with elements" $ do
         
-        it "returns correct child list for pattern with single child" $ do
-          let child = Pattern { value = "child", elements = [] }
-          let parent = Pattern { value = "parent", elements = [child] }
-          elements parent `shouldBe` [child]
+        it "returns correct element list for pattern with single element" $ do
+          let elem = Pattern { value = "elem", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem] }
+          elements pattern `shouldBe` [elem]
         
-        it "returns correct child list for pattern with multiple children" $ do
-          let child1 = Pattern { value = "c1", elements = [] }
-          let child2 = Pattern { value = "c2", elements = [] }
-          let child3 = Pattern { value = "c3", elements = [] }
-          let parent = Pattern { value = "parent", elements = [child1, child2, child3] }
-          elements parent `shouldBe` [child1, child2, child3]
+        it "returns correct element list for pattern with multiple elements" $ do
+          let elem1 = Pattern { value = "e1", elements = [] }
+          let elem2 = Pattern { value = "e2", elements = [] }
+          let elem3 = Pattern { value = "e3", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          elements pattern `shouldBe` [elem1, elem2, elem3]
         
-        it "returns correct child list preserving order" $ do
-          let child1 = Pattern { value = "first", elements = [] }
-          let child2 = Pattern { value = "second", elements = [] }
-          let child3 = Pattern { value = "third", elements = [] }
-          let parent = Pattern { value = "parent", elements = [child1, child2, child3] }
-          let children = elements parent
-          value (head children) `shouldBe` "first"
-          value (children !! 1) `shouldBe` "second"
-          value (children !! 2) `shouldBe` "third"
+        it "returns correct element list preserving order" $ do
+          let elem1 = Pattern { value = "first", elements = [] }
+          let elem2 = Pattern { value = "second", elements = [] }
+          let elem3 = Pattern { value = "third", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          let elems = elements pattern
+          value (head elems) `shouldBe` "first"
+          value (elems !! 1) `shouldBe` "second"
+          value (elems !! 2) `shouldBe` "third"
       
       describe "Elements accessibility and order" $ do
         
         it "elements are accessible in correct order" $ do
-          let child1 = Pattern { value = "a", elements = [] }
-          let child2 = Pattern { value = "b", elements = [] }
-          let child3 = Pattern { value = "c", elements = [] }
-          let parent = Pattern { value = "parent", elements = [child1, child2, child3] }
-          let children = elements parent
-          children `shouldBe` [child1, child2, child3]
-          map value children `shouldBe` ["a", "b", "c"]
+          let elem1 = Pattern { value = "a", elements = [] }
+          let elem2 = Pattern { value = "b", elements = [] }
+          let elem3 = Pattern { value = "c", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          let elems = elements pattern
+          elems `shouldBe` [elem1, elem2, elem3]
+          map value elems `shouldBe` ["a", "b", "c"]
         
-        it "can access individual children by index" $ do
-          let child1 = Pattern { value = "first", elements = [] }
-          let child2 = Pattern { value = "second", elements = [] }
-          let parent = Pattern { value = "parent", elements = [child1, child2] }
-          let children = elements parent
-          head children `shouldBe` child1
-          last children `shouldBe` child2
+        it "can access individual elements by index" $ do
+          let elem1 = Pattern { value = "first", elements = [] }
+          let elem2 = Pattern { value = "second", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem1, elem2] }
+          let elems = elements pattern
+          head elems `shouldBe` elem1
+          last elems `shouldBe` elem2
       
       describe "Edge cases" $ do
         
@@ -172,19 +172,19 @@ spec = do
           null (elements pattern) `shouldBe` True
         
         it "deeply nested patterns (multiple levels)" $ do
-          let level3 = Pattern { value = "level3", elements = [] }
-          let level2 = Pattern { value = "level2", elements = [level3] }
-          let level1 = Pattern { value = "level1", elements = [level2] }
-          let root = Pattern { value = "root", elements = [level1] }
-          value root `shouldBe` "root"
-          length (elements root) `shouldBe` 1
-          value (head (elements root)) `shouldBe` "level1"
-          let l1Children = elements (head (elements root))
-          length l1Children `shouldBe` 1
-          value (head l1Children) `shouldBe` "level2"
-          let l2Children = elements (head l1Children)
-          length l2Children `shouldBe` 1
-          value (head l2Children) `shouldBe` "level3"
+          let inner = Pattern { value = "inner", elements = [] }
+          let middle = Pattern { value = "middle", elements = [inner] }
+          let outer = Pattern { value = "outer", elements = [middle] }
+          let pattern = Pattern { value = "pattern", elements = [outer] }
+          value pattern `shouldBe` "pattern"
+          length (elements pattern) `shouldBe` 1
+          value (head (elements pattern)) `shouldBe` "outer"
+          let outerElems = elements (head (elements pattern))
+          length outerElems `shouldBe` 1
+          value (head outerElems) `shouldBe` "middle"
+          let middleElems = elements (head outerElems)
+          length middleElems `shouldBe` 1
+          value (head middleElems) `shouldBe` "inner"
         
         it "pattern containing pattern containing pattern (arbitrary depth)" $ do
           let innermost = Pattern { value = "innermost", elements = [] }
@@ -194,136 +194,136 @@ spec = do
           value (head (elements outer)) `shouldBe` "middle"
           value (head (elements (head (elements outer)))) `shouldBe` "innermost"
         
-        it "patterns with varying numbers of children (zero, one, many)" $ do
-          let zeroChildren = Pattern { value = "zero", elements = [] }
-          let oneChild = Pattern { value = "one", elements = [Pattern { value = "child", elements = [] }] }
-          let child1 = Pattern { value = "c1", elements = [] }
-          let child2 = Pattern { value = "c2", elements = [] }
-          let child3 = Pattern { value = "c3", elements = [] }
-          let manyChildren = Pattern { value = "many", elements = [child1, child2, child3] }
-          length (elements zeroChildren) `shouldBe` 0
-          length (elements oneChild) `shouldBe` 1
-          length (elements manyChildren) `shouldBe` 3
+        it "patterns with varying numbers of elements (zero, one, many)" $ do
+          let zeroElements = Pattern { value = "zero", elements = [] }
+          let oneElement = Pattern { value = "one", elements = [Pattern { value = "elem", elements = [] }] }
+          let elem1 = Pattern { value = "e1", elements = [] }
+          let elem2 = Pattern { value = "e2", elements = [] }
+          let elem3 = Pattern { value = "e3", elements = [] }
+          let manyElements = Pattern { value = "many", elements = [elem1, elem2, elem3] }
+          length (elements zeroElements) `shouldBe` 0
+          length (elements oneElement) `shouldBe` 1
+          length (elements manyElements) `shouldBe` 3
     
     describe "Show Instance (Phase 2.1)" $ do
       
       describe "Show instance for empty patterns" $ do
         
         it "shows empty pattern with string value correctly" $ do
-          let leaf = Pattern { value = "test", elements = [] }
-          show leaf `shouldBe` "Pattern {value = \"test\", elements = []}"
+          let empty = Pattern { value = "test", elements = [] }
+          show empty `shouldBe` "Pattern {value = \"test\", elements = []}"
         
         it "shows empty pattern with integer value correctly" $ do
-          let leaf = Pattern { value = 42, elements = [] }
-          show leaf `shouldBe` "Pattern {value = 42, elements = []}"
+          let empty = Pattern { value = 42, elements = [] }
+          show empty `shouldBe` "Pattern {value = 42, elements = []}"
         
         it "shows empty pattern with custom type value correctly" $ do
           let person = Person "Alice" 30
-          let leaf = Pattern { value = person, elements = [] }
-          show leaf `shouldBe` "Pattern {value = Person {personName = \"Alice\", personAge = 30}, elements = []}"
+          let empty = Pattern { value = person, elements = [] }
+          show empty `shouldBe` "Pattern {value = Person {personName = \"Alice\", personAge = 30}, elements = []}"
       
-      describe "Show instance for patterns with children" $ do
+      describe "Show instance for patterns with elements" $ do
         
-        it "shows pattern with single child correctly" $ do
-          let child = Pattern { value = "child", elements = [] }
-          let parent = Pattern { value = "parent", elements = [child] }
-          show parent `shouldBe` "Pattern {value = \"parent\", elements = [Pattern {value = \"child\", elements = []}]}"
+        it "shows pattern with single element correctly" $ do
+          let elem = Pattern { value = "elem", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem] }
+          show pattern `shouldBe` "Pattern {value = \"pattern\", elements = [Pattern {value = \"elem\", elements = []}]}"
         
-        it "shows pattern with multiple children correctly" $ do
-          let child1 = Pattern { value = "c1", elements = [] }
-          let child2 = Pattern { value = "c2", elements = [] }
-          let parent = Pattern { value = "parent", elements = [child1, child2] }
-          show parent `shouldBe` "Pattern {value = \"parent\", elements = [Pattern {value = \"c1\", elements = []},Pattern {value = \"c2\", elements = []}]}"
+        it "shows pattern with multiple elements correctly" $ do
+          let elem1 = Pattern { value = "e1", elements = [] }
+          let elem2 = Pattern { value = "e2", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem1, elem2] }
+          show pattern `shouldBe` "Pattern {value = \"pattern\", elements = [Pattern {value = \"e1\", elements = []},Pattern {value = \"e2\", elements = []}]}"
         
         it "shows nested patterns correctly" $ do
-          let level3 = Pattern { value = "level3", elements = [] }
-          let level2 = Pattern { value = "level2", elements = [level3] }
-          let level1 = Pattern { value = "level1", elements = [level2] }
-          let root = Pattern { value = "root", elements = [level1] }
-          show root `shouldContain` "Pattern {value = \"root\""
-          show root `shouldContain` "Pattern {value = \"level1\""
-          show root `shouldContain` "Pattern {value = \"level2\""
-          show root `shouldContain` "Pattern {value = \"level3\""
+          let inner = Pattern { value = "inner", elements = [] }
+          let middle = Pattern { value = "middle", elements = [inner] }
+          let outer = Pattern { value = "outer", elements = [middle] }
+          let pattern = Pattern { value = "pattern", elements = [outer] }
+          show pattern `shouldContain` "Pattern {value = \"pattern\""
+          show pattern `shouldContain` "Pattern {value = \"outer\""
+          show pattern `shouldContain` "Pattern {value = \"middle\""
+          show pattern `shouldContain` "Pattern {value = \"inner\""
     
     describe "Eq Instance (Phase 2.2)" $ do
       
       describe "Equality for empty patterns" $ do
         
         it "two identical empty patterns are equal" $ do
-          let leaf1 = Pattern { value = "node", elements = [] }
-          let leaf2 = Pattern { value = "node", elements = [] }
-          leaf1 `shouldBe` leaf2
-          (leaf1 == leaf2) `shouldBe` True
+          let empty1 = Pattern { value = "node", elements = [] }
+          let empty2 = Pattern { value = "node", elements = [] }
+          empty1 `shouldBe` empty2
+          (empty1 == empty2) `shouldBe` True
         
         it "two empty patterns with different values are not equal" $ do
-          let leaf1 = Pattern { value = "node1", elements = [] }
-          let leaf2 = Pattern { value = "node2", elements = [] }
-          leaf1 `shouldNotBe` leaf2
-          (leaf1 == leaf2) `shouldBe` False
+          let empty1 = Pattern { value = "node1", elements = [] }
+          let empty2 = Pattern { value = "node2", elements = [] }
+          empty1 `shouldNotBe` empty2
+          (empty1 == empty2) `shouldBe` False
         
         it "two empty patterns with same integer value are equal" $ do
-          let leaf1 = Pattern { value = 42, elements = [] }
-          let leaf2 = Pattern { value = 42, elements = [] }
-          leaf1 `shouldBe` leaf2
+          let empty1 = Pattern { value = 42, elements = [] }
+          let empty2 = Pattern { value = 42, elements = [] }
+          empty1 `shouldBe` empty2
         
         it "two empty patterns with different integer values are not equal" $ do
-          let leaf1 = Pattern { value = 42, elements = [] }
-          let leaf2 = Pattern { value = 100, elements = [] }
-          leaf1 `shouldNotBe` leaf2
+          let empty1 = Pattern { value = 42, elements = [] }
+          let empty2 = Pattern { value = 100, elements = [] }
+          empty1 `shouldNotBe` empty2
       
-      describe "Equality for patterns with children" $ do
+      describe "Equality for patterns with elements" $ do
         
-        it "two identical patterns with children are equal" $ do
-          let child1 = Pattern { value = "child1", elements = [] }
-          let child2 = Pattern { value = "child2", elements = [] }
-          let parent1 = Pattern { value = "parent", elements = [child1, child2] }
-          let parent2 = Pattern { value = "parent", elements = [child1, child2] }
-          parent1 `shouldBe` parent2
+        it "two identical patterns with elements are equal" $ do
+          let elem1 = Pattern { value = "elem1", elements = [] }
+          let elem2 = Pattern { value = "elem2", elements = [] }
+          let pattern1 = Pattern { value = "pattern", elements = [elem1, elem2] }
+          let pattern2 = Pattern { value = "pattern", elements = [elem1, elem2] }
+          pattern1 `shouldBe` pattern2
         
-        it "patterns with same value but different children are not equal" $ do
-          let child1 = Pattern { value = "child1", elements = [] }
-          let child2 = Pattern { value = "child2", elements = [] }
-          let child3 = Pattern { value = "child3", elements = [] }
-          let parent1 = Pattern { value = "parent", elements = [child1, child2] }
-          let parent2 = Pattern { value = "parent", elements = [child1, child3] }
-          parent1 `shouldNotBe` parent2
+        it "patterns with same value but different elements are not equal" $ do
+          let elem1 = Pattern { value = "elem1", elements = [] }
+          let elem2 = Pattern { value = "elem2", elements = [] }
+          let elem3 = Pattern { value = "elem3", elements = [] }
+          let pattern1 = Pattern { value = "pattern", elements = [elem1, elem2] }
+          let pattern2 = Pattern { value = "pattern", elements = [elem1, elem3] }
+          pattern1 `shouldNotBe` pattern2
         
-        it "patterns with different values but same children are not equal" $ do
-          let child1 = Pattern { value = "child1", elements = [] }
-          let child2 = Pattern { value = "child2", elements = [] }
-          let parent1 = Pattern { value = "parent1", elements = [child1, child2] }
-          let parent2 = Pattern { value = "parent2", elements = [child1, child2] }
-          parent1 `shouldNotBe` parent2
+        it "patterns with different values but same elements are not equal" $ do
+          let elem1 = Pattern { value = "elem1", elements = [] }
+          let elem2 = Pattern { value = "elem2", elements = [] }
+          let pattern1 = Pattern { value = "pattern1", elements = [elem1, elem2] }
+          let pattern2 = Pattern { value = "pattern2", elements = [elem1, elem2] }
+          pattern1 `shouldNotBe` pattern2
         
-        it "patterns with different numbers of children are not equal" $ do
-          let child1 = Pattern { value = "child1", elements = [] }
-          let child2 = Pattern { value = "child2", elements = [] }
-          let parent1 = Pattern { value = "parent", elements = [child1] }
-          let parent2 = Pattern { value = "parent", elements = [child1, child2] }
-          parent1 `shouldNotBe` parent2
+        it "patterns with different numbers of elements are not equal" $ do
+          let elem1 = Pattern { value = "elem1", elements = [] }
+          let elem2 = Pattern { value = "elem2", elements = [] }
+          let pattern1 = Pattern { value = "pattern", elements = [elem1] }
+          let pattern2 = Pattern { value = "pattern", elements = [elem1, elem2] }
+          pattern1 `shouldNotBe` pattern2
       
       describe "Equality for nested patterns" $ do
         
         it "two identical deeply nested patterns are equal" $ do
-          let level3 = Pattern { value = "level3", elements = [] }
-          let level2 = Pattern { value = "level2", elements = [level3] }
-          let level1 = Pattern { value = "level1", elements = [level2] }
-          let root1 = Pattern { value = "root", elements = [level1] }
-          let root2 = Pattern { value = "root", elements = [level1] }
-          root1 `shouldBe` root2
+          let inner = Pattern { value = "inner", elements = [] }
+          let middle = Pattern { value = "middle", elements = [inner] }
+          let outer = Pattern { value = "outer", elements = [middle] }
+          let pattern1 = Pattern { value = "pattern", elements = [outer] }
+          let pattern2 = Pattern { value = "pattern", elements = [outer] }
+          pattern1 `shouldBe` pattern2
         
         it "nested patterns with different structure are not equal" $ do
-          let level3a = Pattern { value = "level3", elements = [] }
-          let level2a = Pattern { value = "level2", elements = [level3a] }
-          let level1a = Pattern { value = "level1", elements = [level2a] }
-          let root1 = Pattern { value = "root", elements = [level1a] }
+          let innerA = Pattern { value = "inner", elements = [] }
+          let middleA = Pattern { value = "middle", elements = [innerA] }
+          let outerA = Pattern { value = "outer", elements = [middleA] }
+          let pattern1 = Pattern { value = "pattern", elements = [outerA] }
           
-          let level3b = Pattern { value = "level3", elements = [] }
-          let level2b = Pattern { value = "level2", elements = [] }
-          let level1b = Pattern { value = "level1", elements = [level2b] }
-          let root2 = Pattern { value = "root", elements = [level1b] }
+          let innerB = Pattern { value = "inner", elements = [] }
+          let middleB = Pattern { value = "middle", elements = [] }
+          let outerB = Pattern { value = "outer", elements = [middleB] }
+          let pattern2 = Pattern { value = "pattern", elements = [outerB] }
           
-          root1 `shouldNotBe` root2
+          pattern1 `shouldNotBe` pattern2
       
       describe "Equality edge cases" $ do
         

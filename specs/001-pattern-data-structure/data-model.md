@@ -7,9 +7,9 @@
 
 ### Definition
 
-A **Pattern** is a **decorated sequence**: the elements form the pattern itself, and the value provides decoration (metadata) about that pattern. For example, the pattern "A B B A" with decoration "Enclosed rhyme" represents a specific sequence pattern (A B B A) that is classified as an "Enclosed rhyme". The elements ARE the pattern; the value describes what kind of pattern it is.
+A **Pattern** is a **decorated sequence**: the elements form the pattern itself, and the value provides decoration about that pattern. For example, the pattern "A B B A" with decoration "Enclosed rhyme" represents a specific sequence pattern (A B B A) that is classified as an "Enclosed rhyme". The elements ARE the pattern; the value describes what kind of pattern it is.
 
-While implemented using a recursive tree structure, the primary semantic is that elements form the pattern sequence itself, not that they are children of a node. The tree structure is an implementation detail that supports the sequence representation.
+While implemented using a recursive tree structure, the primary semantic is that elements form the pattern sequence itself. The tree structure is an implementation detail that supports the sequence representation.
 
 ### Structure
 
@@ -25,16 +25,16 @@ data Pattern v = Pattern
 
 ### Fields
 
-- **value** (`v`): The decoration or metadata associated with the pattern. The value field stores data of any type that describes or classifies the pattern sequence. For example, "Enclosed rhyme" describes the pattern "A B B A". The value is decoration about the pattern, not part of the pattern itself. Type parameter `v` allows for different value types.
+- **value** (`v`): The decoration (value) associated with the pattern. The value field stores data of any type that describes or classifies the pattern sequence. For example, "Enclosed rhyme" describes the pattern "A B B A". The value is decoration about the pattern, not part of the pattern itself. Type parameter `v` allows for different value types.
 
-- **elements** (`[Pattern v]`): The pattern itself, represented as a sequence of elements. The elements ARE the pattern; they are not children or subordinate to the value. Each element in the sequence is itself a Pattern, enabling recursive nesting. An empty list `[]` represents a pattern with no elements (an empty sequence). A non-empty list represents a pattern containing one or more pattern elements in sequence.
+- **elements** (`[Pattern v]`): The pattern itself, represented as a sequence of elements. The elements ARE the pattern; they are not subordinate to the value. Each element in the sequence is itself a Pattern, enabling recursive nesting. An empty list `[]` represents a pattern with no elements (an empty sequence). A non-empty list represents a pattern containing one or more pattern elements in sequence.
 
 ### Conceptual Model: Decorated Sequences
 
 **Primary Semantic**: Patterns are decorated sequences where the elements form the pattern itself.
 
 - The `elements` field IS the pattern - it contains the sequence that defines the pattern
-- The `value` field provides decoration/metadata about what kind of pattern it is
+- The `value` field provides decoration about what kind of pattern it is
 - Elements maintain their sequence order - this order is essential to the pattern
 - Each element in the sequence is itself a Pattern, enabling nested patterns
 
@@ -42,7 +42,7 @@ data Pattern v = Pattern
 - Pattern: the sequence `[A, B, B, A]` (the elements)
 - Decoration: "Enclosed rhyme" (the value describing what kind of pattern this is)
 
-The pattern itself is the sequence; the value is metadata about that pattern.
+The pattern itself is the sequence; the value is decoration about that pattern.
 
 ### Implementation Model: Recursive Tree
 
