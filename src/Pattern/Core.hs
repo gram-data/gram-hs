@@ -254,3 +254,23 @@ data Pattern v = Pattern
     -- [Pattern {value = "child1", elements = []},Pattern {value = "child2", elements = []}]
   , elements :: [Pattern v]
   }
+  deriving (Eq)
+
+-- | Show instance for Pattern.
+--
+-- Displays patterns in a readable format showing both the value and elements.
+-- The output format is: @Pattern {value = <value>, elements = [<elements>]}@
+--
+-- This instance requires that the value type @v@ has a @Show@ instance.
+--
+-- === Examples
+--
+-- >>> show (Pattern { value = "test", elements = [] })
+-- "Pattern {value = \"test\", elements = []}"
+--
+-- >>> show (Pattern { value = 42, elements = [] })
+-- "Pattern {value = 42, elements = []}"
+--
+instance Show v => Show (Pattern v) where
+  show (Pattern v els) = 
+    "Pattern {value = " ++ show v ++ ", elements = " ++ show els ++ "}"

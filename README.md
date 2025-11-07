@@ -83,17 +83,17 @@ pattern-hs/
 
 ### Prerequisites
 
-- **GHC**: 9.8.4 (specified in `cabal.project`)
-- **Cabal**: 3.6.2.0 or later (recommended: 3.12.1.0+)
+- **GHC**: 9.10.3 (specified in `cabal.project`)
+- **Cabal**: 3.6.2.0 or later (recommended: latest)
 - **Haskell Language Server (HLS)**: Optional but recommended for IDE support
 
 #### Installing Prerequisites
 
 **Using ghcup (recommended)**:
 ```bash
-# Install GHC 9.8.4
-ghcup install ghc 9.8.4
-ghcup set ghc 9.8.4
+# Install GHC 9.10.3
+ghcup install ghc 9.10.3
+ghcup set ghc 9.10.3
 
 # Install Cabal (if needed)
 ghcup install cabal
@@ -105,7 +105,7 @@ ghcup install hls
 
 **Verify installation**:
 ```bash
-ghc --version    # Should show 9.8.4
+ghc --version    # Should show 9.10.3
 cabal --version  # Should show 3.6.2.0 or later
 ```
 
@@ -147,7 +147,7 @@ cabal build lib:pattern
 
 **Build with specific GHC version**:
 ```bash
-cabal build --with-compiler=ghc-9.8.4
+cabal build --with-compiler=ghc-9.10.3
 ```
 
 ### Test
@@ -187,12 +187,13 @@ cabal haddock
 **Open documentation**:
 ```bash
 # After generating with haddock
-open dist-newstyle/build/*/ghc-9.8.4/pattern-0.1.0.0/doc/html/pattern/index.html
+# Find the correct path (architecture may vary)
+open $(find dist-newstyle -name "index.html" -path "*/doc/html/pattern/*" | head -1 | xargs dirname)/index.html
 ```
 
 **Generate with additional options** (recommended for GitHub Pages):
 ```bash
-cabal haddock --haddock-html --haddock-quickjump --haddock-hyperlink-source
+cabal haddock lib:pattern --haddock-html --haddock-quickjump --haddock-hyperlink-source
 ```
 
 ## Publishing Documentation to GitHub Pages
@@ -223,7 +224,7 @@ To manually deploy documentation:
 
 ```bash
 # Generate documentation
-cabal haddock --haddock-html --haddock-quickjump --haddock-hyperlink-source
+cabal haddock lib:pattern --haddock-html --haddock-quickjump --haddock-hyperlink-source
 
 # Find the output directory
 DOC_DIR=$(find dist-newstyle -name "index.html" -path "*/doc/html/pattern/*" | head -1 | xargs dirname)
@@ -249,7 +250,7 @@ find src tests -name "*.hs" -exec ormolu -m inplace {} \;
 ### Troubleshooting
 
 **Build errors**:
-- Ensure GHC 9.8.4 is installed: `ghc --version`
+- Ensure GHC 9.10.3 is installed: `ghc --version`
 - Update package index: `cabal update`
 - Clean and rebuild: `cabal clean && cabal build`
 

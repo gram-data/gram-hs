@@ -14,5 +14,5 @@ spec = do
   describe "Category-theoretic properties" $ do
     -- Property-based tests will be added here when implementation begins
     it "placeholder property test" $ do
-      property $ \x -> x == x
+      property $ \x -> (x :: Int) == x
 
