@@ -67,17 +67,19 @@ The pattern itself is the sequence; the value is decoration about that pattern.
 - **Self-referential**: Each `Pattern` contains zero or more Pattern elements that form the pattern sequence
 - **Recursive**: Pattern elements can themselves be patterns, enabling arbitrarily deep nesting (patterns containing patterns containing patterns, etc.)
 - **Compositional**: Patterns can be composed by including other patterns as elements in the sequence
-- **Graph interpretation**: A `Pattern` can be interpreted as different graph elements (node, relationship, subgraph, path) based on its structure
+- **Graph representation**: Patterns are a data structure for representing graphs (like an adjacency matrix or adjacency list), optimized for expressiveness of layered, hierarchical graph structures. Patterns can be **interpreted** as different graph elements through views.
 
 ---
 
-## Graph Element Classifications
+## Pattern Structural Classifications
+
+Pattern structural classifications describe what patterns **are** structurally, not how they are interpreted. These are based on the element structure of the pattern itself.
 
 ### Empty Pattern
 
 A pattern with no elements (`elements == []`).
 
-**Structure**: Empty sequence
+**Structure**: Empty sequence  
 **Status**: ✅ Implemented (this is the basic Pattern structure)
 
 **Example**:
@@ -86,21 +88,68 @@ emptyPattern :: Pattern String
 emptyPattern = Pattern { value = "node1", elements = [] }
 ```
 
-### Node
+### Pattern with Elements
 
-A pattern interpreted as a **node** when it has no elements that are graph elements themselves. Typically, this means `elements == []` (an empty pattern).
+A pattern containing one or more pattern elements in sequence.
 
-**Structure**: Empty sequence (empty pattern)
-**Status**: ⏳ Planned (classification function `isNode` not yet implemented)
+**Structure**: Non-empty sequence of patterns  
+**Status**: ✅ Implemented (this is the basic Pattern structure)
+
+**Example**:
+```haskell
+patternWithElements :: Pattern String
+patternWithElements = Pattern 
+  { value = "pattern"
+  , elements = [ Pattern { value = "elem1", elements = [] }
+               , Pattern { value = "elem2", elements = [] }
+               ]
+  }
+```
+
+### Nested Pattern
+
+A pattern containing patterns that themselves contain patterns, enabling arbitrary nesting depth.
+
+**Structure**: Recursive nesting of patterns  
+**Status**: ✅ Implemented (this is the basic Pattern structure)
+
+**Example**:
+```haskell
+nestedPattern :: Pattern String
+nestedPattern = Pattern 
+  { value = "outer"
+  , elements = [ Pattern { value = "middle"
+                         , elements = [ Pattern { value = "inner", elements = [] } ]
+                         }
+               ]
+  }
+```
+
+**Note**: Patterns are a data structure for representing graphs, optimized for expressiveness of layered, hierarchical graph structures rather than performance optimization over a single, "flat" graph.
+
+---
+
+## Graph Interpretations (Views)
+
+Patterns can be **interpreted** as graph elements through different views. These are interpretations/views of pattern structures, **not pattern variants themselves**. The following interpretation functions are planned but not yet implemented:
+
+### Node Interpretation
+
+A pattern can be **interpreted** as a **node** when it has no elements that are graph elements themselves. Typically, this means `elements == []` (an empty pattern).
+
+**Structure**: Empty sequence (empty pattern)  
+**Status**: ⏳ Planned (interpretation function `isNode` not yet implemented)
 
 **Validation** (planned): `isNode :: Pattern v -> Bool`
 
-### Relationship
+**Note**: This is an interpretation/view of a pattern structure, not a pattern variant. An empty pattern can be interpreted as a node through a graph view.
 
-A pattern interpreted as a **relationship** when it has exactly 2 elements, and both elements are nodes (empty patterns).
+### Relationship Interpretation
 
-**Structure**: Exactly 2 elements, both are empty patterns
-**Status**: ⏳ Planned (classification function `isRelationship` not yet implemented)
+A pattern can be **interpreted** as a **relationship** when it has exactly 2 elements, and both elements are nodes (empty patterns).
+
+**Structure**: Exactly 2 elements, both are empty patterns  
+**Status**: ⏳ Planned (interpretation function `isRelationship` not yet implemented)
 
 **Validation** (planned): `isRelationship :: Pattern v -> Bool`
 
@@ -108,37 +157,43 @@ A pattern interpreted as a **relationship** when it has exactly 2 elements, and 
 - `length (elements p) == 2`
 - `all isNode (elements p)`
 
-**Example** (structure exists, classification function planned):
+**Example** (structure exists, interpretation function planned):
 ```haskell
 nodeA = Pattern { value = "A", elements = [] }
 nodeB = Pattern { value = "B", elements = [] }
 relationship = Pattern { value = "knows", elements = [nodeA, nodeB] }
 ```
 
-### Subgraph
+**Note**: This is an interpretation/view of a pattern structure, not a pattern variant. A pattern with 2 elements can be interpreted as a relationship through a graph view.
 
-A pattern interpreted as a **subgraph** when all elements are graph elements (nodes, relationships, or other subgraphs).
+### Subgraph Interpretation
 
-**Structure**: All elements are graph elements
-**Status**: ⏳ Planned (classification function `isSubgraph` not yet implemented)
+A pattern can be **interpreted** as a **subgraph** when all elements are graph elements (nodes, relationships, or other subgraphs).
+
+**Structure**: All elements are graph elements  
+**Status**: ⏳ Planned (interpretation function `isSubgraph` not yet implemented)
 
 **Validation** (planned): `isSubgraph :: Pattern v -> Bool`
 
 **Constraints** (planned):
 - `all isGraphElement (elements p)`
 
-### Path
+**Note**: This is an interpretation/view of a pattern structure, not a pattern variant. A pattern with elements can be interpreted as a subgraph through a graph view.
 
-A pattern interpreted as a **path** when it is a subgraph and all relationships in the path chain correctly (target of one equals source of next).
+### Path Interpretation
 
-**Structure**: Subgraph with chained relationships
-**Status**: ⏳ Planned (classification function `isPath` not yet implemented)
+A pattern can be **interpreted** as a **path** when it is a subgraph and all relationships in the path chain correctly (target of one equals source of next).
+
+**Structure**: Subgraph with chained relationships  
+**Status**: ⏳ Planned (interpretation function `isPath` not yet implemented)
 
 **Validation** (planned): `isPath :: Pattern v -> Bool`
 
 **Constraints** (planned):
 - `isSubgraph p`
 - `chainsCorrectly (elements p)`
+
+**Note**: This is an interpretation/view of a pattern structure, not a pattern variant. A pattern structure can be interpreted as a path through a graph view.
 
 ---
 

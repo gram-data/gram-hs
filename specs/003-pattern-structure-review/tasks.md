@@ -69,21 +69,25 @@
 
 ---
 
-## Phase 4: User Story 3 - Clarify Pattern Variant Classifications (Priority: P2)
+## Phase 4: User Story 3 - Clarify Pattern Structural Classifications (Priority: P2)
 
-**Goal**: Provide clear and consistent definitions of pattern variants (empty patterns, nodes, relationships, subgraphs, paths) with explicit implementation status
+**Goal**: Provide clear and consistent definitions of pattern structural classifications (empty patterns, patterns with elements, nested patterns) and clarify how patterns can be interpreted as graph elements through views (separate from pattern structure itself)
 
-**Independent Test**: Review all references to pattern variants. Verify that each variant has a clear, unambiguous definition with explicit implementation status (implemented vs planned), and that the hierarchy and classification rules are clearly explained.
+**Independent Test**: Review all references to pattern classifications. Verify that:
+- Pattern structural variants (empty patterns, patterns with elements) are clearly defined
+- Graph interpretations (nodes, relationships, subgraphs, paths) are clearly separated as views/interpretations, not pattern variants
+- The distinction between pattern structure and graph interpretation is explicit
+- Implementation status is marked for both structural operations and view/interpretation functions
 
 ### Implementation for User Story 3
 
-- [ ] T020 [P] [US3] Update pattern variant definitions in DESIGN.md: clarify that variants are structural classifications interpretable through views, mark implementation status
-- [ ] T021 [P] [US3] Update pattern variant definitions in specs/001-pattern-data-structure/data-model.md: use consistent definitions with implementation status
-- [ ] T022 [P] [US3] Update pattern variant definitions in specs/002-basic-pattern-type/data-model.md: use consistent definitions with implementation status
-- [ ] T023 [P] [US3] Update pattern variant definitions in src/Pattern/Core.hs: clarify variant definitions in Haddock comments with implementation status
-- [ ] T024 [US3] Verify all pattern variant definitions are consistent and include implementation status
+- [x] T020 [P] [US3] Update pattern structural classifications in DESIGN.md: clarify structural variants (empty patterns, patterns with elements) vs graph interpretations (nodes, relationships, subgraphs, paths as views), mark implementation status
+- [x] T021 [P] [US3] Update pattern structural classifications in specs/001-pattern-data-structure/data-model.md: separate structural variants from graph interpretations, use consistent definitions with implementation status
+- [x] T022 [P] [US3] Update pattern structural classifications in specs/002-basic-pattern-type/data-model.md: separate structural variants from graph interpretations, use consistent definitions with implementation status
+- [x] T023 [P] [US3] Update pattern structural classifications in src/Pattern/Core.hs: clarify structural variants in Haddock comments, separate from graph interpretation views, mark implementation status
+- [x] T024 [US3] Verify all pattern structural classifications are consistent, graph interpretations are clearly separated as views, and implementation status is included
 
-**Checkpoint**: At this point, all pattern variant definitions should be clear, consistent, and include implementation status. User Story 3 should be fully complete and independently verifiable.
+**Checkpoint**: At this point, pattern structural classifications should be clearly defined and separated from graph interpretations. The distinction between pattern structure (decorated sequences) and graph interpretation (views) should be explicit. User Story 3 should be fully complete and independently verifiable.
 
 ---
 

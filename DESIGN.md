@@ -18,21 +18,54 @@ data Pattern v = Pattern
 
 While implemented using a recursive tree structure, the primary semantic is that elements form the pattern sequence itself. The tree structure is an implementation detail that supports the sequence representation.
 
-## Graph Elements
+## Pattern Structural Classifications
 
-Pattern variants are structural classifications based on their element structure that can be interpreted through different graph views. The following classification functions are planned but not yet implemented:
+Patterns have structural classifications based on their element structure. These describe what patterns **are** structurally, not how they are interpreted:
+
+### Empty Pattern
+
+A pattern with no elements (`elements == []`).
+
+**Structure**: Empty sequence  
+**Status**: ✅ Implemented (this is the basic Pattern structure)
+
+### Pattern with Elements
+
+A pattern containing one or more pattern elements in sequence.
+
+**Structure**: Non-empty sequence of patterns  
+**Status**: ✅ Implemented (this is the basic Pattern structure)
+
+### Nested Pattern
+
+A pattern containing patterns that themselves contain patterns, enabling arbitrary nesting depth.
+
+**Structure**: Recursive nesting of patterns  
+**Status**: ✅ Implemented (this is the basic Pattern structure)
+
+**Note**: Patterns are a data structure for representing graphs (like an adjacency matrix or adjacency list), optimized for expressiveness of layered, hierarchical graph structures rather than performance optimization over a single, "flat" graph.
+
+## Graph Interpretations (Views)
+
+Patterns can be **interpreted** as graph elements through different views. These are interpretations/views of pattern structures, not pattern variants themselves. The following interpretation functions are planned but not yet implemented:
 
 ```haskell
--- Simple graph element classification (planned)
+-- Graph interpretation functions (planned)
+-- These interpret pattern structures as graph elements through views
+
+-- Interpret pattern as a node (typically empty pattern)
 isNode :: Pattern v -> Bool
 isNode p = all (not . isGraphElement) (elements p)
 
+-- Interpret pattern as a relationship (typically 2 elements that are nodes)
 isRelationship :: Pattern v -> Bool
 isRelationship p = length (elements p) == 2 && all isNode (elements p)
 
+-- Interpret pattern as a subgraph (all elements are graph elements)
 isSubgraph :: Pattern v -> Bool
 isSubgraph p = all isGraphElement (elements p)
 
+-- Interpret pattern as a path (subgraph with chained relationships)
 isPath :: Pattern v -> Bool
 isPath p = isSubgraph p && chainsCorrectly (elements p)
   where
@@ -43,7 +76,9 @@ isPath p = isSubgraph p && chainsCorrectly (elements p)
       target r1 == source r2 && chainsCorrectly (r2:rs)
 ```
 
-**Status**: ⏳ Planned (classification functions not yet implemented)
+**Status**: ⏳ Planned (graph interpretation functions not yet implemented)
+
+**Note**: These functions interpret pattern structures as graph elements. Patterns themselves are decorated sequences; graph interpretations (nodes, relationships, subgraphs, paths) are views of those structures, not pattern variants.
 
 ## Category Theoretic Perspective
 

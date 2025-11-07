@@ -179,27 +179,42 @@ module Pattern.Core where
 -- represents patterns with custom Person decorations. All elements in a pattern's
 -- sequence must have the same decoration type as the pattern itself.
 --
--- === Pattern Variants
+-- === Pattern Structural Classifications
 --
--- * Empty pattern: @elements == []@ - a sequence with no elements, representing
---   a simple entity or atomic pattern
--- * Pattern with elements: @elements@ contains one or more pattern elements -
---   represents relationships, subgraphs, or complex sequence structures
+-- Patterns have structural classifications based on their element structure:
+--
+-- * Empty pattern: @elements == []@ - a sequence with no elements
+-- * Pattern with elements: @elements@ contains one or more pattern elements
+-- * Nested pattern: patterns containing patterns containing patterns, enabling arbitrary nesting
+--
+-- === Graph Interpretations (Views)
+--
+-- Patterns can be **interpreted** as graph elements through different views.
+-- These are interpretations/views of pattern structures, not pattern variants themselves:
+--
+-- * Empty patterns can be interpreted as nodes through graph views
+-- * Patterns with 2 elements can be interpreted as relationships through graph views
+-- * Patterns with elements can be interpreted as subgraphs through graph views
+--
+-- **Note**: Patterns are a data structure for representing graphs (like an adjacency matrix
+-- or adjacency list), optimized for expressiveness of layered, hierarchical graph structures
+-- rather than performance optimization over a single, "flat" graph.
 --
 -- === Examples
 --
--- Creating an empty pattern (node):
+-- Creating an empty pattern:
 --
--- >>> nodeA = Pattern { value = "A", elements = [] }
+-- >>> empty = Pattern { value = "A", elements = [] }
 --
--- Creating a relationship pattern:
+-- Creating a pattern with elements (can be interpreted as a relationship):
 --
--- >>> nodeB = Pattern { value = "B", elements = [] }
--- >>> relationship = Pattern { value = "knows", elements = [nodeA, nodeB] }
+-- >>> elem1 = Pattern { value = "A", elements = [] }
+-- >>> elem2 = Pattern { value = "B", elements = [] }
+-- >>> pattern = Pattern { value = "knows", elements = [elem1, elem2] }
 --
--- Creating a graph pattern:
+-- Creating a pattern with multiple elements (can be interpreted as a subgraph):
 --
--- >>> graph = Pattern { value = "myGraph", elements = [nodeA, nodeB, relationship] }
+-- >>> graph = Pattern { value = "myGraph", elements = [elem1, elem2, pattern] }
 --
 data Pattern v = Pattern 
   { -- | The decoration (value) associated with this pattern.
