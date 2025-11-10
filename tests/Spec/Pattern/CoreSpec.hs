@@ -5,81 +5,81 @@ import Test.Hspec
 import Pattern.Core (Pattern(..))
 
 -- Custom type for testing
-data Person = Person { personName :: String, personAge :: Int }
+data Person = Person { name :: String, age :: Int }
   deriving (Eq, Show)
 
 spec :: Spec
 spec = do
   describe "Pattern.Core" $ do
     
-    describe "Empty Patterns (User Story 1)" $ do
+    describe "Atomic Patterns (User Story 1)" $ do
       
-      describe "Creating empty patterns with different value types" $ do
+      describe "Creating atomic patterns with different value types" $ do
         
-        it "creates an empty pattern with string value" $ do
-          let empty = Pattern { value = "node1", elements = [] }
-          value empty `shouldBe` "node1"
-          elements empty `shouldBe` ([] :: [Pattern String])
+        it "creates an atomic pattern with string value" $ do
+          let atom = Pattern { value = "node1", elements = [] }
+          value atom `shouldBe` "node1"
+          elements atom `shouldBe` ([] :: [Pattern String])
         
-        it "creates an empty pattern with integer value" $ do
-          let empty = Pattern { value = 42, elements = [] }
-          value empty `shouldBe` (42 :: Int)
-          elements empty `shouldBe` ([] :: [Pattern Int])
+        it "creates an atomic pattern with integer value" $ do
+          let atom = Pattern { value = 42, elements = [] }
+          value atom `shouldBe` (42 :: Int)
+          elements atom `shouldBe` ([] :: [Pattern Int])
         
-        it "creates an empty pattern with custom type value" $ do
+        it "creates an atomic pattern with custom type value" $ do
           let person = Person "Alice" 30
-          let empty = Pattern { value = person, elements = [] }
-          value empty `shouldBe` person
-          elements empty `shouldBe` ([] :: [Pattern Person])
+          let atom = Pattern { value = person, elements = [] }
+          value atom `shouldBe` person
+          elements atom `shouldBe` ([] :: [Pattern Person])
       
       describe "Value field accessor" $ do
         
-        it "returns the correct value for an empty pattern with string" $ do
-          let empty = Pattern { value = "test", elements = [] }
-          value empty `shouldBe` "test"
+        it "returns the correct value for an atomic pattern with string" $ do
+          let atom = Pattern { value = "test", elements = [] }
+          value atom `shouldBe` "test"
         
-        it "returns the correct value for an empty pattern with integer" $ do
-          let empty = Pattern { value = 100, elements = [] }
-          value empty `shouldBe` (100 :: Int)
+        it "returns the correct value for an atomic pattern with integer" $ do
+          let atom = Pattern { value = 100, elements = [] }
+          value atom `shouldBe` (100 :: Int)
         
-        it "returns the correct value for an empty pattern with custom type" $ do
+        it "returns the correct value for an atomic pattern with custom type" $ do
           let person = Person "Bob" 25
-          let empty = Pattern { value = person, elements = [] }
-          value empty `shouldBe` person
+          let atom = Pattern { value = person, elements = [] }
+          value atom `shouldBe` person
       
       describe "Elements field accessor" $ do
         
-        it "returns empty list for empty pattern" $ do
-          let empty = Pattern { value = "empty", elements = [] }
-          elements empty `shouldBe` ([] :: [Pattern String])
+        it "returns empty list for atomic pattern" $ do
+          let atom = Pattern { value = "empty", elements = [] }
+          elements atom `shouldBe` ([] :: [Pattern String])
         
-        it "returns empty list for empty pattern with different value types" $ do
-          let emptyInt = Pattern { value = 42, elements = [] }
-          let emptyString = Pattern { value = "test", elements = [] }
-          elements emptyInt `shouldBe` ([] :: [Pattern Int])
-          elements emptyString `shouldBe` ([] :: [Pattern String])
+        it "returns empty list for atomic pattern with different value types" $ do
+          let atomInt = Pattern { value = 42, elements = [] }
+          let atomString = Pattern { value = "test", elements = [] }
+          elements atomInt `shouldBe` ([] :: [Pattern Int])
+          elements atomString `shouldBe` ([] :: [Pattern String])
       
       describe "Edge cases" $ do
         
-        it "empty pattern with explicitly empty list of elements behaves correctly" $ do
-          let empty = Pattern { value = "node", elements = [] }
-          value empty `shouldBe` "node"
-          elements empty `shouldBe` ([] :: [Pattern String])
-          null (elements empty) `shouldBe` True
+        it "atomic pattern with explicitly empty list of elements behaves correctly" $ do
+          let atom = Pattern { value = "node", elements = [] }
+          value atom `shouldBe` "node"
+          elements atom `shouldBe` ([] :: [Pattern String])
+          null (elements atom) `shouldBe` True
         
-        it "multiple empty patterns with same value type can be created independently" $ do
-          let empty1 = Pattern { value = "node1", elements = [] }
-          let empty2 = Pattern { value = "node2", elements = [] }
-          value empty1 `shouldBe` "node1"
-          value empty2 `shouldBe` "node2"
-          elements empty1 `shouldBe` ([] :: [Pattern String])
-          elements empty2 `shouldBe` ([] :: [Pattern String])
+        it "multiple atomic patterns with same value type can be created independently" $ do
+          let atom1 = Pattern { value = "node1", elements = [] }
+          let atom2 = Pattern { value = "node2", elements = [] }
+          value atom1 `shouldBe` "node1"
+          value atom2 `shouldBe` "node2"
+          elements atom1 `shouldBe` ([] :: [Pattern String])
+          elements atom2 `shouldBe` ([] :: [Pattern String])
         
-        it "empty patterns with different value types are type-safe" $ do
-          let emptyString = Pattern { value = "text", elements = [] }
-          let emptyInt = Pattern { value = 123, elements = [] }
-          value emptyString `shouldBe` "text"
-          value emptyInt `shouldBe` (123 :: Int)
+        it "atomic patterns with different value types are type-safe" $ do
+          let atomString = Pattern { value = "text", elements = [] }
+          let atomInt = Pattern { value = 123, elements = [] }
+          value atomString `shouldBe` "text"
+          value atomInt `shouldBe` (123 :: Int)
           -- Type system ensures they cannot be mixed
     
     describe "Patterns with Elements (User Story 2)" $ do
@@ -165,7 +165,7 @@ spec = do
       
       describe "Edge cases" $ do
         
-        it "pattern with zero elements behaves like empty pattern" $ do
+        it "pattern with zero elements behaves like atomic pattern" $ do
           let pattern = Pattern { value = "node", elements = [] }
           value pattern `shouldBe` "node"
           elements pattern `shouldBe` ([] :: [Pattern String])
@@ -207,20 +207,20 @@ spec = do
     
     describe "Show Instance (Phase 2.1)" $ do
       
-      describe "Show instance for empty patterns" $ do
+      describe "Show instance for atomic patterns" $ do
         
-        it "shows empty pattern with string value correctly" $ do
-          let empty = Pattern { value = "test", elements = [] }
-          show empty `shouldBe` "Pattern {value = \"test\", elements = []}"
+        it "shows atomic pattern with string value correctly" $ do
+          let atom = Pattern { value = "test", elements = [] }
+          show atom `shouldBe` "Pattern {value = \"test\", elements = []}"
         
-        it "shows empty pattern with integer value correctly" $ do
-          let empty = Pattern { value = 42, elements = [] }
-          show empty `shouldBe` "Pattern {value = 42, elements = []}"
+        it "shows atomic pattern with integer value correctly" $ do
+          let atom = Pattern { value = 42, elements = [] }
+          show atom `shouldBe` "Pattern {value = 42, elements = []}"
         
-        it "shows empty pattern with custom type value correctly" $ do
+        it "shows atomic pattern with custom type value correctly" $ do
           let person = Person "Alice" 30
-          let empty = Pattern { value = person, elements = [] }
-          show empty `shouldBe` "Pattern {value = Person {personName = \"Alice\", personAge = 30}, elements = []}"
+          let atom = Pattern { value = person, elements = [] }
+          show atom `shouldBe` "Pattern {value = Person {name = \"Alice\", age = 30}, elements = []}"
       
       describe "Show instance for patterns with elements" $ do
         
@@ -247,29 +247,29 @@ spec = do
     
     describe "Eq Instance (Phase 2.2)" $ do
       
-      describe "Equality for empty patterns" $ do
+      describe "Equality for atomic patterns" $ do
         
-        it "two identical empty patterns are equal" $ do
-          let empty1 = Pattern { value = "node", elements = [] }
-          let empty2 = Pattern { value = "node", elements = [] }
-          empty1 `shouldBe` empty2
-          (empty1 == empty2) `shouldBe` True
+        it "two identical atomic patterns are equal" $ do
+          let atom1 = Pattern { value = "node", elements = [] }
+          let atom2 = Pattern { value = "node", elements = [] }
+          atom1 `shouldBe` atom2
+          (atom1 == atom2) `shouldBe` True
         
-        it "two empty patterns with different values are not equal" $ do
-          let empty1 = Pattern { value = "node1", elements = [] }
-          let empty2 = Pattern { value = "node2", elements = [] }
-          empty1 `shouldNotBe` empty2
-          (empty1 == empty2) `shouldBe` False
+        it "two atomic patterns with different values are not equal" $ do
+          let atom1 = Pattern { value = "node1", elements = [] }
+          let atom2 = Pattern { value = "node2", elements = [] }
+          atom1 `shouldNotBe` atom2
+          (atom1 == atom2) `shouldBe` False
         
-        it "two empty patterns with same integer value are equal" $ do
-          let empty1 = Pattern { value = 42, elements = [] }
-          let empty2 = Pattern { value = 42, elements = [] }
-          empty1 `shouldBe` empty2
+        it "two atomic patterns with same integer value are equal" $ do
+          let atom1 = Pattern { value = 42, elements = [] }
+          let atom2 = Pattern { value = 42, elements = [] }
+          atom1 `shouldBe` atom2
         
-        it "two empty patterns with different integer values are not equal" $ do
-          let empty1 = Pattern { value = 42, elements = [] }
-          let empty2 = Pattern { value = 100, elements = [] }
-          empty1 `shouldNotBe` empty2
+        it "two atomic patterns with different integer values are not equal" $ do
+          let atom1 = Pattern { value = 42, elements = [] }
+          let atom2 = Pattern { value = 100, elements = [] }
+          atom1 `shouldNotBe` atom2
       
       describe "Equality for patterns with elements" $ do
         
@@ -327,10 +327,10 @@ spec = do
       
       describe "Equality edge cases" $ do
         
-        it "empty patterns with same value are equal" $ do
-          let p1 = Pattern { value = "test", elements = [] }
-          let p2 = Pattern { value = "test", elements = [] }
-          p1 `shouldBe` p2
+        it "atomic patterns with same value are equal" $ do
+          let atom1 = Pattern { value = "test", elements = [] }
+          let atom2 = Pattern { value = "test", elements = [] }
+          atom1 `shouldBe` atom2
         
         it "reflexivity: pattern equals itself" $ do
           let pattern = Pattern { value = "test", elements = [] }

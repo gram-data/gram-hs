@@ -55,9 +55,9 @@ The tree implementation **supports** the sequence semantic:
 
 Patterns have structural classifications based on their element structure. These describe what patterns **are** structurally, not how they are interpreted:
 
-### Empty Pattern
+### Atomic Pattern
 
-A pattern with no elements (`elements == []`).
+A pattern with no elements (`elements == []`). Atomic patterns are the fundamental building blocks from which all other patterns are constructed.
 
 **Structure**: Empty sequence  
 **Status**: ✅ Implemented (this is the basic Pattern structure)
@@ -89,7 +89,7 @@ Patterns can be **interpreted** as graph elements through different views. These
 -- ⏳ Planned: Check if pattern is a graph element (node, relationship, subgraph, or path)
 isGraphElement :: Pattern v -> Bool
 
--- ⏳ Planned: Interpret pattern as a node (typically empty pattern)
+-- ⏳ Planned: Interpret pattern as a node (typically atomic pattern)
 isNode :: Pattern v -> Bool
 isNode p = all (not . isGraphElement) (elements p)
 

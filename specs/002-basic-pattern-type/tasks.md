@@ -49,9 +49,9 @@
 
 ---
 
-## Phase 3: User Story 1 - Create Empty Patterns (Priority: P1) 🎯 MVP ✅
+## Phase 3: User Story 1 - Create Atomic Patterns (Priority: P1) 🎯 MVP ✅
 
-**Goal**: Enable creation of empty patterns (patterns with no elements) that store values and can be inspected.
+**Goal**: Enable creation of atomic patterns (patterns with no elements) that store values and can be inspected. Atomic patterns are the fundamental building blocks from which all other patterns are constructed.
 
 **Independent Test**: Can be fully tested by creating a pattern with a single value and no elements, then verifying that the pattern stores the value correctly and reports having no elements.
 
@@ -59,20 +59,20 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [x] T011 [P] [US1] Add test for creating empty pattern with string value in tests/Spec/Pattern/CoreSpec.hs
-- [x] T012 [P] [US1] Add test for creating empty pattern with integer value in tests/Spec/Pattern/CoreSpec.hs
-- [x] T013 [P] [US1] Add test for creating empty pattern with custom type value in tests/Spec/Pattern/CoreSpec.hs
+- [x] T011 [P] [US1] Add test for creating atomic pattern with string value in tests/Spec/Pattern/CoreSpec.hs
+- [x] T012 [P] [US1] Add test for creating atomic pattern with integer value in tests/Spec/Pattern/CoreSpec.hs
+- [x] T013 [P] [US1] Add test for creating atomic pattern with custom type value in tests/Spec/Pattern/CoreSpec.hs
 - [x] T014 [P] [US1] Add test for verifying value field accessor returns correct value in tests/Spec/Pattern/CoreSpec.hs
-- [x] T015 [P] [US1] Add test for verifying elements field accessor returns empty list for empty pattern in tests/Spec/Pattern/CoreSpec.hs
-- [x] T016 [P] [US1] Add test for edge case: empty pattern with empty list of elements in tests/Spec/Pattern/CoreSpec.hs
+- [x] T015 [P] [US1] Add test for verifying elements field accessor returns empty list for atomic pattern in tests/Spec/Pattern/CoreSpec.hs
+- [x] T016 [P] [US1] Add test for edge case: atomic pattern with empty list of elements in tests/Spec/Pattern/CoreSpec.hs
 
 ### Implementation for User Story 1
 
-- [x] T017 [US1] Verify Pattern constructor works for empty patterns (no implementation needed - uses Phase 2 definition)
-- [x] T018 [US1] Run tests and verify all empty pattern tests pass (tests written, syntax verified - full cabal test requires dependency resolution)
-- [x] T019 [US1] Add example usage in Haddock comments showing empty pattern creation in src/Pattern/Core.hs
+- [x] T017 [US1] Verify Pattern constructor works for atomic patterns (no implementation needed - uses Phase 2 definition)
+- [x] T018 [US1] Run tests and verify all atomic pattern tests pass (tests written, syntax verified - full cabal test requires dependency resolution)
+- [x] T019 [US1] Add example usage in Haddock comments showing atomic pattern creation in src/Pattern/Core.hs
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently - developers can create and inspect empty patterns
+**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently - developers can create and inspect atomic patterns
 
 ---
 
@@ -91,7 +91,7 @@
 - [x] T022 [P] [US2] Add test for verifying value field accessor returns correct value for pattern with elements in tests/Spec/Pattern/CoreSpec.hs
 - [x] T023 [P] [US2] Add test for verifying elements field accessor returns correct element list in tests/Spec/Pattern/CoreSpec.hs
 - [x] T024 [P] [US2] Add test for verifying elements are accessible in correct order in tests/Spec/Pattern/CoreSpec.hs
-- [x] T025 [P] [US2] Add test for edge case: pattern with zero elements (should behave like empty pattern) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T025 [P] [US2] Add test for edge case: pattern with zero elements (should behave like atomic pattern) in tests/Spec/Pattern/CoreSpec.hs
 - [x] T026 [P] [US2] Add test for edge case: deeply nested patterns (multiple levels) in tests/Spec/Pattern/CoreSpec.hs
 - [x] T027 [P] [US2] Add test for edge case: pattern containing pattern containing pattern (arbitrary depth) in tests/Spec/Pattern/CoreSpec.hs
 
@@ -102,7 +102,7 @@
 - [x] T030 [US2] Add example usage in Haddock comments showing pattern with elements creation in src/Pattern/Core.hs
 - [x] T031 [US2] Add example usage showing nested pattern structure in Haddock comments in src/Pattern/Core.hs
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - developers can create empty patterns and patterns with elements
+**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - developers can create atomic patterns and patterns with elements
 
 ---
 
@@ -117,7 +117,7 @@
 - [x] T032 [US3] Enhance module-level Haddock documentation with detailed recursive structure explanation in src/Pattern/Core.hs
 - [x] T033 [US3] Add comprehensive Haddock documentation explaining how values are associated with patterns in src/Pattern/Core.hs
 - [x] T034 [US3] Add comprehensive Haddock documentation explaining how elements form sequence structure in src/Pattern/Core.hs
-- [x] T035 [US3] Add Haddock examples showing empty pattern construction in src/Pattern/Core.hs (already in Phase 3)
+- [x] T035 [US3] Add Haddock examples showing atomic pattern construction in src/Pattern/Core.hs (already in Phase 3)
 - [x] T036 [US3] Add Haddock examples showing pattern with elements construction in src/Pattern/Core.hs (already in Phase 4)
 - [x] T037 [US3] Add Haddock examples showing nested pattern structure in src/Pattern/Core.hs (already in Phase 4)
 - [x] T038 [US3] Add Haddock documentation explaining type parameter v and type consistency in src/Pattern/Core.hs
@@ -185,12 +185,12 @@
 
 ```bash
 # Launch all tests for User Story 1 together:
-Task: "Add test for creating empty pattern with string value in tests/Spec/Pattern/CoreSpec.hs"
-Task: "Add test for creating empty pattern with integer value in tests/Spec/Pattern/CoreSpec.hs"
-Task: "Add test for creating empty pattern with custom type value in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for creating atomic pattern with string value in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for creating atomic pattern with integer value in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for creating atomic pattern with custom type value in tests/Spec/Pattern/CoreSpec.hs"
 Task: "Add test for verifying value field accessor returns correct value in tests/Spec/Pattern/CoreSpec.hs"
-Task: "Add test for verifying elements field accessor returns empty list for empty pattern in tests/Spec/Pattern/CoreSpec.hs"
-Task: "Add test for edge case: empty pattern with empty list of elements in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for verifying elements field accessor returns empty list for atomic pattern in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for edge case: atomic pattern with empty list of elements in tests/Spec/Pattern/CoreSpec.hs"
 ```
 
 ---
@@ -204,7 +204,7 @@ Task: "Add test for creating pattern with multiple elements in tests/Spec/Patter
 Task: "Add test for verifying value field accessor returns correct value for pattern with elements in tests/Spec/Pattern/CoreSpec.hs"
 Task: "Add test for verifying elements field accessor returns correct element list in tests/Spec/Pattern/CoreSpec.hs"
 Task: "Add test for verifying elements are accessible in correct order in tests/Spec/Pattern/CoreSpec.hs"
-Task: "Add test for edge case: pattern with zero elements (should behave like empty pattern) in tests/Spec/Pattern/CoreSpec.hs"
+Task: "Add test for edge case: pattern with zero elements (should behave like atomic pattern) in tests/Spec/Pattern/CoreSpec.hs"
 Task: "Add test for edge case: deeply nested patterns (multiple levels) in tests/Spec/Pattern/CoreSpec.hs"
 Task: "Add test for edge case: pattern containing pattern containing pattern (arbitrary depth) in tests/Spec/Pattern/CoreSpec.hs"
 ```
@@ -217,8 +217,8 @@ Task: "Add test for edge case: pattern containing pattern containing pattern (ar
 
 1. Complete Phase 1: Setup (verification)
 2. Complete Phase 2: Foundational (Pattern type definition) - **CRITICAL - blocks all stories**
-3. Complete Phase 3: User Story 1 (empty patterns)
-4. **STOP and VALIDATE**: Test User Story 1 independently - verify empty pattern creation and inspection
+3. Complete Phase 3: User Story 1 (atomic patterns)
+4. **STOP and VALIDATE**: Test User Story 1 independently - verify atomic pattern creation and inspection
 5. Deploy/demo if ready
 
 ### Incremental Delivery
@@ -235,7 +235,7 @@ With multiple developers:
 
 1. Team completes Setup + Foundational together
 2. Once Foundational is done:
-   - Developer A: User Story 1 (empty patterns)
+   - Developer A: User Story 1 (atomic patterns)
    - Developer B: User Story 2 (patterns with elements)
    - Developer C: User Story 3 (documentation) - can start after Foundational
 3. Stories complete and integrate independently

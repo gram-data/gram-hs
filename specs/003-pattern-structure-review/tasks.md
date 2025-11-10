@@ -71,17 +71,17 @@
 
 ## Phase 4: User Story 3 - Clarify Pattern Structural Classifications (Priority: P2)
 
-**Goal**: Provide clear and consistent definitions of pattern structural classifications (empty patterns, patterns with elements, nested patterns) and clarify how patterns can be interpreted as graph elements through views (separate from pattern structure itself)
+**Goal**: Provide clear and consistent definitions of pattern structural classifications (atomic patterns, patterns with elements, nested patterns) and clarify how patterns can be interpreted as graph elements through views (separate from pattern structure itself)
 
 **Independent Test**: Review all references to pattern classifications. Verify that:
-- Pattern structural variants (empty patterns, patterns with elements) are clearly defined
+- Pattern structural variants (atomic patterns, patterns with elements) are clearly defined
 - Graph interpretations (nodes, relationships, subgraphs, paths) are clearly separated as views/interpretations, not pattern variants
 - The distinction between pattern structure and graph interpretation is explicit
 - Implementation status is marked for both structural operations and view/interpretation functions
 
 ### Implementation for User Story 3
 
-- [x] T020 [P] [US3] Update pattern structural classifications in DESIGN.md: clarify structural variants (empty patterns, patterns with elements) vs graph interpretations (nodes, relationships, subgraphs, paths as views), mark implementation status
+- [x] T020 [P] [US3] Update pattern structural classifications in DESIGN.md: clarify structural variants (atomic patterns, patterns with elements) vs graph interpretations (nodes, relationships, subgraphs, paths as views), mark implementation status
 - [x] T021 [P] [US3] Update pattern structural classifications in specs/001-pattern-data-structure/data-model.md: separate structural variants from graph interpretations, use consistent definitions with implementation status
 - [x] T022 [P] [US3] Update pattern structural classifications in specs/002-basic-pattern-type/data-model.md: separate structural variants from graph interpretations, use consistent definitions with implementation status
 - [x] T023 [P] [US3] Update pattern structural classifications in src/Pattern/Core.hs: clarify structural variants in Haddock comments, separate from graph interpretation views, mark implementation status
@@ -136,17 +136,17 @@
 
 **Goal**: Create a comprehensive collection of idiomatic examples demonstrating correct usage of the Pattern library with consistent terminology
 
-**Independent Test**: Review the examples file. Verify that all examples use consistent terminology ("value", "elements", "empty pattern"), demonstrate correct usage patterns, and serve as clear documentation for library users.
+**Independent Test**: Review the examples file. Verify that all examples use consistent terminology ("value", "elements", "atomic pattern"), demonstrate correct usage patterns, and serve as clear documentation for library users.
 
 ### Implementation for User Story 6
 
-- [ ] T049 [US6] Create examples/examples.md file with comprehensive idiomatic examples
-- [ ] T050 [P] [US6] Add examples for creating empty patterns with different value types
-- [ ] T051 [P] [US6] Add examples for creating patterns with elements
-- [ ] T052 [P] [US6] Add examples for accessing pattern values and elements
-- [ ] T053 [P] [US6] Add examples for nested patterns and sequences
-- [ ] T054 [P] [US6] Add examples demonstrating sequence-based conceptual model
-- [ ] T055 [US6] Verify all examples use consistent terminology and compile correctly
+- [x] T049 [US6] Create examples/examples.md file with comprehensive idiomatic examples
+- [x] T050 [P] [US6] Add examples for creating atomic patterns with different value types
+- [x] T051 [P] [US6] Add examples for creating patterns with elements
+- [x] T052 [P] [US6] Add examples for accessing pattern values and elements
+- [x] T053 [P] [US6] Add examples for nested patterns and sequences
+- [x] T054 [P] [US6] Add examples demonstrating sequence-based conceptual model
+- [x] T055 [US6] Verify all examples use consistent terminology and compile correctly
 
 **Checkpoint**: At this point, a comprehensive examples file should exist demonstrating idiomatic usage with consistent terminology. User Story 6 should be fully complete and independently verifiable.
 

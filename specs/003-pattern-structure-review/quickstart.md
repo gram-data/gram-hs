@@ -32,10 +32,10 @@ data Pattern v = Pattern
 
 ### Creating Patterns
 
-**Empty Pattern** (sequence with no elements):
+**Atomic Pattern** (sequence with no elements):
 
 ```haskell
--- Create an empty pattern
+-- Create an atomic pattern
 nodeA :: Pattern String
 nodeA = Pattern { value = "A", elements = [] }
 
@@ -99,9 +99,9 @@ length (elements parent)  -- Returns: 2
 
 Pattern variants are structural classifications based on element structure.
 
-### Empty Pattern
+### Atomic Pattern
 
-A pattern with no elements.
+A pattern with no elements (`elements == []`). Atomic patterns are the fundamental building blocks from which all other patterns are constructed.
 
 ```haskell
 leaf :: Pattern String
@@ -112,7 +112,7 @@ leaf = Pattern { value = "leaf", elements = [] }
 
 ### Node
 
-A pattern interpreted as a node (typically an empty pattern).
+A pattern interpreted as a node (typically an atomic pattern).
 
 **Status**: ⏳ Planned (classification function `isNode` not yet implemented)
 
@@ -167,7 +167,7 @@ A subgraph with chained relationships.
 ### Creating a Simple Graph
 
 ```haskell
--- Nodes (empty patterns)
+-- Nodes (atomic patterns)
 alice = Pattern { value = "Alice", elements = [] }
 bob = Pattern { value = "Bob", elements = [] }
 

@@ -7,7 +7,7 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Create Empty Patterns (Priority: P1)
+### User Story 1 - Create Atomic Patterns (Priority: P1)
 
 As a developer building graph-based applications, I need to create simple pattern instances that represent individual elements (nodes) so that I can represent basic graph entities with associated values.
 
@@ -17,9 +17,9 @@ As a developer building graph-based applications, I need to create simple patter
 
 **Acceptance Scenarios**:
 
-1. **Given** a value of any type, **When** I create an empty pattern with that value, **Then** the pattern contains that value and has no elements
-2. **Given** an empty pattern, **When** I inspect its structure, **Then** I can verify it contains the expected value and has an empty list of elements
-3. **Given** empty patterns with different value types, **When** I create them, **Then** each pattern correctly stores its value regardless of type
+1. **Given** a value of any type, **When** I create an atomic pattern with that value, **Then** the pattern contains that value and has no elements
+2. **Given** an atomic pattern, **When** I inspect its structure, **Then** I can verify it contains the expected value and has an empty list of elements
+3. **Given** atomic patterns with different value types, **When** I create them, **Then** each pattern correctly stores its value regardless of type
 
 ---
 
@@ -27,7 +27,7 @@ As a developer building graph-based applications, I need to create simple patter
 
 As a developer building graph-based applications, I need to create patterns that contain pattern elements so that I can represent sequences and complex graph structures.
 
-**Why this priority**: This enables the recursive structure that makes patterns powerful. Without this capability, patterns cannot represent relationships or nested structures. This is equally fundamental to empty pattern creation.
+**Why this priority**: This enables the recursive structure that makes patterns powerful. Without this capability, patterns cannot represent relationships or nested structures. This is equally fundamental to atomic pattern creation.
 
 **Independent Test**: Can be fully tested by creating a pattern with a value and a list of pattern elements, then verifying that the pattern stores both the value and correctly references all elements. This delivers the recursive structure needed for representing complex graph relationships.
 
@@ -51,13 +51,13 @@ As a developer learning to use the Pattern library, I need clear documentation e
 
 1. **Given** a developer reading the documentation, **When** they review the Pattern type documentation, **Then** they understand that patterns are decorated sequences
 2. **Given** the documentation, **When** a developer reads it, **Then** they can understand how values are associated with patterns and how elements form the pattern sequence
-3. **Given** the documentation, **When** a developer reviews examples, **Then** they can see how empty patterns and patterns with elements are constructed
+3. **Given** the documentation, **When** a developer reviews examples, **Then** they can see how atomic patterns and patterns with elements are constructed
 
 ---
 
 ### Edge Cases
 
-- What happens when a pattern is created with an empty list of elements? (Should behave like an empty pattern)
+- What happens when a pattern is created with an empty list of elements? (Should behave like an atomic pattern)
 - What happens when a pattern contains a very large number of elements? (Should handle without performance degradation)
 - What happens when patterns are deeply nested (many levels of recursion)? (Should support arbitrary nesting depth)
 - What happens when patterns contain values of different types? (Type system should enforce type consistency)
@@ -68,7 +68,7 @@ As a developer learning to use the Pattern library, I need clear documentation e
 
 - **FR-001**: System MUST define a Pattern type that can store a value and a list of Pattern elements
 - **FR-002**: System MUST allow Pattern values to be created with any value type (parameterized type)
-- **FR-003**: System MUST support creating empty patterns (patterns with no elements)
+- **FR-003**: System MUST support creating atomic patterns (patterns with no elements)
 - **FR-004**: System MUST support creating patterns with any number of elements (zero, one, or many)
 - **FR-005**: System MUST provide field accessors to retrieve the value and elements from a pattern
 - **FR-006**: System MUST include documentation explaining the sequence-based conceptual model of patterns
@@ -91,7 +91,7 @@ As a developer learning to use the Pattern library, I need clear documentation e
 
 ### Measurable Outcomes
 
-- **SC-001**: Developers can create empty patterns (patterns with no elements) and successfully verify the stored value and empty element list
+- **SC-001**: Developers can create atomic patterns (patterns with no elements) and successfully verify the stored value and empty element list
 - **SC-002**: Developers can create patterns with elements and successfully verify both the stored value and all elements are accessible
 - **SC-003**: Pattern type supports creating patterns with any number of elements (zero, one, or many) without limitations
 - **SC-004**: Pattern type supports arbitrary nesting depth (patterns containing patterns containing patterns, etc.) without structural limitations

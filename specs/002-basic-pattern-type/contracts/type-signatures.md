@@ -54,7 +54,7 @@ elements :: Pattern v -> [Pattern v]
 Patterns can be constructed directly using the `Pattern` constructor:
 
 ```haskell
--- | Construct an empty pattern (pattern with no elements).
+-- | Construct an atomic pattern (pattern with no elements).
 --
 -- Example:
 -- >>> leaf = Pattern { value = "node1", elements = [] }
@@ -85,7 +85,7 @@ The `Pattern.Core` module exports:
 
 ## Usage Examples
 
-### Creating Empty Patterns
+### Creating Atomic Patterns
 
 ```haskell
 -- String pattern

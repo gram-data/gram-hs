@@ -23,20 +23,20 @@ import Pattern.Core (Pattern(..))
 
 The `Pattern(..)` import brings in the data type, constructor, and field accessors.
 
-### Creating Empty Patterns
+### Creating Atomic Patterns
 
-An empty pattern is a pattern with no elements:
+An atomic pattern is a pattern with no elements. Atomic patterns are the fundamental building blocks from which all other patterns are constructed:
 
 ```haskell
--- String empty pattern
+-- String atomic pattern
 node1 :: Pattern String
 node1 = Pattern { value = "node1", elements = [] }
 
--- Integer empty pattern
+-- Integer atomic pattern
 node2 :: Pattern Int
 node2 = Pattern { value = 42, elements = [] }
 
--- Custom type empty pattern
+-- Custom type atomic pattern
 data Person = Person { name :: String, age :: Int }
   deriving Show
 
@@ -92,8 +92,8 @@ example = do
   let leaf = Pattern { value = "test", elements = [] }
   let parent = Pattern { value = "parent", elements = [leaf] }
   
-  putStrLn $ "Empty pattern value: " ++ value leaf
-  putStrLn $ "Empty pattern has elements: " ++ show (not $ null $ elements leaf)
+  putStrLn $ "Atomic pattern value: " ++ value leaf
+  putStrLn $ "Atomic pattern has elements: " ++ show (not $ null $ elements leaf)
   putStrLn $ "Pattern has " ++ show (length $ elements parent) ++ " elements"
 ```
 
@@ -125,10 +125,10 @@ singleElement = Pattern
 
 ### Empty Elements List
 
-A pattern with an empty elements list is an empty pattern:
+A pattern with an empty elements list is an atomic pattern:
 
 ```haskell
--- These are equivalent (both are empty patterns)
+-- These are equivalent (both are atomic patterns)
 leaf1 :: Pattern String
 leaf1 = Pattern { value = "leaf", elements = [] }
 
@@ -176,7 +176,7 @@ import Pattern.Core (Pattern(..))
 
 main :: IO ()
 main = do
-  -- Create empty patterns
+  -- Create atomic patterns
   let node1 = Pattern { value = "Alice", elements = [] }
   let node2 = Pattern { value = "Bob", elements = [] }
   
@@ -204,7 +204,7 @@ main = do
 ### Common Issues
 
 1. **Type mismatch errors**: Ensure all patterns in a structure use the same value type
-2. **Empty list**: An empty `elements` list creates an empty pattern - this is correct
+2. **Empty list**: An empty `elements` list creates an atomic pattern - this is correct
 3. **Deep nesting**: Patterns can be arbitrarily nested - the type system allows this
 
 ### Getting Help

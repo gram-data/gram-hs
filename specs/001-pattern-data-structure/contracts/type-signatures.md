@@ -24,7 +24,7 @@ data Pattern v = Pattern
 ### Pattern Construction
 
 ```haskell
--- ⏳ Planned: Construct an empty pattern (node)
+-- ⏳ Planned: Construct an atomic pattern (can be interpreted as a node)
 pattern :: v -> Pattern v
 
 -- ⏳ Planned: Construct a pattern with elements

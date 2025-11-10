@@ -45,7 +45,7 @@
 --
 -- This recursive implementation enables:
 --
--- * Empty patterns: Patterns with no elements (@elements == []@), representing empty sequences
+-- * Atomic patterns: Patterns with no elements (@elements == []@), representing empty sequences. Atomic patterns are the fundamental building blocks from which all other patterns are constructed.
 -- * Patterns with elements: Patterns containing one or more pattern elements in sequence
 -- * Arbitrary nesting: Patterns can contain patterns containing patterns, enabling
 --   deeply nested pattern structures
@@ -111,7 +111,7 @@
 --
 -- == Examples
 --
--- Empty pattern (node):
+-- Atomic pattern (can be interpreted as a node):
 --
 -- >>> leaf = Pattern { value = "node1", elements = [] }
 -- >>> value leaf
@@ -142,7 +142,7 @@
 -- >>> value (head (elements nested))
 -- "level1"
 --
--- Empty patterns with different value types:
+-- Atomic patterns with different value types:
 --
 -- >>> leafString = Pattern { value = "text", elements = [] }
 -- >>> leafInt = Pattern { value = 42, elements = [] }
@@ -198,7 +198,7 @@ module Pattern.Core where
 --
 -- Patterns have structural classifications based on their element structure:
 --
--- * Empty pattern: @elements == []@ - a sequence with no elements
+-- * Atomic pattern: @elements == []@ - a sequence with no elements. Atomic patterns are the fundamental building blocks from which all other patterns are constructed.
 -- * Pattern with elements: @elements@ contains one or more pattern elements
 -- * Nested pattern: patterns containing patterns containing patterns, enabling arbitrary nesting
 --
@@ -207,7 +207,7 @@ module Pattern.Core where
 -- Patterns can be **interpreted** as graph elements through different views.
 -- These are interpretations/views of pattern structures, not pattern variants themselves:
 --
--- * Empty patterns can be interpreted as nodes through graph views
+-- * Atomic patterns can be interpreted as nodes through graph views
 -- * Patterns with 2 elements can be interpreted as relationships through graph views
 -- * Patterns with elements can be interpreted as subgraphs through graph views
 --
@@ -217,9 +217,9 @@ module Pattern.Core where
 --
 -- === Examples
 --
--- Creating an empty pattern:
+-- Creating an atomic pattern:
 --
--- >>> empty = Pattern { value = "A", elements = [] }
+-- >>> atom = Pattern { value = "A", elements = [] }
 --
 -- Creating a pattern with elements (can be interpreted as a relationship):
 --

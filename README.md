@@ -326,7 +326,7 @@ find src tests -name "*.hs" -exec ormolu -m inplace {} \;
 ```haskell
 import Pattern.Core (Pattern(..))
 
--- Create an empty pattern (sequence with no elements)
+-- Create an atomic pattern (sequence with no elements)
 nodeA :: Pattern String
 nodeA = Pattern { value = "A", elements = [] }
 
@@ -343,7 +343,7 @@ main = do
 ### More Examples
 
 See `specs/002-basic-pattern-type/quickstart.md` for comprehensive examples including:
-- Creating empty patterns with different value types
+- Creating atomic patterns with different value types
 - Creating patterns with multiple elements
 - Building nested pattern structures
 - Type safety examples
@@ -363,7 +363,7 @@ See `specs/002-basic-pattern-type/quickstart.md` for comprehensive examples incl
 - **Pattern Type Definition**: Core `Pattern v` data type with record syntax
 - **Field Accessors**: `value` and `elements` accessors
 - **Comprehensive Documentation**: Haddock documentation at all levels
-- **Test Suite**: 25 test cases covering empty patterns and patterns with elements
+- **Test Suite**: 25 test cases covering atomic patterns and patterns with elements
 
 ### 🔄 In Progress / Planned
 

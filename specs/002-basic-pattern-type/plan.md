@@ -7,7 +7,7 @@
 
 ## Summary
 
-Implement the foundational Pattern data type as a decorated sequence that stores a value and contains zero or more Pattern elements. This basic type definition enables all subsequent pattern operations and serves as the core building block for representing graph elements. The implementation will include the data type definition, field accessors, and comprehensive Haddock documentation explaining the sequence-based conceptual model. Testing will verify pattern construction and structure inspection for both empty patterns and patterns with elements.
+Implement the foundational Pattern data type as a decorated sequence that stores a value and contains zero or more Pattern elements. This basic type definition enables all subsequent pattern operations and serves as the core building block for representing graph elements. The implementation will include the data type definition, field accessors, and comprehensive Haddock documentation explaining the sequence-based conceptual model. Testing will verify pattern construction and structure inspection for both atomic patterns and patterns with elements.
 
 ## Technical Context
 
@@ -29,7 +29,7 @@ Implement the foundational Pattern data type as a decorated sequence that stores
 
 - **Code Quality (NON-NEGOTIABLE)**: ✅ The design provides clear structure for a basic data type. The Pattern type will be self-documenting through clear naming (`value`, `elements`). Public data type and field accessors will be documented with Haddock including examples. Code organization follows the existing module structure (`Pattern.Core`).
 
-- **Testing Standards (NON-NEGOTIABLE)**: ✅ Testing strategy includes unit tests for pattern construction (empty patterns and patterns with elements) and structure inspection. Tests will verify field accessors work correctly. Property-based tests for category-theoretic properties (Functor, Foldable, Traversable laws) will be added in future phases when those typeclass instances are implemented.
+- **Testing Standards (NON-NEGOTIABLE)**: ✅ Testing strategy includes unit tests for pattern construction (atomic patterns and patterns with elements) and structure inspection. Tests will verify field accessors work correctly. Property-based tests for category-theoretic properties (Functor, Foldable, Traversable laws) will be added in future phases when those typeclass instances are implemented.
 
 - **Conceptual Consistency**: ✅ The Pattern type aligns with category theory - it is a recursive structure that will form the foundation for functor instances. The recursive tree structure is a standard categorical pattern. Formal definitions will be provided in documentation.
 

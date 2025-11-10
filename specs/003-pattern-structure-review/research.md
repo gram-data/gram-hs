@@ -137,8 +137,8 @@
 ### 4. Pattern Variant Definitions
 
 **Variants Identified**:
-- Empty patterns (elements == [])
-- Nodes (interpretation of empty patterns)
+- Atomic patterns (elements == [])
+- Nodes (interpretation of atomic patterns)
 - Relationships (exactly 2 elements that are nodes)
 - Subgraphs (all elements are graph elements)
 - Paths (subgraphs with chained relationships)

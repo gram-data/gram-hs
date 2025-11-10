@@ -108,17 +108,18 @@ This document establishes the standard terminology for the Pattern library. All 
 
 ## Pattern Variant Terms
 
-### Empty Pattern
+### Atomic Pattern
 
-**Primary Term**: **empty pattern**
+**Primary Term**: **atomic pattern**
 
-**Definition**: A pattern with no elements (`elements == []`).
+**Definition**: A pattern with no elements (`elements == []`). Atomic patterns are the fundamental building blocks from which all other patterns are constructed.
 
-**Usage**: Use "empty pattern" to describe the structure.
+**Usage**: Use "atomic pattern" to describe the structure.
 
 **Examples**:
-- ✅ "An empty pattern has no elements"
-- ✅ "Create an empty pattern with `Pattern { value = "x", elements = [] }`"
+- ✅ "An atomic pattern has no elements"
+- ✅ "Create an atomic pattern with `Pattern { value = "x", elements = [] }`"
+- ✅ "Atomic patterns are the fundamental building blocks for constructing composite patterns"
 
 ---
 
@@ -126,15 +127,15 @@ This document establishes the standard terminology for the Pattern library. All 
 
 **Primary Term**: **node**
 
-**Definition**: A pattern interpreted as a node (typically an empty pattern).
+**Definition**: A pattern interpreted as a node (typically an atomic pattern).
 
 **Usage**: Use "node" when describing graph interpretation.
 
 **Examples**:
 - ✅ "A node is a pattern with no elements"
-- ✅ "Empty patterns are interpreted as nodes"
+- ✅ "Atomic patterns are interpreted as nodes"
 
-**Note**: "Node" is a graph interpretation term. The structural term is "empty pattern".
+**Note**: "Node" is a graph interpretation term. The structural term is "atomic pattern".
 
 ---
 
@@ -212,7 +213,7 @@ These terms should not be used in new documentation:
 
 In some contexts, alternative terms may be acceptable if clearly explained:
 
-- "Graph node" vs "empty pattern": Both acceptable, but clarify that "node" is the graph interpretation
+- "Graph node" vs "atomic pattern": Both acceptable, but clarify that "node" is the graph interpretation
 - "Tree node" vs "pattern": Use "pattern" to avoid confusion with graph nodes
 
 ---

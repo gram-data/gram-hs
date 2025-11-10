@@ -79,17 +79,17 @@ Haskell record syntax automatically provides field accessors:
 
 Pattern structural classifications describe what patterns **are** structurally, not how they are interpreted. These are based on the element structure of the pattern itself.
 
-#### Empty Pattern
+#### Atomic Pattern
 
-A pattern with no elements (`elements == []`).
+A pattern with no elements (`elements == []`). Atomic patterns are the fundamental building blocks from which all other patterns are constructed.
 
 **Structure**: Empty sequence  
 **Status**: ✅ Implemented (this is the basic Pattern structure)
 
 **Example**:
 ```haskell
-emptyPattern :: Pattern String
-emptyPattern = Pattern { value = "node1", elements = [] }
+atomicPattern :: Pattern String
+atomicPattern = Pattern { value = "node1", elements = [] }
 ```
 
 #### Pattern with Elements
@@ -125,23 +125,23 @@ Patterns can be **interpreted** as graph elements through different views. These
 
 #### Node Interpretation
 
-A pattern can be **interpreted** as a **node** when it has no elements that are graph elements themselves. Typically, this means `elements == []` (an empty pattern).
+A pattern can be **interpreted** as a **node** when it has no elements that are graph elements themselves. Typically, this means `elements == []` (an atomic pattern).
 
-**Structure**: Empty sequence (empty pattern)  
+**Structure**: Empty sequence (atomic pattern)  
 **Status**: ⏳ Planned (interpretation function `isNode` not yet implemented)
 
-**Note**: This is an interpretation/view of a pattern structure, not a pattern variant. An empty pattern can be interpreted as a node through a graph view.
+**Note**: This is an interpretation/view of a pattern structure, not a pattern variant. An atomic pattern can be interpreted as a node through a graph view.
 
 #### Relationship Interpretation
 
-A pattern can be **interpreted** as a **relationship** when it has exactly 2 elements, and both elements are nodes (empty patterns).
+A pattern can be **interpreted** as a **relationship** when it has exactly 2 elements, and both elements are nodes (atomic patterns).
 
-**Structure**: Exactly 2 elements, both are empty patterns  
+**Structure**: Exactly 2 elements, both are atomic patterns  
 **Status**: ⏳ Planned (interpretation function `isRelationship` not yet implemented)
 
 **Example** (structure exists, interpretation function planned):
 ```haskell
--- Empty patterns (can be interpreted as nodes)
+-- Atomic patterns (can be interpreted as nodes)
 nodeA :: Pattern String
 nodeA = Pattern { value = "A", elements = [] }
 
@@ -171,8 +171,8 @@ A pattern can be **interpreted** as a **subgraph** when all elements are graph e
 graphPattern :: Pattern String
 graphPattern = Pattern 
   { value = "myGraph"
-  , elements = [ nodeA                    -- empty pattern (interpreted as node)
-               , nodeB                    -- empty pattern (interpreted as node)
+  , elements = [ nodeA                    -- atomic pattern (interpreted as node)
+               , nodeB                    -- atomic pattern (interpreted as node)
                , relationship             -- pattern with 2 elements (interpreted as relationship)
                ]
   }
@@ -190,7 +190,7 @@ graphPattern = Pattern
 
 #### Pattern Construction
 
-- **Empty pattern creation**: `Pattern v []` - creates a pattern with value `v` and empty element list
+- **Atomic pattern creation**: `Pattern v []` - creates a pattern with value `v` and empty element list
 - **Pattern with elements creation**: `Pattern v [p1, p2, ...]` - creates a pattern with value `v` and element patterns `p1, p2, ...`
 
 #### Pattern Inspection

@@ -83,7 +83,7 @@ data Pattern v = Pattern
 - The sequence-based conceptual model
 - How values are stored
 - How elements form the pattern sequence
-- Examples of empty patterns and patterns with elements
+- Examples of atomic patterns and patterns with elements
 
 ---
 
@@ -103,7 +103,7 @@ data Pattern v = Pattern
 - No tests: Violates Constitution testing standards
 
 **Action**: Write unit tests for:
-- Creating empty patterns (patterns with no elements)
+- Creating atomic patterns (patterns with no elements)
 - Creating patterns with elements
 - Verifying field accessors return correct values
 - Testing edge cases (empty elements, single element, many elements)
