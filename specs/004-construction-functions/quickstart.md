@@ -41,11 +41,11 @@ atom2 :: Pattern Int
 atom2 = pattern 42
 
 -- Custom type atomic pattern
-data Person = Person { name :: String, age :: Int }
+data Person = Person { name :: String, age :: Maybe Int }
   deriving Show
 
 alice :: Pattern Person
-alice = pattern (Person "Alice" 30)
+alice = pattern (Person "Alice" (Just 30))
 ```
 
 **Comparison with record syntax**:
@@ -70,11 +70,39 @@ Use `patternWith` to create patterns with elements:
 ```haskell
 -- Create a singular pattern
 singular :: Pattern String
-singular = patternWith "parent" [pattern "child"]
+singular = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
 
 -- Verify structure
-value singular        -- "parent"
+value singular        -- "soccer"
 length (elements singular)  -- 1
+```
+
+### Role-Based Singular Pattern (Custom Types)
+
+```haskell
+-- Role-based singular patterns: "The goalie" is "Hans"
+data Person = Person { name :: String, age :: Maybe Int }
+  deriving (Eq, Show)
+
+-- "The goalie" is "Hans"
+goalie :: Pattern Person
+goalie = patternWith (Person "Goalie" Nothing) 
+  [ pattern (Person "Hans" (Just 25)) ]
+
+-- "The bus driver" is "Alice"
+busDriver :: Pattern Person
+busDriver = patternWith (Person "Bus Driver" Nothing) 
+  [ pattern (Person "Alice" (Just 30)) ]
+
+-- "The waiter" is "Bob"
+waiter :: Pattern Person
+waiter = patternWith (Person "Waiter" Nothing) 
+  [ pattern (Person "Bob" (Just 25)) ]
+
+-- Verify structure
+value goalie        -- Person "Goalie" Nothing
+length (elements goalie)  -- 1
+value (head (elements goalie))  -- Person "Hans" (Just 25)
 ```
 
 ### Pair Pattern (Two Elements)
@@ -174,11 +202,11 @@ Patterns created with constructor functions are functionally identical to patter
 ```haskell
 -- Using constructor function
 p1 = pattern "test"
-p2 = patternWith "parent" [pattern "child"]
+p2 = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
 
 -- Using record syntax
 p1' = Pattern { value = "test", elements = [] }
-p2' = Pattern { value = "parent", elements = [Pattern { value = "child", elements = [] }] }
+p2' = Pattern { value = "soccer", elements = [Pattern { value = "a team sport involving kicking a ball", elements = [] }] }
 
 -- They are equivalent
 p1 == p1'  -- True
@@ -209,17 +237,18 @@ Both functions work with any value type:
 ```haskell
 -- String values
 strPattern = pattern "text"
-strPatternWith = patternWith "parent" [pattern "child"]
+strPatternWith = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
 
 -- Integer values
 intPattern = pattern 42
 intPatternWith = patternWith 100 [pattern 10, pattern 20]
 
 -- Custom types
-data Person = Person { name :: String, age :: Int }
-personPattern = pattern (Person "Alice" 30)
-personPatternWith = patternWith (Person "Parent" 50) 
-  [ pattern (Person "Child" 10) ]
+data Person = Person { name :: String, age :: Maybe Int }
+personPattern = pattern (Person "Alice" (Just 30))
+-- Role-based singular pattern: "The goalie" is "Hans"
+personPatternWith = patternWith (Person "Goalie" Nothing) 
+  [ pattern (Person "Hans" (Just 25)) ]
 ```
 
 ## Common Patterns
@@ -313,11 +342,11 @@ strPattern = fromList "words" ["hello", "world"]
 intPattern = fromList "numbers" [1, 2, 3, 4, 5]
 
 -- Custom types
-data Person = Person { name :: String, age :: Int }
-people = fromList "group" 
-  [ Person "Alice" 30
-  , Person "Bob" 25
-  , Person "Charlie" 35
+data Person = Person { name :: String, age :: Maybe Int }
+people = fromList (Person "Team" Nothing) 
+  [ Person "Alice" (Just 30)
+  , Person "Bob" (Just 25)
+  , Person "Charlie" (Just 35)
   ]
 ```
 

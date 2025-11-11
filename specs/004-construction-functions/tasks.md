@@ -25,20 +25,20 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T001 [P] [US1] Add test for creating atomic pattern with string value using `pattern` function in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T002 [P] [US1] Add test for creating atomic pattern with integer value using `pattern` function in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T003 [P] [US1] Add test for creating atomic pattern with custom type value using `pattern` function in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T004 [US1] Add test verifying `pattern` function produces patterns functionally identical to record syntax in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T005 [US1] Add property-based test for functional equivalence: `pattern v == Pattern { value = v, elements = [] }` in tests/Spec/Pattern/Properties.hs
+- [x] T001 [P] [US1] Add test for creating atomic pattern with string value using `pattern` function in tests/Spec/Pattern/CoreSpec.hs
+- [x] T002 [P] [US1] Add test for creating atomic pattern with integer value using `pattern` function in tests/Spec/Pattern/CoreSpec.hs
+- [x] T003 [P] [US1] Add test for creating atomic pattern with custom type value using `pattern` function in tests/Spec/Pattern/CoreSpec.hs
+- [x] T004 [US1] Add test verifying `pattern` function produces patterns functionally identical to record syntax in tests/Spec/Pattern/CoreSpec.hs
+- [x] T005 [US1] Add property-based test for functional equivalence: `pattern v == Pattern { value = v, elements = [] }` in tests/Spec/Pattern/Properties.hs
 
 ### Implementation for User Story 1
 
-- [ ] T006 [US1] Implement `pattern :: v -> Pattern v` function in src/Pattern/Core.hs
-- [ ] T007 [US1] Add Haddock documentation for `pattern` function with examples in src/Pattern/Core.hs
-- [ ] T008 [US1] Export `pattern` from Pattern.Core module in src/Pattern/Core.hs
-- [ ] T009 [US1] Re-export `pattern` from main Pattern module in src/Pattern.hs
+- [x] T006 [US1] Implement `pattern :: v -> Pattern v` function in src/Pattern/Core.hs
+- [x] T007 [US1] Add Haddock documentation for `pattern` function with examples in src/Pattern/Core.hs
+- [x] T008 [US1] Export `pattern` from Pattern.Core module in src/Pattern/Core.hs
+- [x] T009 [US1] Re-export `pattern` from main Pattern module in src/Pattern.hs
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently - developers can create atomic patterns using `pattern` function.
+**Checkpoint**: ✅ At this point, User Story 1 should be fully functional and testable independently - developers can create atomic patterns using `pattern` function.
 
 ---
 
@@ -52,22 +52,22 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T010 [P] [US2] Add test for creating singular pattern (one element) using `patternWith` in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T011 [P] [US2] Add test for creating pair pattern (two elements) using `patternWith` in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T012 [P] [US2] Add test for creating extended pattern (many elements) using `patternWith` in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T013 [P] [US2] Add test for empty list in `patternWith` (should produce atomic pattern) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T014 [US2] Add test verifying `patternWith` preserves element order in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T015 [US2] Add test verifying `patternWith` produces patterns functionally identical to record syntax in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T016 [US2] Add property-based test for functional equivalence: `patternWith v ps == Pattern { value = v, elements = ps }` in tests/Spec/Pattern/Properties.hs
+- [x] T010 [P] [US2] Add test for creating singular pattern (one element) using `patternWith` in tests/Spec/Pattern/CoreSpec.hs
+- [x] T011 [P] [US2] Add test for creating pair pattern (two elements) using `patternWith` in tests/Spec/Pattern/CoreSpec.hs
+- [x] T012 [P] [US2] Add test for creating extended pattern (many elements) using `patternWith` in tests/Spec/Pattern/CoreSpec.hs
+- [x] T013 [P] [US2] Add test for empty list in `patternWith` (should produce atomic pattern) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T014 [US2] Add test verifying `patternWith` preserves element order in tests/Spec/Pattern/CoreSpec.hs
+- [x] T015 [US2] Add test verifying `patternWith` produces patterns functionally identical to record syntax in tests/Spec/Pattern/CoreSpec.hs
+- [x] T016 [US2] Add property-based test for functional equivalence: `patternWith v ps == Pattern { value = v, elements = ps }` in tests/Spec/Pattern/Properties.hs
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Implement `patternWith :: v -> [Pattern v] -> Pattern v` function in src/Pattern/Core.hs
-- [ ] T018 [US2] Add Haddock documentation for `patternWith` function with examples in src/Pattern/Core.hs
-- [ ] T019 [US2] Export `patternWith` from Pattern.Core module in src/Pattern/Core.hs
-- [ ] T020 [US2] Re-export `patternWith` from main Pattern module in src/Pattern.hs
+- [x] T017 [US2] Implement `patternWith :: v -> [Pattern v] -> Pattern v` function in src/Pattern/Core.hs
+- [x] T018 [US2] Add Haddock documentation for `patternWith` function with examples in src/Pattern/Core.hs
+- [x] T019 [US2] Export `patternWith` from Pattern.Core module in src/Pattern/Core.hs
+- [x] T020 [US2] Re-export `patternWith` from main Pattern module in src/Pattern.hs
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - developers can create atomic patterns and patterns with elements using constructor functions.
+**Checkpoint**: ✅ At this point, User Stories 1 AND 2 should both work independently - developers can create atomic patterns and patterns with elements using constructor functions.
 
 ---
 
@@ -81,23 +81,23 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T021 [P] [US3] Add test for creating pattern from list of strings using `fromList` in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T022 [P] [US3] Add test for creating pattern from list of integers using `fromList` in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T023 [P] [US3] Add test for creating pattern from list of custom types using `fromList` in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T024 [P] [US3] Add test for empty list in `fromList` (should produce atomic pattern) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T025 [US3] Add test verifying `fromList` preserves value order in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T026 [US3] Add test verifying `fromList` converts each value to atomic pattern in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T027 [US3] Add test verifying `fromList` produces patterns functionally identical to `patternWith decoration (map pattern values)` in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T028 [US3] Add property-based test for functional equivalence: `fromList decoration values == patternWith decoration (map pattern values)` in tests/Spec/Pattern/Properties.hs
+- [x] T021 [P] [US3] Add test for creating pattern from list of strings using `fromList` in tests/Spec/Pattern/CoreSpec.hs
+- [x] T022 [P] [US3] Add test for creating pattern from list of integers using `fromList` in tests/Spec/Pattern/CoreSpec.hs
+- [x] T023 [P] [US3] Add test for creating pattern from list of custom types using `fromList` in tests/Spec/Pattern/CoreSpec.hs
+- [x] T024 [P] [US3] Add test for empty list in `fromList` (should produce atomic pattern) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T025 [US3] Add test verifying `fromList` preserves value order in tests/Spec/Pattern/CoreSpec.hs
+- [x] T026 [US3] Add test verifying `fromList` converts each value to atomic pattern in tests/Spec/Pattern/CoreSpec.hs
+- [x] T027 [US3] Add test verifying `fromList` produces patterns functionally identical to `patternWith decoration (map pattern values)` in tests/Spec/Pattern/CoreSpec.hs
+- [x] T028 [US3] Add property-based test for functional equivalence: `fromList decoration values == patternWith decoration (map pattern values)` in tests/Spec/Pattern/Properties.hs
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Implement `fromList :: v -> [v] -> Pattern v` function in src/Pattern/Core.hs
-- [ ] T030 [US3] Add Haddock documentation for `fromList` function with examples in src/Pattern/Core.hs
-- [ ] T031 [US3] Export `fromList` from Pattern.Core module in src/Pattern/Core.hs
-- [ ] T032 [US3] Re-export `fromList` from main Pattern module in src/Pattern.hs
+- [x] T029 [US3] Implement `fromList :: v -> [v] -> Pattern v` function in src/Pattern/Core.hs
+- [x] T030 [US3] Add Haddock documentation for `fromList` function with examples in src/Pattern/Core.hs
+- [x] T031 [US3] Export `fromList` from Pattern.Core module in src/Pattern/Core.hs
+- [x] T032 [US3] Re-export `fromList` from main Pattern module in src/Pattern.hs
 
-**Checkpoint**: At this point, User Stories 1, 2, AND 3 should all work independently - developers can create patterns using all three constructor functions.
+**Checkpoint**: ✅ At this point, User Stories 1, 2, AND 3 should all work independently - developers can create patterns using all three constructor functions.
 
 ---
 
@@ -111,22 +111,22 @@
 
 > **NOTE: These tests verify edge cases and comprehensive coverage**
 
-- [ ] T033 [P] [US4] Add test for `patternWith` with 0 elements (atomic pattern) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T034 [P] [US4] Add test for `patternWith` with 1 element (singular pattern) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T035 [P] [US4] Add test for `patternWith` with 2 elements (pair pattern) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T036 [P] [US4] Add test for `patternWith` with many elements (extended pattern) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T037 [P] [US4] Add test for `fromList` with 0 values (atomic pattern) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T038 [P] [US4] Add test for `fromList` with 1 value (singular pattern) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T039 [P] [US4] Add test for `fromList` with 2 values (pair pattern) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T040 [P] [US4] Add test for `fromList` with many values (extended pattern) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T041 [US4] Add test for nested patterns with all constructors in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T042 [US4] Add test for all value types (strings, integers, custom types) with all constructors in tests/Spec/Pattern/CoreSpec.hs
+- [x] T033 [P] [US4] Add test for `patternWith` with 0 elements (atomic pattern) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T034 [P] [US4] Add test for `patternWith` with 1 element (singular pattern) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T035 [P] [US4] Add test for `patternWith` with 2 elements (pair pattern) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T036 [P] [US4] Add test for `patternWith` with many elements (extended pattern) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T037 [P] [US4] Add test for `fromList` with 0 values (atomic pattern) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T038 [P] [US4] Add test for `fromList` with 1 value (singular pattern) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T039 [P] [US4] Add test for `fromList` with 2 values (pair pattern) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T040 [P] [US4] Add test for `fromList` with many values (extended pattern) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T041 [US4] Add test for nested patterns with all constructors in tests/Spec/Pattern/CoreSpec.hs
+- [x] T042 [US4] Add test for all value types (strings, integers, custom types) with all constructors in tests/Spec/Pattern/CoreSpec.hs
 
 ### Implementation for User Story 4
 
-- [ ] T043 [US4] Verify all edge cases are handled correctly in existing implementations (no code changes needed if tests pass)
+- [x] T043 [US4] Verify all edge cases are handled correctly in existing implementations (no code changes needed if tests pass)
 
-**Checkpoint**: At this point, all constructor functions should work correctly for all common pattern structures with comprehensive test coverage.
+**Checkpoint**: ✅ At this point, all constructor functions should work correctly for all common pattern structures with comprehensive test coverage.
 
 ---
 
@@ -141,6 +141,7 @@
 - [ ] T048 Verify code builds without warnings: `cabal build`
 - [ ] T049 Generate and review Haddock documentation: `cabal haddock`
 - [ ] T050 Review all function exports are correct in src/Pattern.hs
+- [ ] T051 [P] Re-check terminology in codebase: search for tree-like terms (leaf, node, parent, child, children) in values, variables, and documentation; verify they are either acceptable (e.g., string values like `"node"`, implementation detail comments) or replace with appropriate terminology (e.g., use definition-style examples for singular patterns instead of parent/child)
 
 ---
 

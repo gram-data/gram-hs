@@ -40,10 +40,10 @@ This document defines the public API type signatures for the pattern constructor
 --
 -- Create an atomic pattern with a custom type:
 --
--- >>> data Person = Person { name :: String, age :: Int }
--- >>> person = pattern (Person "Alice" 30)
+-- >>> data Person = Person { name :: String, age :: Maybe Int }
+-- >>> person = pattern (Person "Alice" (Just 30))
 -- >>> value person
--- Person {name = "Alice", age = 30}
+-- Person {name = "Alice", age = Just 30}
 --
 -- === Functional Equivalence
 --
@@ -71,7 +71,7 @@ pattern :: v -> Pattern v
 --
 -- Create a singular pattern (one element):
 --
--- >>> singular = patternWith "parent" [pattern "child"]
+-- >>> singular = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
 -- >>> length (elements singular)
 -- 1
 --
@@ -212,9 +212,9 @@ atom2 :: Pattern Int
 atom2 = pattern 42
 
 -- Custom type pattern
-data Person = Person { name :: String, age :: Int }
+data Person = Person { name :: String, age :: Maybe Int }
 personPattern :: Pattern Person
-personPattern = pattern (Person "Alice" 30)
+personPattern = pattern (Person "Alice" (Just 30))
 ```
 
 ### Creating Patterns with Elements
@@ -224,7 +224,12 @@ import Pattern.Core (pattern, patternWith)
 
 -- Singular pattern (one element)
 singular :: Pattern String
-singular = patternWith "parent" [pattern "child"]
+singular = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
+
+-- Role-based singular pattern with custom type
+data Person = Person { name :: String, age :: Maybe Int }
+goalie :: Pattern Person
+goalie = patternWith (Person "Goalie" Nothing) [pattern (Person "Hans" (Just 25))]
 
 -- Pair pattern (two elements)
 pair :: Pattern String
@@ -258,8 +263,8 @@ testEquivalence =
 
 testEquivalenceWith :: Bool
 testEquivalenceWith = 
-  patternWith "parent" [pattern "child"] == 
-    Pattern { value = "parent", elements = [Pattern { value = "child", elements = [] }] }
+  patternWith "soccer" [pattern "a team sport involving kicking a ball"] == 
+    Pattern { value = "soccer", elements = [Pattern { value = "a team sport involving kicking a ball", elements = [] }] }
 ```
 
 ---

@@ -53,7 +53,7 @@ atom1' = Pattern { value = "atom1", elements = [] }
 ```haskell
 -- Create singular pattern (one element)
 singular :: Pattern String
-singular = patternWith "parent" [pattern "child"]
+singular = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
 
 -- Create pair pattern (two elements)
 pair :: Pattern String
@@ -83,8 +83,8 @@ p2 = Pattern { value = "test", elements = [] }
 -- p1 == p2 is True
 
 -- These are equivalent:
-p3 = patternWith "parent" [pattern "child"]
-p4 = Pattern { value = "parent", elements = [Pattern { value = "child", elements = [] }] }
+p3 = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
+p4 = Pattern { value = "soccer", elements = [Pattern { value = "a team sport involving kicking a ball", elements = [] }] }
 -- p3 == p4 is True
 ```
 
@@ -148,9 +148,9 @@ intPattern :: Pattern Int
 intPattern = pattern 42
 
 -- Custom types
-data Person = Person { name :: String, age :: Int }
+data Person = Person { name :: String, age :: Maybe Int }
 personPattern :: Pattern Person
-personPattern = pattern (Person "Alice" 30)
+personPattern = pattern (Person "Alice" (Just 30))
 ```
 
 ## Relationship to Pattern Data Type
