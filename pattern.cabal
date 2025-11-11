@@ -2,11 +2,13 @@ cabal-version:      2.4
 name:               pattern
 version:            0.1.0.0
 
-synopsis:           A generalized representation of graph elements using category theory
+synopsis:           A recursive, decorated sequence data structure
 description:        
-    Pattern is a recursive tree data structure that can be interpreted as
-    different graph elements (nodes, relationships, subgraphs, paths) through
-    categorical views. This is a reference implementation designed to be
+    Pattern is a recursive data structure that pairs a sequence with a value.
+    The sequence is the pattern itself. The value decorates the sequence with
+    additional information. The sequence elements are themselves patterns,
+    which allows for arbitrary nesting and complexity.
+    This is a reference implementation designed to be
     translatable to other languages while maintaining category-theoretic
     correctness.
 
