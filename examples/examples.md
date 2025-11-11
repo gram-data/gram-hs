@@ -129,20 +129,20 @@ intPattern = Pattern { value = 123, elements = [] }
 
 A pattern with **elements** contains one or more pattern elements in sequence. The elements form the pattern itself; the value provides decoration about that pattern.
 
-### Pattern with Single Element
+### Singular Pattern
 
 ```haskell
 -- Create an element (atomic pattern)
 elem1 :: Pattern String
 elem1 = Pattern { value = "elem1", elements = [] }
 
--- Create a pattern containing that element
-patternWithOne :: Pattern String
-patternWithOne = Pattern { value = "pattern", elements = [elem1] }
+-- Create a singular pattern (exactly one element)
+singularPattern :: Pattern String
+singularPattern = Pattern { value = "pattern", elements = [elem1] }
 
-value patternWithOne  -- "pattern"
-length (elements patternWithOne)  -- 1
-head (elements patternWithOne)  -- Pattern {value = "elem1", elements = []}
+value singularPattern  -- "pattern"
+length (elements singularPattern)  -- 1
+head (elements singularPattern)  -- Pattern {value = "elem1", elements = []}
 ```
 
 **Gram notation:**
@@ -208,9 +208,9 @@ length (elements pairLike)  -- 2
 zeroElements :: Pattern String
 zeroElements = Pattern { value = "zero", elements = [] }
 
--- One element
-oneElement :: Pattern String
-oneElement = Pattern { value = "one", elements = [Pattern { value = "elem", elements = [] }] }
+-- Singular pattern (one element)
+singularPattern :: Pattern String
+singularPattern = Pattern { value = "one", elements = [Pattern { value = "elem", elements = [] }] }
 
 -- Many elements
 manyElements :: Pattern String
@@ -223,7 +223,7 @@ manyElements = Pattern
   }
 
 length (elements zeroElements)  -- 0
-length (elements oneElement)   -- 1
+length (elements singularPattern)   -- 1
 length (elements manyElements)  -- 3
 ```
 

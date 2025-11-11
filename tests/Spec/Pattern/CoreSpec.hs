@@ -86,7 +86,7 @@ spec = do
       
       describe "Creating patterns with elements" $ do
         
-        it "creates a pattern with single element" $ do
+        it "creates a singular pattern" $ do
           let elem = Pattern { value = "elem", elements = [] }
           let pattern = Pattern { value = "pattern", elements = [elem] }
           value pattern `shouldBe` "pattern"
@@ -104,7 +104,7 @@ spec = do
       
       describe "Value field accessor for patterns with elements" $ do
         
-        it "returns the correct value for pattern with single element" $ do
+        it "returns the correct value for singular pattern" $ do
           let elem = Pattern { value = "elem", elements = [] }
           let pattern = Pattern { value = "pattern", elements = [elem] }
           value pattern `shouldBe` "pattern"
@@ -122,7 +122,7 @@ spec = do
       
       describe "Elements field accessor for patterns with elements" $ do
         
-        it "returns correct element list for pattern with single element" $ do
+        it "returns correct element list for singular pattern" $ do
           let elem = Pattern { value = "elem", elements = [] }
           let pattern = Pattern { value = "pattern", elements = [elem] }
           elements pattern `shouldBe` [elem]
@@ -196,13 +196,13 @@ spec = do
         
         it "patterns with varying numbers of elements (zero, one, many)" $ do
           let zeroElements = Pattern { value = "zero", elements = [] }
-          let oneElement = Pattern { value = "one", elements = [Pattern { value = "elem", elements = [] }] }
+          let singularPattern = Pattern { value = "one", elements = [Pattern { value = "elem", elements = [] }] }
           let elem1 = Pattern { value = "e1", elements = [] }
           let elem2 = Pattern { value = "e2", elements = [] }
           let elem3 = Pattern { value = "e3", elements = [] }
           let manyElements = Pattern { value = "many", elements = [elem1, elem2, elem3] }
           length (elements zeroElements) `shouldBe` 0
-          length (elements oneElement) `shouldBe` 1
+          length (elements singularPattern) `shouldBe` 1
           length (elements manyElements) `shouldBe` 3
     
     describe "Show Instance (Phase 2.1)" $ do
@@ -224,7 +224,7 @@ spec = do
       
       describe "Show instance for patterns with elements" $ do
         
-        it "shows pattern with single element correctly" $ do
+        it "shows singular pattern correctly" $ do
           let elem = Pattern { value = "elem", elements = [] }
           let pattern = Pattern { value = "pattern", elements = [elem] }
           show pattern `shouldBe` "Pattern {value = \"pattern\", elements = [Pattern {value = \"elem\", elements = []}]}"

@@ -199,6 +199,7 @@ module Pattern.Core where
 -- Patterns have structural classifications based on their element structure:
 --
 -- * Atomic pattern: @elements == []@ - a sequence with no elements. Atomic patterns are the fundamental building blocks from which all other patterns are constructed.
+-- * Singular pattern: @length (elements p) == 1@ - a sequence with exactly one element
 -- * Pattern with elements: @elements@ contains one or more pattern elements
 -- * Nested pattern: patterns containing patterns containing patterns, enabling arbitrary nesting
 --
@@ -274,7 +275,7 @@ data Pattern v = Pattern
     -- >>> elements (Pattern { value = "empty", elements = [] })
     -- []
     --
-    -- Pattern with one element:
+    -- Singular pattern (one element):
     --
     -- >>> elem = Pattern { value = "elem", elements = [] }
     -- >>> elements (Pattern { value = "pattern", elements = [elem] })
