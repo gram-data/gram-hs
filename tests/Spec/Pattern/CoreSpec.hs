@@ -4,7 +4,7 @@ module Spec.Pattern.CoreSpec where
 import Data.Char (toUpper)
 import Data.Foldable (toList)
 import Test.Hspec
-import Pattern.Core (Pattern(..), pattern, patternWith, fromList)
+import Pattern.Core (Pattern(..), pattern, patternWith, fromList, toTuple)
 
 -- Custom type for testing
 data Person = Person { name :: String, age :: Maybe Int }
@@ -1187,3 +1187,80 @@ spec = do
           let pattern = Pattern { value = "root", elements = [middle1, middle2] }
           -- Should preserve order: root, middle1, inner1, middle2, inner2
           toList pattern `shouldBe` ["root", "middle1", "inner1", "middle2", "inner2"]
+    
+    describe "toTuple Operation (User Story 2b)" $ do
+      
+      describe "toTuple on atomic patterns" $ do
+        
+        it "toTuple on atomic pattern returns tuple with value and empty list" $ do
+          let atom = Pattern { value = "test", elements = [] }
+          toTuple atom `shouldBe` ("test", [] :: [Pattern String])
+        
+        it "toTuple on atomic pattern with integer value returns tuple with integer and empty list" $ do
+          let atom = Pattern { value = 42, elements = [] }
+          toTuple atom `shouldBe` (42 :: Int, [] :: [Pattern Int])
+      
+      describe "toTuple on patterns with multiple elements" $ do
+        
+        it "toTuple on pattern with multiple elements returns tuple with value and list of element patterns" $ do
+          let elem1 = Pattern { value = "a", elements = [] }
+          let elem2 = Pattern { value = "b", elements = [] }
+          let elem3 = Pattern { value = "c", elements = [] }
+          let pattern = Pattern { value = "root", elements = [elem1, elem2, elem3] }
+          toTuple pattern `shouldBe` ("root", [elem1, elem2, elem3])
+        
+        it "toTuple on pattern with integer values returns tuple with integer value and list of Pattern Int" $ do
+          let elem1 = Pattern { value = 10, elements = [] }
+          let elem2 = Pattern { value = 20, elements = [] }
+          let pattern = Pattern { value = 100, elements = [elem1, elem2] }
+          toTuple pattern `shouldBe` (100 :: Int, [elem1, elem2])
+      
+      describe "toTuple on nested patterns" $ do
+        
+        it "toTuple on nested pattern returns tuple where elements list contains nested Pattern structures" $ do
+          let inner = Pattern { value = "inner", elements = [] }
+          let middle = Pattern { value = "middle", elements = [inner] }
+          let outer = Pattern { value = "outer", elements = [middle] }
+          let pattern = Pattern { value = "root", elements = [outer] }
+          let (val, els) = toTuple pattern
+          val `shouldBe` "root"
+          length els `shouldBe` 1
+          head els `shouldBe` outer
+          -- Verify nested structure is preserved
+          let (outerVal, outerEls) = toTuple (head els)
+          outerVal `shouldBe` "outer"
+          length outerEls `shouldBe` 1
+          head outerEls `shouldBe` middle
+      
+      describe "Verifying toTuple preserves pattern structure" $ do
+        
+        it "toTuple preserves pattern structure" $ do
+          let elem1 = Pattern { value = "first", elements = [] }
+          let elem2 = Pattern { value = "second", elements = [] }
+          let pattern = Pattern { value = "root", elements = [elem1, elem2] }
+          let (val, els) = toTuple pattern
+          val `shouldBe` "root"
+          length els `shouldBe` 2
+          els `shouldBe` [elem1, elem2]
+          -- Verify elements are still Pattern structures, not flattened
+          value (head els) `shouldBe` "first"
+          value (last els) `shouldBe` "second"
+        
+        it "toTuple preserves nested pattern structure" $ do
+          let inner1 = Pattern { value = "inner1", elements = [] }
+          let inner2 = Pattern { value = "inner2", elements = [] }
+          let middle1 = Pattern { value = "middle1", elements = [inner1] }
+          let middle2 = Pattern { value = "middle2", elements = [inner2] }
+          let pattern = Pattern { value = "root", elements = [middle1, middle2] }
+          let (val, els) = toTuple pattern
+          val `shouldBe` "root"
+          length els `shouldBe` 2
+          -- Verify nested structures are preserved
+          let (mid1Val, mid1Els) = toTuple (head els)
+          mid1Val `shouldBe` "middle1"
+          length mid1Els `shouldBe` 1
+          head mid1Els `shouldBe` inner1
+          let (mid2Val, mid2Els) = toTuple (last els)
+          mid2Val `shouldBe` "middle2"
+          length mid2Els `shouldBe` 1
+          head mid2Els `shouldBe` inner2

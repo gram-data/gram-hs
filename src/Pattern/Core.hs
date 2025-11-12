@@ -763,3 +763,83 @@ patternWith v ps = Pattern { value = v, elements = ps }
 -- @
 fromList :: v -> [v] -> Pattern v
 fromList decoration values = patternWith decoration (map pattern values)
+
+-- | Extract a pattern as a tuple preserving its structure.
+--
+-- Returns a tuple @(v, [Pattern v])@ where the first element is the pattern's
+-- value and the second element is the list of element patterns. This function
+-- preserves the pattern's structure by keeping elements as Pattern values
+-- rather than flattening them.
+--
+-- The tuple representation directly reflects the Pattern's structure:
+-- the value (decoration) and the list of pattern elements. This enables
+-- structure-preserving operations and makes the pattern's composition explicit.
+--
+-- === Examples
+--
+-- Atomic pattern (no elements):
+--
+-- >>> atom = Pattern { value = "test", elements = [] }
+-- >>> toTuple atom
+-- ("test", [])
+--
+-- Pattern with multiple elements:
+--
+-- >>> elem1 = Pattern { value = "a", elements = [] }
+-- >>> elem2 = Pattern { value = "b", elements = [] }
+-- >>> pattern = Pattern { value = "root", elements = [elem1, elem2] }
+-- >>> toTuple pattern
+-- ("root", [Pattern {value = "a", elements = []},Pattern {value = "b", elements = []}])
+--
+-- Nested pattern structure:
+--
+-- >>> inner = Pattern { value = "inner", elements = [] }
+-- >>> middle = Pattern { value = "middle", elements = [inner] }
+-- >>> pattern = Pattern { value = "root", elements = [middle] }
+-- >>> toTuple pattern
+-- ("root", [Pattern {value = "middle", elements = [Pattern {value = "inner", elements = []}]}])
+--
+-- Pattern with integer values:
+--
+-- >>> elem1 = Pattern { value = 10, elements = [] }
+-- >>> elem2 = Pattern { value = 20, elements = [] }
+-- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
+-- >>> toTuple pattern
+-- (100, [Pattern {value = 10, elements = []},Pattern {value = 20, elements = []}])
+--
+-- === Structure Preservation
+--
+-- The @toTuple@ function preserves the pattern's structure:
+--
+-- * Elements remain as Pattern values (not flattened to their values)
+-- * Nested structures are preserved in the elements list
+-- * The pattern's value and elements are accessible separately
+--
+-- This is different from @toList@ which flattens all values into a single list.
+-- Use @toTuple@ when you need to work with the pattern's value and elements
+-- separately while maintaining the structural relationship.
+--
+-- === Edge Cases
+--
+-- **Atomic patterns** (no elements):
+--
+-- >>> atom = Pattern { value = "atom", elements = [] }
+-- >>> toTuple atom
+-- ("atom", [])
+--
+-- **Singular patterns** (one element):
+--
+-- >>> elem = Pattern { value = "elem", elements = [] }
+-- >>> pattern = Pattern { value = "singular", elements = [elem] }
+-- >>> toTuple pattern
+-- ("singular", [Pattern {value = "elem", elements = []}])
+--
+-- **Patterns with many elements**:
+--
+-- >>> elems = [Pattern { value = "a", elements = [] }, Pattern { value = "b", elements = [] }, Pattern { value = "c", elements = [] }]
+-- >>> pattern = Pattern { value = "root", elements = elems }
+-- >>> toTuple pattern
+-- ("root", [Pattern {value = "a", elements = []},Pattern {value = "b", elements = []},Pattern {value = "c", elements = []}])
+--
+toTuple :: Pattern v -> (v, [Pattern v])
+toTuple (Pattern v els) = (v, els)

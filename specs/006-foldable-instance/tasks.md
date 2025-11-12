@@ -84,16 +84,16 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T019 [P] [US2b] Write unit test for toTuple on atomic pattern returning tuple with value and empty list in `tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T020 [P] [US2b] Write unit test for toTuple on pattern with multiple elements returning tuple with value and list of element patterns in `tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T021 [P] [US2b] Write unit test for toTuple on nested pattern returning tuple where elements list contains nested Pattern structures in `tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T022 [P] [US2b] Write unit test for toTuple on pattern with integer values returning tuple with integer value and list of Pattern Int in `tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T023 [P] [US2b] Write unit test verifying toTuple preserves pattern structure in `tests/Spec/Pattern/CoreSpec.hs`
+- [x] T019 [P] [US2b] Write unit test for toTuple on atomic pattern returning tuple with value and empty list in `tests/Spec/Pattern/CoreSpec.hs`
+- [x] T020 [P] [US2b] Write unit test for toTuple on pattern with multiple elements returning tuple with value and list of element patterns in `tests/Spec/Pattern/CoreSpec.hs`
+- [x] T021 [P] [US2b] Write unit test for toTuple on nested pattern returning tuple where elements list contains nested Pattern structures in `tests/Spec/Pattern/CoreSpec.hs`
+- [x] T022 [P] [US2b] Write unit test for toTuple on pattern with integer values returning tuple with integer value and list of Pattern Int in `tests/Spec/Pattern/CoreSpec.hs`
+- [x] T023 [P] [US2b] Write unit test verifying toTuple preserves pattern structure in `tests/Spec/Pattern/CoreSpec.hs`
 
 ### Implementation for User Story 2b
 
-- [ ] T024 [US2b] Implement toTuple to preserve structure (returns tuple) in `src/Pattern/Core.hs`
-- [ ] T025 [US2b] Add Haddock documentation examples for toTuple usage showing structure preservation in `src/Pattern/Core.hs`
+- [x] T024 [US2b] Implement toTuple to preserve structure (returns tuple) in `src/Pattern/Core.hs`
+- [x] T025 [US2b] Add Haddock documentation examples for toTuple usage showing structure preservation in `src/Pattern/Core.hs`
 
 **Checkpoint**: At this point, User Stories 1, 2, 2a, AND 2b should all work independently. toTuple should extract patterns correctly as tuples preserving structure.
 
