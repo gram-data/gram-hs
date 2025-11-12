@@ -1,3 +1,0 @@
-[submodule "tree-sitter-gram"]
-	path = tree-sitter-gram
-	url = git@github.com:gram-data/tree-sitter-gram.git
