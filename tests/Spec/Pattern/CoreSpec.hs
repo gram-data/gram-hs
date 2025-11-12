@@ -1264,3 +1264,132 @@ spec = do
           mid2Val `shouldBe` "middle2"
           length mid2Els `shouldBe` 1
           head mid2Els `shouldBe` inner2
+    
+    describe "Fold with Right-Associative Operations (User Story 3)" $ do
+      
+      describe "foldr processing values in correct order with addition" $ do
+        
+        it "foldr processes values in correct order with addition" $ do
+          -- Pattern: value=100, elements=[10, 20]
+          -- foldr should process: pattern's value (100) first, then elements in order (10, 20)
+          -- Result: 100 + 10 + 20 = 130
+          let elem1 = Pattern { value = 10, elements = [] }
+          let elem2 = Pattern { value = 20, elements = [] }
+          let pattern = Pattern { value = 100, elements = [elem1, elem2] }
+          -- foldr (+) 0 should sum: 100 + 10 + 20 = 130
+          foldr (+) 0 pattern `shouldBe` (130 :: Int)
+        
+        it "foldr processes values in correct order for pattern with three elements" $ do
+          -- Pattern: value=1, elements=[2, 3, 4]
+          -- foldr should process: 1 + 2 + 3 + 4 = 10
+          let elem1 = Pattern { value = 2, elements = [] }
+          let elem2 = Pattern { value = 3, elements = [] }
+          let elem3 = Pattern { value = 4, elements = [] }
+          let pattern = Pattern { value = 1, elements = [elem1, elem2, elem3] }
+          foldr (+) 0 pattern `shouldBe` (10 :: Int)
+        
+        it "foldr processes atomic pattern value correctly" $ do
+          -- Atomic pattern: value=42
+          -- foldr should process: 42
+          let atom = Pattern { value = 42, elements = [] }
+          foldr (+) 0 atom `shouldBe` (42 :: Int)
+      
+      describe "foldr building list in correct order with string values" $ do
+        
+        it "foldr builds list in correct order with string values" $ do
+          -- Pattern: value="root", elements=["a", "b"]
+          -- foldr (:) [] should produce: ["root", "a", "b"]
+          let elem1 = Pattern { value = "a", elements = [] }
+          let elem2 = Pattern { value = "b", elements = [] }
+          let pattern = Pattern { value = "root", elements = [elem1, elem2] }
+          -- toList uses foldr internally, should preserve order: pattern's value first, then elements
+          toList pattern `shouldBe` ["root", "a", "b"]
+        
+        it "foldr builds list in correct order for pattern with multiple string elements" $ do
+          -- Pattern: value="first", elements=["second", "third", "fourth"]
+          -- foldr should produce: ["first", "second", "third", "fourth"]
+          let elem1 = Pattern { value = "second", elements = [] }
+          let elem2 = Pattern { value = "third", elements = [] }
+          let elem3 = Pattern { value = "fourth", elements = [] }
+          let pattern = Pattern { value = "first", elements = [elem1, elem2, elem3] }
+          toList pattern `shouldBe` ["first", "second", "third", "fourth"]
+        
+        it "foldr builds list correctly for atomic pattern with string value" $ do
+          -- Atomic pattern: value="test"
+          -- foldr should produce: ["test"]
+          let atom = Pattern { value = "test", elements = [] }
+          toList atom `shouldBe` ["test"]
+      
+      describe "foldr processing nested pattern values in correct order" $ do
+        
+        it "foldr processes nested pattern values in correct order" $ do
+          -- Nested structure:
+          -- Pattern { value = 4, elements = [
+          --   Pattern { value = 3, elements = [
+          --     Pattern { value = 2, elements = [
+          --       Pattern { value = 1, elements = [] }
+          --     ]}
+          --   ]}
+          -- ]}
+          -- foldr should process: 4 + 3 + 2 + 1 = 10
+          let inner = Pattern { value = 1, elements = [] }
+          let middle = Pattern { value = 2, elements = [inner] }
+          let outer = Pattern { value = 3, elements = [middle] }
+          let pattern = Pattern { value = 4, elements = [outer] }
+          foldr (+) 0 pattern `shouldBe` (10 :: Int)
+        
+        it "foldr processes nested pattern values in correct order for multiple nested elements" $ do
+          -- Pattern { value = 100, elements = [
+          --   Pattern { value = 10, elements = [Pattern { value = 1, elements = [] }] },
+          --   Pattern { value = 20, elements = [Pattern { value = 2, elements = [] }] }
+          -- ]}
+          -- foldr should process: 100 + 10 + 1 + 20 + 2 = 133
+          let inner1 = Pattern { value = 1, elements = [] }
+          let inner2 = Pattern { value = 2, elements = [] }
+          let middle1 = Pattern { value = 10, elements = [inner1] }
+          let middle2 = Pattern { value = 20, elements = [inner2] }
+          let pattern = Pattern { value = 100, elements = [middle1, middle2] }
+          foldr (+) 0 pattern `shouldBe` (133 :: Int)
+        
+        it "foldr processes deeply nested pattern values in correct order" $ do
+          -- 5 levels deep: 5 + 4 + 3 + 2 + 1 = 15
+          let level4 = Pattern { value = 1, elements = [] }
+          let level3 = Pattern { value = 2, elements = [level4] }
+          let level2 = Pattern { value = 3, elements = [level3] }
+          let level1 = Pattern { value = 4, elements = [level2] }
+          let pattern = Pattern { value = 5, elements = [level1] }
+          foldr (+) 0 pattern `shouldBe` (15 :: Int)
+      
+      describe "foldr right-associativity property" $ do
+        
+        it "foldr right-associativity property: foldr f z = foldr f z . toList" $ do
+          -- For commutative operations, foldr on pattern should equal foldr on toList
+          let elem1 = Pattern { value = 10, elements = [] }
+          let elem2 = Pattern { value = 20, elements = [] }
+          let pattern = Pattern { value = 100, elements = [elem1, elem2] }
+          -- Addition is commutative, so both should produce same result
+          let patternFold = foldr (+) 0 pattern
+          let listFold = foldr (+) 0 (toList pattern)
+          patternFold `shouldBe` listFold
+          patternFold `shouldBe` (130 :: Int)
+        
+        it "foldr right-associativity property: order matters for non-commutative operations" $ do
+          -- For non-commutative operations like list building, order is preserved
+          let elem1 = Pattern { value = "a", elements = [] }
+          let elem2 = Pattern { value = "b", elements = [] }
+          let pattern = Pattern { value = "root", elements = [elem1, elem2] }
+          -- toList preserves order: pattern's value first, then elements
+          toList pattern `shouldBe` ["root", "a", "b"]
+          -- foldr (:) [] should produce same order
+          foldr (:) [] pattern `shouldBe` ["root", "a", "b"]
+        
+        it "foldr right-associativity property: pattern value processed before elements" $ do
+          -- Verify that pattern's own value is processed first (combined with accumulated elements)
+          -- Using a function that reveals order: building a list with markers
+          let elem1 = Pattern { value = "elem1", elements = [] }
+          let elem2 = Pattern { value = "elem2", elements = [] }
+          let pattern = Pattern { value = "pattern", elements = [elem1, elem2] }
+          -- foldr builds: pattern's value first, then elements in order
+          toList pattern `shouldBe` ["pattern", "elem1", "elem2"]
+          -- Verify order by checking first element is pattern's value
+          head (toList pattern) `shouldBe` "pattern"

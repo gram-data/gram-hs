@@ -593,11 +593,25 @@ instance Foldable Pattern where
   -- (right-to-left through the elements list), then the pattern's own value is combined
   -- with the accumulated result.
   --
+  -- === Processing Order
+  --
+  -- The @foldr@ operation processes values in a specific order:
+  --
+  -- 1. Element values are processed first (right-to-left through the elements list)
+  -- 2. The pattern's own value is processed last (combined with accumulated elements)
+  --
+  -- When building lists with @foldr (:) []@ or using @toList@, this results in the
+  -- pattern's own value appearing first in the list, followed by element values in order.
+  --
   -- === Examples
+  --
+  -- Atomic pattern:
   --
   -- >>> atom = Pattern { value = 5, elements = [] }
   -- >>> foldr (+) 0 atom
   -- 5
+  --
+  -- Pattern with multiple elements (order: elements first, then pattern's value):
   --
   -- >>> elem1 = Pattern { value = 10, elements = [] }
   -- >>> elem2 = Pattern { value = 20, elements = [] }
@@ -605,11 +619,48 @@ instance Foldable Pattern where
   -- >>> foldr (+) 0 pattern
   -- 130
   --
+  -- Building a list preserves order (pattern's value first, then elements):
+  --
+  -- >>> toList pattern
+  -- [100, 10, 20]
+  --
+  -- Nested pattern structure:
+  --
   -- >>> inner = Pattern { value = 1, elements = [] }
   -- >>> middle = Pattern { value = 2, elements = [inner] }
   -- >>> pattern = Pattern { value = 3, elements = [middle] }
   -- >>> foldr (+) 0 pattern
   -- 6
+  --
+  -- Order preservation in nested structures:
+  --
+  -- >>> toList pattern
+  -- [3, 2, 1]
+  --
+  -- === Right-Associativity
+  --
+  -- The @foldr@ operation is right-associative, meaning operations are grouped from
+  -- right to left. For commutative operations like addition, this produces the same
+  -- result as left-associative folding. For non-commutative operations, the order
+  -- matters and is preserved as described above.
+  --
+  -- Example with commutative operation (addition):
+  --
+  -- >>> elem1 = Pattern { value = 10, elements = [] }
+  -- >>> elem2 = Pattern { value = 20, elements = [] }
+  -- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
+  -- >>> foldr (+) 0 pattern
+  -- 130
+  -- >>> foldr (+) 0 (toList pattern)
+  -- 130
+  --
+  -- Example with non-commutative operation (list building):
+  --
+  -- >>> elem1 = Pattern { value = "a", elements = [] }
+  -- >>> elem2 = Pattern { value = "b", elements = [] }
+  -- >>> pattern = Pattern { value = "root", elements = [elem1, elem2] }
+  -- >>> toList pattern
+  -- ["root", "a", "b"]
   --
   foldr f z (Pattern v els) = f v (foldr (\e acc -> foldr f acc e) z els)
   

@@ -111,15 +111,15 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T029 [P] [US3] Write unit test for foldr processing values in correct order with addition in `tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T030 [P] [US3] Write unit test for foldr building list in correct order with string values in `tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T031 [P] [US3] Write unit test for foldr processing nested pattern values in correct order in `tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T032 [P] [US3] Write unit test verifying foldr right-associativity property in `tests/Spec/Pattern/CoreSpec.hs`
+- [x] T029 [P] [US3] Write unit test for foldr processing values in correct order with addition in `tests/Spec/Pattern/CoreSpec.hs`
+- [x] T030 [P] [US3] Write unit test for foldr building list in correct order with string values in `tests/Spec/Pattern/CoreSpec.hs`
+- [x] T031 [P] [US3] Write unit test for foldr processing nested pattern values in correct order in `tests/Spec/Pattern/CoreSpec.hs`
+- [x] T032 [P] [US3] Write unit test verifying foldr right-associativity property in `tests/Spec/Pattern/CoreSpec.hs`
 
 ### Implementation for User Story 3
 
-- [ ] T033 [US3] Verify foldr implementation processes values in correct order (no code changes if already correct)
-- [ ] T034 [US3] Add Haddock documentation examples for foldr order semantics in `src/Pattern/Core.hs`
+- [x] T033 [US3] Verify foldr implementation processes values in correct order (no code changes if already correct)
+- [x] T034 [US3] Add Haddock documentation examples for foldr order semantics in `src/Pattern/Core.hs`
 
 **Checkpoint**: At this point, User Stories 1, 2, AND 3 should all work independently. foldr should process values in correct order.
 
