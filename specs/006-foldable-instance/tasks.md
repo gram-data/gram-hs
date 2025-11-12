@@ -48,29 +48,29 @@
 
 ---
 
-## Phase 2: User Story 2 - Extract All Values as a List (Priority: P1)
+## Phase 2: User Story 2 - Extract Values as a List Preserving Structure (Priority: P1)
 
-**Goal**: Implement `toList` operation that extracts all values from a pattern as a list so that developers can process values using standard list operations, pass them to functions expecting lists, and work with pattern values in a familiar list-based interface.
+**Goal**: Implement `toList` operation that extracts values from a pattern as a list while preserving structure, so that developers can work with pattern values in a familiar list-based interface while maintaining structural information for roundtrips and structure-aware operations.
 
-**Independent Test**: Convert patterns to lists and verify that: (1) all values are included in the list, (2) values appear in the correct order, and (3) conversion works for all pattern structures.
+**Independent Test**: Convert patterns to lists and verify that: (1) the pattern's value is included, (2) element patterns are converted to lists preserving their structure, (3) values appear in the correct order, and (4) conversion works for all pattern structures.
 
 ### Tests for User Story 2
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
 - [ ] T011 [P] [US2] Write unit test for toList on atomic pattern returning single-element list in `tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T012 [P] [US2] Write unit test for toList on pattern with multiple elements returning all values in `tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T013 [P] [US2] Write unit test for toList on nested pattern returning values from all levels in `tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T014 [P] [US2] Write unit test for toList on pattern with integer values returning list of integers in `tests/Spec/Pattern/CoreSpec.hs`
+- [ ] T012 [P] [US2] Write unit test for toList on pattern with multiple elements returning pattern value followed by lists representing each element in `tests/Spec/Pattern/CoreSpec.hs`
+- [ ] T013 [P] [US2] Write unit test for toList on nested pattern returning nested list structure preserving nesting levels in `tests/Spec/Pattern/CoreSpec.hs`
+- [ ] T014 [P] [US2] Write unit test for toList on pattern with integer values returning nested list structure with integers in `tests/Spec/Pattern/CoreSpec.hs`
 - [ ] T015 [P] [US2] Write unit test verifying toList includes pattern's own value in `tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T016 [P] [US2] Write unit test verifying toList preserves element order in `tests/Spec/Pattern/CoreSpec.hs`
+- [ ] T016 [P] [US2] Write unit test verifying toList preserves element order and structure in `tests/Spec/Pattern/CoreSpec.hs`
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Verify toList is correctly derived from foldr (or implement explicitly if needed) in `src/Pattern/Core.hs`
-- [ ] T018 [US2] Add Haddock documentation examples for toList usage in `src/Pattern/Core.hs`
+- [ ] T017 [US2] Implement toList to preserve structure (returns nested lists) in `src/Pattern/Core.hs`
+- [ ] T018 [US2] Add Haddock documentation examples for toList usage showing structure preservation in `src/Pattern/Core.hs`
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently. toList should extract all values correctly.
+**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently. toList should extract values correctly while preserving structure.
 
 ---
 

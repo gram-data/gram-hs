@@ -29,7 +29,7 @@ Implement a `Foldable` instance for the `Pattern` data type that enables folding
 
 - **Code Quality (NON-NEGOTIABLE)**: ✅ PASS - Foldable instance is a standard Haskell typeclass implementation. The `foldr`, `foldl`, `foldMap`, and `toList` functions will be self-documenting through their type signatures and standard foldable semantics. Haddock documentation will include examples demonstrating value aggregation, list extraction, and order preservation.
 
-- **Testing Standards (NON-NEGOTIABLE)**: ✅ PASS - Comprehensive testing strategy includes: (1) Unit tests for folding operations in various pattern structures (atomic, with elements, nested), (2) Unit tests for `toList` extraction, (3) Unit tests for `foldMap` with monoids, (4) Property-based tests for foldable laws and properties (using `quickProperty` helper for performance - 20 test cases max), (5) Edge case tests for empty elements, single elements, many elements, deep nesting, and various value types. All tests must complete quickly to avoid long-running test suites.
+- **Testing Standards (NON-NEGOTIABLE)**: ✅ PASS - Comprehensive testing strategy includes: (1) Unit tests for folding operations in various pattern structures (atomic, with elements, nested), (2) Unit tests for `toList` structure-preserving extraction, (3) Unit tests for `flatten` flat list extraction, (4) Unit tests for `foldMap` with monoids, (5) Property-based tests for foldable laws and properties (using `quickProperty` helper for performance - 20 test cases max), (6) Edge case tests for empty elements, single elements, many elements, deep nesting, and various value types. All tests must complete quickly to avoid long-running test suites.
 
 - **Conceptual Consistency**: ✅ PASS - Foldable is a fundamental category theory concept. The implementation explicitly represents the foldable structure: `Pattern` is a foldable that aggregates values while traversing the pattern structure. The foldable laws are mathematical requirements that ensure categorical correctness.
 
@@ -129,7 +129,8 @@ The Foldable instance will be implemented using the standard recursive pattern f
    - Edge cases (empty, single, many elements)
 
 2. **Property-Based Tests**: Verify foldable laws and properties
-   - `toList` extracts all values correctly
+   - `toList` preserves structure correctly
+   - `flatten` extracts all values correctly as flat list
    - `foldr` and `foldl` process all values
    - `foldMap` with monoids produces correct results
    - Order preservation properties
@@ -279,8 +280,8 @@ import Data.Monoid (Sum(..))
 -- Create a pattern with integer values
 let p = patternWith 10 [pattern 5, pattern 3]
 
--- Sum all values
-sum (toList p)  -- [10, 5, 3] -> 18
+-- Sum all values (using flatten for flat list)
+sum (flatten p)  -- [10, 5, 3] -> 18
 
 -- Or using foldMap with Sum monoid
 getSum (foldMap Sum p)  -- 18
