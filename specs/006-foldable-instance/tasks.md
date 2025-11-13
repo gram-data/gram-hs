@@ -183,19 +183,19 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T047 [P] Write property-based test for toList extracting all values correctly as flat list in `tests/Spec/Pattern/Properties.hs`
-- [ ] T048 [P] Write property-based test for flatten extracting all values correctly in `tests/Spec/Pattern/Properties.hs`
-- [ ] T049 [P] Write property-based test for foldr processing all values correctly in `tests/Spec/Pattern/Properties.hs`
-- [ ] T050 [P] Write property-based test for foldl processing all values correctly in `tests/Spec/Pattern/Properties.hs`
-- [ ] T051 [P] Write property-based test for foldMap with Sum monoid producing correct results in `tests/Spec/Pattern/Properties.hs`
-- [ ] T052 [P] Write property-based test for order preservation in toList and flatten in `tests/Spec/Pattern/Properties.hs`
-- [ ] T053 [P] Write property-based test verifying toList p = flatten p relationship (both extract flat lists) in `tests/Spec/Pattern/Properties.hs`
-- [ ] T054 [P] Write property-based test verifying foldr and foldl produce same results for commutative operations in `tests/Spec/Pattern/Properties.hs`
+- [x] T047 [P] Write property-based test for toList extracting all values correctly as flat list in `tests/Spec/Pattern/Properties.hs`
+- [x] T048 [P] Write property-based test for flatten extracting all values correctly in `tests/Spec/Pattern/Properties.hs`
+- [x] T049 [P] Write property-based test for foldr processing all values correctly in `tests/Spec/Pattern/Properties.hs`
+- [x] T050 [P] Write property-based test for foldl processing all values correctly in `tests/Spec/Pattern/Properties.hs`
+- [x] T051 [P] Write property-based test for foldMap with Sum monoid producing correct results in `tests/Spec/Pattern/Properties.hs`
+- [x] T052 [P] Write property-based test for order preservation in toList and flatten in `tests/Spec/Pattern/Properties.hs`
+- [x] T053 [P] Write property-based test verifying toList p = flatten p relationship (both extract flat lists) in `tests/Spec/Pattern/Properties.hs`
+- [x] T054 [P] Write property-based test verifying foldr and foldl produce same results for commutative operations in `tests/Spec/Pattern/Properties.hs`
 
 ### Implementation for Foldable Laws
 
-- [ ] T055 Verify Foldable instance implementation satisfies all foldable laws (no code changes if already correct)
-- [ ] T056 Add Haddock documentation for foldable laws in `src/Pattern/Core.hs` with formal statements
+- [x] T055 Verify Foldable instance implementation satisfies all foldable laws (no code changes if already correct)
+- [x] T056 Add Haddock documentation for foldable laws in `src/Pattern/Core.hs` with formal statements
 
 **Checkpoint**: All property-based tests should pass, verifying foldable laws and properties hold for all pattern structures.
 

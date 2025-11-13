@@ -507,11 +507,107 @@ instance Functor Pattern where
 --
 -- === Foldable Laws
 --
--- The Foldable instance satisfies standard foldable laws and properties:
+-- The Foldable instance satisfies standard foldable laws and properties. These laws
+-- ensure mathematical correctness and predictable behavior for all foldable operations.
 --
--- * All values in the pattern structure are processed exactly once
--- * Folding operations work correctly for all pattern structures (atomic, with elements, nested)
--- * The implementation follows standard Foldable semantics for recursive data structures
+-- **Law 1: toList extracts all values**
+--
+-- For any pattern @p :: Pattern a@, @toList p@ extracts all values from the pattern
+-- structure as a flat list. The pattern's own value and all element values at all
+-- nesting levels are included exactly once:
+--
+-- @
+-- toList (Pattern v els) = v : concatMap toList els
+-- @
+--
+-- This law ensures that @toList@ processes all values in the pattern structure
+-- without duplication or omission.
+--
+-- **Law 2: foldr processes all values**
+--
+-- For any pattern @p :: Pattern a@, function @f :: a -> b -> b@, and initial value @z :: b@,
+-- @foldr f z p@ processes all values in the pattern structure exactly once:
+--
+-- @
+-- foldr f z (Pattern v els) = f v (foldr (\e acc -> foldr f acc e) z els)
+-- @
+--
+-- This law ensures that @foldr@ processes the pattern's own value and all element
+-- values recursively, maintaining right-associative semantics.
+--
+-- **Law 3: foldl processes all values**
+--
+-- For any pattern @p :: Pattern a@, function @f :: b -> a -> b@, and initial value @z :: b@,
+-- @foldl f z p@ processes all values in the pattern structure exactly once:
+--
+-- @
+-- foldl f z (Pattern v els) = foldl (\acc e -> foldl f acc e) (f z v) els
+-- @
+--
+-- This law ensures that @foldl@ processes the pattern's own value first, then all
+-- element values recursively, maintaining left-associative semantics.
+--
+-- **Law 4: foldMap with monoids**
+--
+-- For any pattern @p :: Pattern a@, function @f :: a -> m@ where @m@ is a monoid,
+-- @foldMap f p@ maps all values to monoids and combines them:
+--
+-- @
+-- foldMap f (Pattern v els) = f v <> foldMap (\e -> foldMap f e) els
+-- @
+--
+-- This law ensures that @foldMap@ processes all values and combines them using
+-- monoid operations, enabling efficient aggregation.
+--
+-- **Law 5: Relationship between toList and foldr**
+--
+-- For any pattern @p :: Pattern a@, @toList p@ is equivalent to @foldr (:) [] p@:
+--
+-- @
+-- toList p = foldr (:) [] p
+-- @
+--
+-- This law ensures that @toList@ is correctly derived from @foldr@ and extracts
+-- all values as a flat list.
+--
+-- **Law 6: Commutative operations produce same results**
+--
+-- For any pattern @p :: Pattern a@ and commutative operation @f@, @foldr f z p@
+-- and @foldl f z p@ produce the same result:
+--
+-- @
+-- foldr (+) 0 p = foldl (+) 0 p  -- for commutative operations
+-- @
+--
+-- This law ensures that for commutative operations like addition and multiplication,
+-- both folding directions produce identical results.
+--
+-- **Property: Order preservation**
+--
+-- For any pattern @p :: Pattern a@, multiple calls to @toList p@ produce the same
+-- result in the same order:
+--
+-- @
+-- toList p == toList p  -- always true, order is preserved
+-- @
+--
+-- This property ensures that @toList@ is deterministic and preserves the order
+-- of values in the pattern structure.
+--
+-- **Property: All values processed**
+--
+-- For any pattern @p :: Pattern a@, the number of values in @toList p@ equals the
+-- total number of values in the pattern structure (pattern's value plus all element
+-- values at all nesting levels):
+--
+-- @
+-- length (toList p) = countValues p
+-- @
+--
+-- where @countValues@ manually counts all values in the pattern structure.
+--
+-- These laws and properties are verified through property-based testing to ensure
+-- mathematical correctness for all pattern structures (atomic, with elements, nested).
 --
 -- === Examples
 --
