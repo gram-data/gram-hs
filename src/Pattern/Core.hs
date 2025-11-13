@@ -114,6 +114,15 @@
 -- conversions essential for pattern manipulation. See the Functor instance documentation
 -- below for details on structure preservation and functor laws.
 --
+-- The Pattern type has a Foldable instance that enables value aggregation over pattern
+-- structures. This supports operations like summing values, concatenating strings, counting
+-- elements, and computing statistics without manually traversing the pattern tree. The instance
+-- provides @foldr@ for right-associative folding, @foldl@ for left-associative folding,
+-- @foldMap@ for monoid-based aggregation, and @toList@ for extracting all values as a flat list.
+-- The module also provides @flatten@ as an explicit function for extracting all values as a flat
+-- list, equivalent to @toList@. See the Foldable instance documentation below for details on
+-- value aggregation and folding operations.
+--
 -- == Examples
 --
 -- Atomic pattern:
@@ -168,6 +177,8 @@
 -- >>> length (elements manyElements)
 -- 2
 module Pattern.Core where
+
+import Data.Foldable (toList)
 
 -- | A recursive structure representing a decorated sequence pattern.
 --
@@ -467,6 +478,532 @@ instance Show v => Show (Pattern v) where
 --
 instance Functor Pattern where
   fmap f (Pattern v els) = Pattern (f v) (map (fmap f) els)
+
+-- | Foldable instance for Pattern.
+--
+-- Enables folding over all values in a pattern structure, including the pattern's
+-- own value and all element values at all nesting levels. The Foldable instance
+-- provides value aggregation capabilities, allowing developers to compute statistics,
+-- combine values, and perform calculations over pattern structures without manually
+-- traversing the pattern tree.
+--
+-- === Value Aggregation
+--
+-- The Foldable instance processes all values in the pattern structure:
+--
+-- * The pattern's own value is included in folding operations
+-- * All element values are processed recursively
+-- * Values from all nesting levels are included
+--
+-- This enables efficient aggregation operations like summing integers, concatenating
+-- strings, counting elements, or computing custom statistics over pattern values.
+--
+-- === Folding Order
+--
+-- The @foldr@ operation processes values in right-to-left order:
+--
+-- * Element values are processed first (right-to-left through the elements list)
+-- * The pattern's own value is processed last
+--
+-- This order ensures that when building data structures or applying operations that
+-- depend on processing order, the pattern's own value is combined with the already
+-- processed element values.
+--
+-- === Foldable Laws
+--
+-- The Foldable instance satisfies standard foldable laws and properties. These laws
+-- ensure mathematical correctness and predictable behavior for all foldable operations.
+--
+-- **Law 1: toList extracts all values**
+--
+-- For any pattern @p :: Pattern a@, @toList p@ extracts all values from the pattern
+-- structure as a flat list. The pattern's own value and all element values at all
+-- nesting levels are included exactly once:
+--
+-- @
+-- toList (Pattern v els) = v : concatMap toList els
+-- @
+--
+-- This law ensures that @toList@ processes all values in the pattern structure
+-- without duplication or omission.
+--
+-- **Law 2: foldr processes all values**
+--
+-- For any pattern @p :: Pattern a@, function @f :: a -> b -> b@, and initial value @z :: b@,
+-- @foldr f z p@ processes all values in the pattern structure exactly once:
+--
+-- @
+-- foldr f z (Pattern v els) = f v (foldr (\e acc -> foldr f acc e) z els)
+-- @
+--
+-- This law ensures that @foldr@ processes the pattern's own value and all element
+-- values recursively, maintaining right-associative semantics.
+--
+-- **Law 3: foldl processes all values**
+--
+-- For any pattern @p :: Pattern a@, function @f :: b -> a -> b@, and initial value @z :: b@,
+-- @foldl f z p@ processes all values in the pattern structure exactly once:
+--
+-- @
+-- foldl f z (Pattern v els) = foldl (\acc e -> foldl f acc e) (f z v) els
+-- @
+--
+-- This law ensures that @foldl@ processes the pattern's own value first, then all
+-- element values recursively, maintaining left-associative semantics.
+--
+-- **Law 4: foldMap with monoids**
+--
+-- For any pattern @p :: Pattern a@, function @f :: a -> m@ where @m@ is a monoid,
+-- @foldMap f p@ maps all values to monoids and combines them:
+--
+-- @
+-- foldMap f (Pattern v els) = f v <> foldMap (\e -> foldMap f e) els
+-- @
+--
+-- This law ensures that @foldMap@ processes all values and combines them using
+-- monoid operations, enabling efficient aggregation.
+--
+-- **Law 5: Relationship between toList and foldr**
+--
+-- For any pattern @p :: Pattern a@, @toList p@ is equivalent to @foldr (:) [] p@:
+--
+-- @
+-- toList p = foldr (:) [] p
+-- @
+--
+-- This law ensures that @toList@ is correctly derived from @foldr@ and extracts
+-- all values as a flat list.
+--
+-- **Law 6: Commutative operations produce same results**
+--
+-- For any pattern @p :: Pattern a@ and commutative operation @f@, @foldr f z p@
+-- and @foldl f z p@ produce the same result:
+--
+-- @
+-- foldr (+) 0 p = foldl (+) 0 p  -- for commutative operations
+-- @
+--
+-- This law ensures that for commutative operations like addition and multiplication,
+-- both folding directions produce identical results.
+--
+-- **Property: Order preservation**
+--
+-- For any pattern @p :: Pattern a@, multiple calls to @toList p@ produce the same
+-- result in the same order:
+--
+-- @
+-- toList p == toList p  -- always true, order is preserved
+-- @
+--
+-- This property ensures that @toList@ is deterministic and preserves the order
+-- of values in the pattern structure.
+--
+-- **Property: All values processed**
+--
+-- For any pattern @p :: Pattern a@, the number of values in @toList p@ equals the
+-- total number of values in the pattern structure (pattern's value plus all element
+-- values at all nesting levels):
+--
+-- @
+-- length (toList p) = countValues p
+-- @
+--
+-- where @countValues@ manually counts all values in the pattern structure.
+--
+-- These laws and properties are verified through property-based testing to ensure
+-- mathematical correctness for all pattern structures (atomic, with elements, nested).
+--
+-- === Examples
+--
+-- Summing integer values from an atomic pattern:
+--
+-- >>> atom = Pattern { value = 5, elements = [] }
+-- >>> foldr (+) 0 atom
+-- 5
+--
+-- Summing integer values from a pattern with multiple elements:
+--
+-- >>> elem1 = Pattern { value = 10, elements = [] }
+-- >>> elem2 = Pattern { value = 20, elements = [] }
+-- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
+-- >>> foldr (+) 0 pattern
+-- 130
+--
+-- Concatenating string values from a pattern:
+--
+-- >>> elem1 = Pattern { value = "hello", elements = [] }
+-- >>> elem2 = Pattern { value = "world", elements = [] }
+-- >>> pattern = Pattern { value = "greeting", elements = [elem1, elem2] }
+-- >>> foldr (++) "" pattern
+-- "greetinghelloworld"
+--
+-- Summing values from a nested pattern structure:
+--
+-- >>> inner = Pattern { value = 1, elements = [] }
+-- >>> middle = Pattern { value = 2, elements = [inner] }
+-- >>> outer = Pattern { value = 3, elements = [middle] }
+-- >>> pattern = Pattern { value = 4, elements = [outer] }
+-- >>> foldr (+) 0 pattern
+-- 10
+--
+-- Counting all values in a pattern:
+--
+-- >>> elem1 = Pattern { value = "a", elements = [] }
+-- >>> elem2 = Pattern { value = "b", elements = [] }
+-- >>> pattern = Pattern { value = "root", elements = [elem1, elem2] }
+-- >>> foldr (\_ acc -> acc + 1) 0 pattern
+-- 3
+--
+-- === Edge Cases
+--
+-- The Foldable instance handles all pattern structures correctly:
+--
+-- **Atomic patterns** (no elements):
+--
+-- >>> atom = Pattern { value = 42, elements = [] }
+-- >>> foldr (+) 0 atom
+-- 42
+-- >>> toList atom
+-- [42]
+-- >>> foldl (+) 0 atom
+-- 42
+-- >>> getSum (foldMap Sum atom)
+-- 42
+--
+-- **Patterns with empty elements list**:
+--
+-- >>> pattern = Pattern { value = 10, elements = [] }
+-- >>> foldr (+) 0 pattern
+-- 10
+-- >>> toList pattern
+-- [10]
+-- >>> foldl (+) 0 pattern
+-- 10
+--
+-- **Singular patterns** (one element):
+--
+-- >>> elem = Pattern { value = 5, elements = [] }
+-- >>> pattern = Pattern { value = 10, elements = [elem] }
+-- >>> foldr (+) 0 pattern
+-- 15
+-- >>> toList pattern
+-- [10, 5]
+-- >>> foldl (+) 0 pattern
+-- 15
+--
+-- **Patterns with many elements**:
+--
+-- >>> elems = map (\i -> Pattern { value = i, elements = [] }) [1..5]
+-- >>> pattern = Pattern { value = 100, elements = elems }
+-- >>> foldr (+) 0 pattern
+-- 115
+-- >>> length (toList pattern)
+-- 6
+-- >>> head (toList pattern)
+-- 100
+--
+-- **Nested patterns** (multiple levels):
+--
+-- >>> level3 = Pattern { value = 1, elements = [] }
+-- >>> level2 = Pattern { value = 2, elements = [level3] }
+-- >>> level1 = Pattern { value = 3, elements = [level2] }
+-- >>> pattern = Pattern { value = 4, elements = [level1] }
+-- >>> foldr (+) 0 pattern
+-- 10
+-- >>> toList pattern
+-- [4, 3, 2, 1]
+--
+-- **Deep nesting** (3+ levels):
+--
+-- >>> level4 = Pattern { value = 1, elements = [] }
+-- >>> level3 = Pattern { value = 2, elements = [level4] }
+-- >>> level2 = Pattern { value = 3, elements = [level3] }
+-- >>> level1 = Pattern { value = 4, elements = [level2] }
+-- >>> pattern = Pattern { value = 5, elements = [level1] }
+-- >>> foldr (+) 0 pattern
+-- 15
+-- >>> toList pattern
+-- [5, 4, 3, 2, 1]
+--
+-- **Patterns with different value types**:
+--
+-- String values:
+--
+-- >>> elem1 = Pattern { value = "hello", elements = [] }
+-- >>> elem2 = Pattern { value = "world", elements = [] }
+-- >>> pattern = Pattern { value = "greeting", elements = [elem1, elem2] }
+-- >>> foldr (++) "" pattern
+-- "greetinghelloworld"
+-- >>> toList pattern
+-- ["greeting", "hello", "world"]
+--
+-- Integer values:
+--
+-- >>> elem1 = Pattern { value = 10, elements = [] }
+-- >>> elem2 = Pattern { value = 20, elements = [] }
+-- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
+-- >>> foldr (+) 0 pattern
+-- 130
+-- >>> getSum (foldMap Sum pattern)
+-- 130
+--
+-- **Order preservation**:
+--
+-- >>> elem1 = Pattern { value = "first", elements = [] }
+-- >>> elem2 = Pattern { value = "second", elements = [] }
+-- >>> elem3 = Pattern { value = "third", elements = [] }
+-- >>> pattern = Pattern { value = "root", elements = [elem1, elem2, elem3] }
+-- >>> toList pattern
+-- ["root", "first", "second", "third"]
+-- >>> foldr (:) [] pattern
+-- ["root", "first", "second", "third"]
+--
+-- **Nested patterns with varying depths**:
+--
+-- >>> branch1 = Pattern { value = 10, elements = [Pattern { value = 1, elements = [] }] }
+-- >>> branch2 = Pattern { value = 20, elements = [Pattern { value = 2, elements = [Pattern { value = 3, elements = [] }] }] }
+-- >>> branch3 = Pattern { value = 30, elements = [] }
+-- >>> pattern = Pattern { value = 100, elements = [branch1, branch2, branch3] }
+-- >>> foldr (+) 0 pattern
+-- 166
+-- >>> length (toList pattern)
+-- 7
+--
+instance Foldable Pattern where
+  -- | Right-associative fold over pattern values.
+  --
+  -- Processes all values in the pattern structure, including the pattern's own value
+  -- and all element values at all nesting levels. Element values are processed first
+  -- (right-to-left through the elements list), then the pattern's own value is combined
+  -- with the accumulated result.
+  --
+  -- === Processing Order
+  --
+  -- The @foldr@ operation processes values in a specific order:
+  --
+  -- 1. Element values are processed first (right-to-left through the elements list)
+  -- 2. The pattern's own value is processed last (combined with accumulated elements)
+  --
+  -- When building lists with @foldr (:) []@ or using @toList@, this results in the
+  -- pattern's own value appearing first in the list, followed by element values in order.
+  --
+  -- === Examples
+  --
+  -- Atomic pattern:
+  --
+  -- >>> atom = Pattern { value = 5, elements = [] }
+  -- >>> foldr (+) 0 atom
+  -- 5
+  --
+  -- Pattern with multiple elements (order: elements first, then pattern's value):
+  --
+  -- >>> elem1 = Pattern { value = 10, elements = [] }
+  -- >>> elem2 = Pattern { value = 20, elements = [] }
+  -- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
+  -- >>> foldr (+) 0 pattern
+  -- 130
+  --
+  -- Building a list preserves order (pattern's value first, then elements):
+  --
+  -- >>> toList pattern
+  -- [100, 10, 20]
+  --
+  -- Nested pattern structure:
+  --
+  -- >>> inner = Pattern { value = 1, elements = [] }
+  -- >>> middle = Pattern { value = 2, elements = [inner] }
+  -- >>> pattern = Pattern { value = 3, elements = [middle] }
+  -- >>> foldr (+) 0 pattern
+  -- 6
+  --
+  -- Order preservation in nested structures:
+  --
+  -- >>> toList pattern
+  -- [3, 2, 1]
+  --
+  -- === Right-Associativity
+  --
+  -- The @foldr@ operation is right-associative, meaning operations are grouped from
+  -- right to left. For commutative operations like addition, this produces the same
+  -- result as left-associative folding. For non-commutative operations, the order
+  -- matters and is preserved as described above.
+  --
+  -- Example with commutative operation (addition):
+  --
+  -- >>> elem1 = Pattern { value = 10, elements = [] }
+  -- >>> elem2 = Pattern { value = 20, elements = [] }
+  -- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
+  -- >>> foldr (+) 0 pattern
+  -- 130
+  -- >>> foldr (+) 0 (toList pattern)
+  -- 130
+  --
+  -- Example with non-commutative operation (list building):
+  --
+  -- >>> elem1 = Pattern { value = "a", elements = [] }
+  -- >>> elem2 = Pattern { value = "b", elements = [] }
+  -- >>> pattern = Pattern { value = "root", elements = [elem1, elem2] }
+  -- >>> toList pattern
+  -- ["root", "a", "b"]
+  --
+  foldr f z (Pattern v els) = f v (foldr (\e acc -> foldr f acc e) z els)
+  
+  -- | Left-associative fold over pattern values.
+  --
+  -- Processes all values in the pattern structure, including the pattern's own value
+  -- and all element values at all nesting levels. Values are processed in left-to-right
+  -- order: the pattern's own value is processed first, then element values are processed
+  -- recursively from left to right.
+  --
+  -- === Processing Order
+  --
+  -- The @foldl@ operation processes values in a specific order:
+  --
+  -- 1. The pattern's own value is processed first (combined with initial accumulator)
+  -- 2. Element values are processed recursively from left to right
+  --
+  -- This order ensures that when applying operations that require strict left-to-right
+  -- evaluation, the pattern's own value is combined first, followed by element values
+  -- in their natural order.
+  --
+  -- === Examples
+  --
+  -- Atomic pattern:
+  --
+  -- >>> atom = Pattern { value = 5, elements = [] }
+  -- >>> foldl (+) 0 atom
+  -- 5
+  --
+  -- Pattern with multiple elements (order: pattern's value first, then elements left-to-right):
+  --
+  -- >>> elem1 = Pattern { value = 10, elements = [] }
+  -- >>> elem2 = Pattern { value = 20, elements = [] }
+  -- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
+  -- >>> foldl (+) 0 pattern
+  -- 130
+  --
+  -- Computing running total with left-associative operations:
+  --
+  -- >>> foldl (-) 0 pattern
+  -- -130
+  --
+  -- Nested pattern structure:
+  --
+  -- >>> inner = Pattern { value = 1, elements = [] }
+  -- >>> middle = Pattern { value = 2, elements = [inner] }
+  -- >>> pattern = Pattern { value = 3, elements = [middle] }
+  -- >>> foldl (+) 0 pattern
+  -- 6
+  --
+  -- === Left-Associativity
+  --
+  -- The @foldl@ operation is left-associative, meaning operations are grouped from
+  -- left to right. For commutative operations like addition, this produces the same
+  -- result as right-associative folding. For non-commutative operations, the order
+  -- matters and is preserved as described above.
+  --
+  -- Example with commutative operation (addition):
+  --
+  -- >>> elem1 = Pattern { value = 10, elements = [] }
+  -- >>> elem2 = Pattern { value = 20, elements = [] }
+  -- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
+  -- >>> foldl (+) 0 pattern
+  -- 130
+  -- >>> foldl (+) 0 (toList pattern)
+  -- 130
+  --
+  -- Example with non-commutative operation (subtraction):
+  --
+  -- >>> elem1 = Pattern { value = 5, elements = [] }
+  -- >>> elem2 = Pattern { value = 3, elements = [] }
+  -- >>> pattern = Pattern { value = 10, elements = [elem1, elem2] }
+  -- >>> foldl (-) 0 pattern
+  -- -18
+  --
+  foldl f z (Pattern v els) = Prelude.foldl (\acc e -> foldl f acc e) (f z v) els
+  
+  -- | Map values to monoids and combine them efficiently.
+  --
+  -- Maps each value in the pattern structure to a monoid and combines them
+  -- using monoid operations. This provides a declarative approach for common
+  -- aggregation patterns like summing, concatenating, or counting without
+  -- explicitly writing fold functions.
+  --
+  -- The @foldMap@ operation processes all values in the pattern structure,
+  -- including the pattern's own value and all element values at all nesting
+  -- levels. Values are mapped to monoids and combined using the monoid's
+  -- @mappend@ operation (or @<>@).
+  --
+  -- === Examples
+  --
+  -- Summing integer values with Sum monoid:
+  --
+  -- >>> elem1 = Pattern { value = 10, elements = [] }
+  -- >>> elem2 = Pattern { value = 20, elements = [] }
+  -- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
+  -- >>> getSum (foldMap Sum pattern)
+  -- 130
+  --
+  -- Concatenating string values with list monoid:
+  --
+  -- >>> elem1 = Pattern { value = "hello", elements = [] }
+  -- >>> elem2 = Pattern { value = "world", elements = [] }
+  -- >>> pattern = Pattern { value = "greeting", elements = [elem1, elem2] }
+  -- >>> foldMap (: []) pattern
+  -- ["greeting", "hello", "world"]
+  --
+  -- Logical AND with All monoid:
+  --
+  -- >>> elem1 = Pattern { value = True, elements = [] }
+  -- >>> elem2 = Pattern { value = True, elements = [] }
+  -- >>> pattern = Pattern { value = True, elements = [elem1, elem2] }
+  -- >>> getAll (foldMap All pattern)
+  -- True
+  --
+  -- Nested pattern structure:
+  --
+  -- >>> inner = Pattern { value = 1, elements = [] }
+  -- >>> middle = Pattern { value = 2, elements = [inner] }
+  -- >>> pattern = Pattern { value = 3, elements = [middle] }
+  -- >>> getSum (foldMap Sum pattern)
+  -- 6
+  --
+  -- === Monoid Operations
+  --
+  -- The @foldMap@ operation uses monoid operations to combine mapped values:
+  --
+  -- * @Sum@ monoid: Addition for numeric values
+  -- * @Product@ monoid: Multiplication for numeric values
+  -- * @All@ monoid: Logical AND for boolean values
+  -- * @Any@ monoid: Logical OR for boolean values
+  -- * List monoid: Concatenation for lists
+  -- * Custom monoids: Any type with a Monoid instance
+  --
+  -- === Efficiency
+  --
+  -- The @foldMap@ operation is implemented efficiently using the pattern's
+  -- @foldr@ implementation. For monoids that support efficient combination,
+  -- this provides optimal performance for aggregation operations.
+  --
+  -- Example with Sum monoid (efficient):
+  --
+  -- >>> getSum (foldMap Sum (Pattern { value = 5, elements = [] }))
+  -- 5
+  --
+  -- Example with list monoid (efficient concatenation):
+  --
+  -- >>> foldMap (: []) (Pattern { value = "test", elements = [] })
+  -- ["test"]
+  --
+  -- Note: @foldMap@ is automatically derived from @foldr@ and works correctly
+  -- for all pattern structures. The default implementation processes all values
+  -- in the pattern structure, including the pattern's own value and all element
+  -- values at all nesting levels.
+  
+  -- Note: @toList@ is automatically derived from @foldr@ and extracts all values
+  -- as a flat list. The pattern's own value and all element values at all
+  -- nesting levels are included in the result.
+
 -- | Create an atomic pattern (pattern with no elements) from a value.
 --
 -- This function provides a convenient way to create atomic patterns without
@@ -613,3 +1150,187 @@ patternWith v ps = Pattern { value = v, elements = ps }
 -- @
 fromList :: v -> [v] -> Pattern v
 fromList decoration values = patternWith decoration (map pattern values)
+
+-- | Extract a pattern as a tuple preserving its structure.
+--
+-- Returns a tuple @(v, [Pattern v])@ where the first element is the pattern's
+-- value and the second element is the list of element patterns. This function
+-- preserves the pattern's structure by keeping elements as Pattern values
+-- rather than flattening them.
+--
+-- The tuple representation directly reflects the Pattern's structure:
+-- the value (decoration) and the list of pattern elements. This enables
+-- structure-preserving operations and makes the pattern's composition explicit.
+--
+-- === Examples
+--
+-- Atomic pattern (no elements):
+--
+-- >>> atom = Pattern { value = "test", elements = [] }
+-- >>> toTuple atom
+-- ("test", [])
+--
+-- Pattern with multiple elements:
+--
+-- >>> elem1 = Pattern { value = "a", elements = [] }
+-- >>> elem2 = Pattern { value = "b", elements = [] }
+-- >>> pattern = Pattern { value = "root", elements = [elem1, elem2] }
+-- >>> toTuple pattern
+-- ("root", [Pattern {value = "a", elements = []},Pattern {value = "b", elements = []}])
+--
+-- Nested pattern structure:
+--
+-- >>> inner = Pattern { value = "inner", elements = [] }
+-- >>> middle = Pattern { value = "middle", elements = [inner] }
+-- >>> pattern = Pattern { value = "root", elements = [middle] }
+-- >>> toTuple pattern
+-- ("root", [Pattern {value = "middle", elements = [Pattern {value = "inner", elements = []}]}])
+--
+-- Pattern with integer values:
+--
+-- >>> elem1 = Pattern { value = 10, elements = [] }
+-- >>> elem2 = Pattern { value = 20, elements = [] }
+-- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
+-- >>> toTuple pattern
+-- (100, [Pattern {value = 10, elements = []},Pattern {value = 20, elements = []}])
+--
+-- === Structure Preservation
+--
+-- The @toTuple@ function preserves the pattern's structure:
+--
+-- * Elements remain as Pattern values (not flattened to their values)
+-- * Nested structures are preserved in the elements list
+-- * The pattern's value and elements are accessible separately
+--
+-- This is different from @toList@ which flattens all values into a single list.
+-- Use @toTuple@ when you need to work with the pattern's value and elements
+-- separately while maintaining the structural relationship.
+--
+-- === Edge Cases
+--
+-- **Atomic patterns** (no elements):
+--
+-- >>> atom = Pattern { value = "atom", elements = [] }
+-- >>> toTuple atom
+-- ("atom", [])
+--
+-- **Singular patterns** (one element):
+--
+-- >>> elem = Pattern { value = "elem", elements = [] }
+-- >>> pattern = Pattern { value = "singular", elements = [elem] }
+-- >>> toTuple pattern
+-- ("singular", [Pattern {value = "elem", elements = []}])
+--
+-- **Patterns with many elements**:
+--
+-- >>> elems = [Pattern { value = "a", elements = [] }, Pattern { value = "b", elements = [] }, Pattern { value = "c", elements = [] }]
+-- >>> pattern = Pattern { value = "root", elements = elems }
+-- >>> toTuple pattern
+-- ("root", [Pattern {value = "a", elements = []},Pattern {value = "b", elements = []},Pattern {value = "c", elements = []}])
+--
+toTuple :: Pattern v -> (v, [Pattern v])
+toTuple (Pattern v els) = (v, els)
+
+-- | Extract all values from a pattern as a flat list, explicitly flattening all nesting levels.
+--
+-- This function extracts all values from the pattern structure, including the pattern's own value
+-- and all element values at all nesting levels, into a single flat list. The function is equivalent
+-- to @toList@ (standard Foldable behavior) but is provided explicitly for clarity and to make
+-- flattening operations intentional.
+--
+-- The @flatten@ function processes all values in the pattern structure:
+--
+-- * The pattern's own value is included in the result
+-- * All element values are processed recursively
+-- * Values from all nesting levels are included
+-- * The result is always a flat list (no nested lists)
+--
+-- === Relationship to toList
+--
+-- The @flatten@ function is equivalent to @toList@ (standard Foldable behavior):
+--
+-- @
+-- flatten p = toList p
+-- @
+--
+-- Both functions extract all values as a flat list. Use @flatten@ when you want to make the
+-- flattening operation explicit, or use @toList@ for standard Foldable behavior.
+--
+-- === Examples
+--
+-- Atomic pattern:
+--
+-- >>> atom = Pattern { value = "test", elements = [] }
+-- >>> flatten atom
+-- ["test"]
+--
+-- Pattern with multiple elements:
+--
+-- >>> elem1 = Pattern { value = "a", elements = [] }
+-- >>> elem2 = Pattern { value = "b", elements = [] }
+-- >>> pattern = Pattern { value = "root", elements = [elem1, elem2] }
+-- >>> flatten pattern
+-- ["root", "a", "b"]
+--
+-- Nested pattern structure:
+--
+-- >>> inner = Pattern { value = "inner", elements = [] }
+-- >>> middle = Pattern { value = "middle", elements = [inner] }
+-- >>> pattern = Pattern { value = "root", elements = [middle] }
+-- >>> flatten pattern
+-- ["root", "middle", "inner"]
+--
+-- Pattern with integer values:
+--
+-- >>> elem1 = Pattern { value = 10, elements = [] }
+-- >>> elem2 = Pattern { value = 20, elements = [] }
+-- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
+-- >>> flatten pattern
+-- [100, 10, 20]
+--
+-- Using flatten for aggregation:
+--
+-- >>> pattern = Pattern { value = 10, elements = [Pattern { value = 5, elements = [] }, Pattern { value = 3, elements = [] }] }
+-- >>> sum (flatten pattern)
+-- 18
+--
+-- === Edge Cases
+--
+-- **Atomic patterns** (no elements):
+--
+-- >>> atom = Pattern { value = 42, elements = [] }
+-- >>> flatten atom
+-- [42]
+--
+-- **Patterns with empty elements list**:
+--
+-- >>> pattern = Pattern { value = 10, elements = [] }
+-- >>> flatten pattern
+-- [10]
+--
+-- **Singular patterns** (one element):
+--
+-- >>> elem = Pattern { value = 5, elements = [] }
+-- >>> pattern = Pattern { value = 10, elements = [elem] }
+-- >>> flatten pattern
+-- [10, 5]
+--
+-- **Patterns with many elements**:
+--
+-- >>> elems = map (\i -> Pattern { value = i, elements = [] }) [1..5]
+-- >>> pattern = Pattern { value = 100, elements = elems }
+-- >>> flatten pattern
+-- [100, 1, 2, 3, 4, 5]
+--
+-- **Deep nesting** (3+ levels):
+--
+-- >>> level4 = Pattern { value = 1, elements = [] }
+-- >>> level3 = Pattern { value = 2, elements = [level4] }
+-- >>> level2 = Pattern { value = 3, elements = [level3] }
+-- >>> level1 = Pattern { value = 4, elements = [level2] }
+-- >>> pattern = Pattern { value = 5, elements = [level1] }
+-- >>> flatten pattern
+-- [5, 4, 3, 2, 1]
+--
+flatten :: Pattern a -> [a]
+flatten = toList

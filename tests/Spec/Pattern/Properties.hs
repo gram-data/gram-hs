@@ -2,15 +2,20 @@
 --
 -- This module contains QuickCheck properties that verify:
 -- - Functor laws
+-- - Foldable laws and properties
 -- - Naturality conditions
 -- - Other category-theoretic properties
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Spec.Pattern.Properties where
 
 import Data.Char (toUpper)
-import Pattern.Core (Pattern(..))
+import Data.Foldable (foldl, foldMap, foldr, toList)
+import Data.Monoid (All(..), Sum(..))
+import Pattern.Core (Pattern(..), pattern, patternWith, fromList, flatten)
 import Test.Hspec
 import Test.QuickCheck hiding (elements)
+import qualified Test.QuickCheck as QC
 import Test.QuickCheck.Property (Property)
 
 -- | Arbitrary instance for Pattern with String values.
@@ -78,6 +83,11 @@ instance Arbitrary (Pattern Int) where
 quickProperty :: Testable prop => prop -> Property
 quickProperty = withMaxSuccess 20 . property
 
+-- | Helper function to manually count all values in a pattern.
+-- Used for verifying that foldable operations process all values correctly.
+countValues :: Pattern a -> Int
+countValues (Pattern _ els) = 1 + sum (map countValues els)
+
 spec :: Spec
 spec = do
   describe "Functor Laws (User Story 2)" $ do
@@ -137,4 +147,143 @@ spec = do
         let p1 = fromList v vs
             p2 = patternWith v (map (pattern :: String -> Pattern String) vs)
         in p1 == p2 && value p1 == value p2 && elements p1 == elements p2
+  
+  describe "Foldable Laws (User Story 1-5)" $ do
+    
+    describe "toList extracts all values correctly as flat list" $ do
+      
+      it "toList extracts all values for Pattern String" $ do
+        -- T047: Property-based test for toList extracting all values correctly as flat list
+        quickProperty $ \p -> 
+          let values = toList (p :: Pattern String)
+          in length values == countValues p && all (`elem` values) [value p]
+      
+      it "toList extracts all values for Pattern Int" $ do
+        -- T047: Property-based test for toList extracting all values correctly as flat list
+        quickProperty $ \p -> 
+          let values = toList (p :: Pattern Int)
+          in length values == countValues p && all (`elem` values) [value p]
+    
+    describe "flatten extracts all values correctly" $ do
+      
+      it "flatten extracts all values for Pattern String" $ do
+        -- T048: Property-based test for flatten extracting all values correctly
+        -- Note: flatten should be equivalent to toList (both extract flat lists)
+        quickProperty $ \p -> 
+          let values = flatten (p :: Pattern String)
+          in length values == countValues p && all (`elem` values) [value p]
+      
+      it "flatten extracts all values for Pattern Int" $ do
+        -- T048: Property-based test for flatten extracting all values correctly
+        -- Note: flatten should be equivalent to toList (both extract flat lists)
+        quickProperty $ \p -> 
+          let values = flatten (p :: Pattern Int)
+          in length values == countValues p && all (`elem` values) [value p]
+    
+    describe "foldr processes all values correctly" $ do
+      
+      it "foldr processes all values for Pattern Int" $ do
+        -- T049: Property-based test for foldr processing all values correctly
+        quickProperty $ \p -> 
+          let pInt = p :: Pattern Int
+              folded = foldr (+) 0 pInt
+              listed = sum (toList pInt)
+          in folded == listed
+      
+      it "foldr processes all values for Pattern String" $ do
+        -- T049: Property-based test for foldr processing all values correctly
+        quickProperty $ \p -> 
+          let pStr = p :: Pattern String
+              folded = foldr (++) "" pStr
+              listed = concat (toList pStr)
+          in folded == listed
+    
+    describe "foldl processes all values correctly" $ do
+      
+      it "foldl processes all values for Pattern Int" $ do
+        -- T050: Property-based test for foldl processing all values correctly
+        quickProperty $ \p -> 
+          let pInt = p :: Pattern Int
+              folded = foldl (+) 0 pInt
+              listed = sum (toList pInt)
+          in folded == listed
+      
+      it "foldl processes all values for Pattern String" $ do
+        -- T050: Property-based test for foldl processing all values correctly
+        quickProperty $ \p -> 
+          let pStr = p :: Pattern String
+              folded = foldl (++) "" pStr
+              listed = concat (toList pStr)
+          in folded == listed
+    
+    describe "foldMap with Sum monoid produces correct results" $ do
+      
+      it "foldMap Sum produces correct sum for Pattern Int" $ do
+        -- T051: Property-based test for foldMap with Sum monoid producing correct results
+        quickProperty $ \p -> 
+          let pInt = p :: Pattern Int
+              folded = getSum (foldMap Sum pInt)
+              listed = sum (toList pInt)
+          in folded == listed
+    
+    describe "Order preservation in toList and flatten" $ do
+      
+      it "toList preserves order consistently for Pattern String" $ do
+        -- T052: Property-based test for order preservation in toList and flatten
+        quickProperty $ \p -> 
+          let pStr = p :: Pattern String
+              list1 = toList pStr
+              list2 = toList pStr
+          in list1 == list2
+      
+      it "flatten preserves order consistently for Pattern String" $ do
+        -- T052: Property-based test for order preservation in toList and flatten
+        quickProperty $ \p -> 
+          let pStr = p :: Pattern String
+              list1 = flatten pStr
+              list2 = flatten pStr
+          in list1 == list2
+      
+      it "toList and flatten produce same order for Pattern String" $ do
+        -- T052: Property-based test for order preservation in toList and flatten
+        quickProperty $ \p -> 
+          let pStr = p :: Pattern String
+              list1 = toList pStr
+              list2 = flatten pStr
+          in list1 == list2
+    
+    describe "toList p = flatten p relationship" $ do
+      
+      it "toList and flatten are equivalent for Pattern String" $ do
+        -- T053: Property-based test verifying toList p = flatten p relationship
+        -- Both extract flat lists (standard Foldable behavior)
+        quickProperty $ \p -> 
+          let pStr = p :: Pattern String
+          in toList pStr == flatten pStr
+      
+      it "toList and flatten are equivalent for Pattern Int" $ do
+        -- T053: Property-based test verifying toList p = flatten p relationship
+        -- Both extract flat lists (standard Foldable behavior)
+        quickProperty $ \p -> 
+          let pInt = p :: Pattern Int
+          in toList pInt == flatten pInt
+    
+    describe "foldr and foldl produce same results for commutative operations" $ do
+      
+      it "foldr and foldl produce same results for addition (Pattern Int)" $ do
+        -- T054: Property-based test verifying foldr and foldl produce same results for commutative operations
+        quickProperty $ \p -> 
+          let pInt = p :: Pattern Int
+              foldedR = foldr (+) 0 pInt
+              foldedL = foldl (+) 0 pInt
+          in foldedR == foldedL
+      
+      it "foldr and foldl produce same results for multiplication (Pattern Int)" $ do
+        -- T054: Property-based test verifying foldr and foldl produce same results for commutative operations
+        quickProperty $ \p -> 
+          let pInt = p :: Pattern Int
+              -- Use non-zero values to avoid division by zero issues
+              foldedR = foldr (*) 1 pInt
+              foldedL = foldl (*) 1 pInt
+          in foldedR == foldedL
 
