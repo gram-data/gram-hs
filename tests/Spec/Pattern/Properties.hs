@@ -11,6 +11,7 @@ module Spec.Pattern.Properties where
 
 import Data.Char (toUpper)
 import Data.Foldable (foldl, foldMap, foldr, toList)
+import Data.Functor.Identity (Identity(..))
 import Data.Monoid (All(..), Sum(..))
 import Pattern.Core (Pattern(..), pattern, patternWith, fromList, flatten)
 import Test.Hspec
@@ -286,4 +287,46 @@ spec = do
               foldedR = foldr (*) 1 pInt
               foldedL = foldl (*) 1 pInt
           in foldedR == foldedL
+  
+  describe "Traversable Laws (User Story 1)" $ do
+    
+    describe "Identity Law" $ do
+      
+      it "traverse Identity = Identity for Pattern String" $ do
+        -- T030: Property-based test for Identity law (traverse Identity = Identity)
+        quickProperty $ \p -> 
+          let pStr = p :: Pattern String
+              result = traverse Identity pStr
+          in runIdentity result == pStr
+      
+      it "traverse Identity = Identity for Pattern Int" $ do
+        -- T030: Property-based test for Identity law (traverse Identity = Identity)
+        quickProperty $ \p -> 
+          let pInt = p :: Pattern Int
+              result = traverse Identity pInt
+          in runIdentity result == pInt
+    
+    describe "Structure Preservation" $ do
+      
+      it "traverse preserves structure (element count, nesting depth, element order) for Pattern String" $ do
+        -- T031: Property-based test for structure preservation
+        quickProperty $ \p -> 
+          let pStr = p :: Pattern String
+              result = traverse Identity pStr
+              p' = runIdentity result
+              -- Helper to count elements recursively
+              countElems (Pattern _ els) = length els + sum (map countElems els)
+          in length (elements p') == length (elements pStr) 
+             && countElems p' == countElems pStr
+      
+      it "traverse preserves structure (element count, nesting depth, element order) for Pattern Int" $ do
+        -- T031: Property-based test for structure preservation
+        quickProperty $ \p -> 
+          let pInt = p :: Pattern Int
+              result = traverse Identity pInt
+              p' = runIdentity result
+              -- Helper to count elements recursively
+              countElems (Pattern _ els) = length els + sum (map countElems els)
+          in length (elements p') == length (elements pInt) 
+             && countElems p' == countElems pInt
 
