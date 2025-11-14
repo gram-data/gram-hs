@@ -17,7 +17,7 @@ import Data.Monoid (All(..), Any(..), Endo(..), Product(..), Sum(..), mconcat)
 import Data.Semigroup (sconcat, stimes)
 import qualified Data.Set as Set
 import Test.Hspec
-import Pattern.Core (Pattern(..), pattern, patternWith, fromList, toTuple, size, depth, values)
+import Pattern.Core (Pattern(..), pattern, patternWith, fromList, toTuple, size, depth, values, anyValue, allValues)
 import qualified Pattern.Core as PC
 
 -- Custom type for testing
@@ -3992,3 +3992,55 @@ spec = do
           elements p1 `shouldBe` ([] :: [Pattern String])
           elements p2 `shouldBe` ([] :: [Pattern Int])
           elements p3 `shouldBe` ([] :: [Pattern Person])
+    
+    describe "Value Predicate Functions (User Story 1)" $ do
+      
+      describe "anyValue function - unit tests" $ do
+        
+        it "T001: anyValue with atomic pattern containing matching value" $ do
+          let pat = pattern 5
+          anyValue (> 0) pat `shouldBe` True
+          anyValue (> 10) pat `shouldBe` False
+        
+        it "T002: anyValue with nested pattern containing matching value" $ do
+          let pat = patternWith 0 [pattern 1, pattern 2]
+          anyValue (> 0) pat `shouldBe` True
+          anyValue (< 0) pat `shouldBe` False
+        
+        it "T003: anyValue with pattern containing no matching values" $ do
+          let pat = patternWith 0 [pattern 1, pattern 2]
+          anyValue (< 0) pat `shouldBe` False
+          anyValue (> 10) pat `shouldBe` False
+      
+      describe "allValues function - unit tests" $ do
+        
+        it "T004: allValues with atomic pattern" $ do
+          let pat = pattern 5
+          allValues (> 0) pat `shouldBe` True
+          allValues (> 10) pat `shouldBe` False
+        
+        it "T005: allValues with nested pattern where all values match" $ do
+          let pat = patternWith 1 [pattern 2, pattern 3]
+          allValues (> 0) pat `shouldBe` True
+          allValues (> 1) pat `shouldBe` False
+        
+        it "T006: allValues with pattern where some values don't match" $ do
+          let pat = patternWith 1 [pattern 2, pattern 0]
+          allValues (> 0) pat `shouldBe` False
+          allValues (> 1) pat `shouldBe` False
+        
+        it "T007: allValues with empty pattern (vacuous truth)" $ do
+          let pat = pattern 0
+          -- For atomic pattern, predicate is evaluated on the value
+          allValues (> 0) pat `shouldBe` False
+          allValues (>= 0) pat `shouldBe` True
+        
+        it "T008: anyValue and allValues with deeply nested patterns" $ do
+          let level3 = pattern 1
+          let level2 = patternWith 2 [level3]
+          let level1 = patternWith 3 [level2]
+          let pat = patternWith 4 [level1]
+          anyValue (> 0) pat `shouldBe` True
+          allValues (> 0) pat `shouldBe` True
+          anyValue (> 10) pat `shouldBe` False
+          allValues (> 10) pat `shouldBe` False

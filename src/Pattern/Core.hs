@@ -167,6 +167,8 @@
 -- * @depth@ - Returns the maximum nesting depth of a pattern structure (O(n))
 -- * @values@ - Extracts all values from a pattern structure as a flat list (O(n))
 -- * @value@ - Field accessor for accessing a pattern's decoration value (O(1))
+-- * @anyValue@ - Checks if any value in a pattern satisfies a predicate (O(n))
+-- * @allValues@ - Checks if all values in a pattern satisfy a predicate (O(n))
 --
 -- These query functions enable pattern introspection, validation, and analysis operations.
 -- See individual function documentation for details on usage and performance characteristics.
@@ -3140,3 +3142,161 @@ depth (Pattern _ els) = case els of
 --
 values :: Pattern v -> [v]
 values = toList
+
+-- | Check if any value in a pattern satisfies a predicate.
+--
+-- Returns `True` if at least one value in the pattern (at any nesting level)
+-- satisfies the predicate, `False` otherwise. The function considers all values
+-- extracted from the pattern structure, including the pattern's own value and
+-- all element values recursively.
+--
+-- The @anyValue@ function operates on flattened values extracted via
+-- @Foldable.toList@, treating values independently of structural context.
+-- This enables value-based queries like "does this pattern contain any negative
+-- numbers?" without needing to know the exact structure or values.
+--
+-- === Relationship to Foldable
+--
+-- The @anyValue@ function leverages the @Foldable@ instance:
+--
+-- @
+-- anyValue p = any p . toList
+-- @
+--
+-- This ensures all values at all nesting levels are considered, consistent
+-- with @Foldable@ semantics where values are extracted and processed
+-- independently.
+--
+-- === Short-Circuit Behavior
+--
+-- The @anyValue@ function short-circuits on the first match, returning `True`
+-- immediately when a matching value is found. This provides efficient behavior
+-- for patterns where matching values appear early in the traversal.
+--
+-- === Examples
+--
+-- Atomic pattern:
+--
+-- >>> anyValue (> 0) (pattern 5)
+-- True
+-- >>> anyValue (> 10) (pattern 5)
+-- False
+--
+-- Pattern with elements:
+--
+-- >>> pat = patternWith 0 [pattern 1, pattern 2]
+-- >>> anyValue (> 0) pat
+-- True
+-- >>> anyValue (< 0) pat
+-- False
+--
+-- Nested pattern:
+--
+-- >>> pat = patternWith 0 [patternWith 1 [pattern 2]]
+-- >>> anyValue (> 1) pat
+-- True
+-- >>> anyValue (> 10) pat
+-- False
+--
+-- === Performance
+--
+-- The @anyValue@ function completes in O(n) time where n is the total number
+-- of nodes, but may short-circuit earlier if a match is found. For patterns
+-- with up to 1000 nodes, the function should complete in under 10 milliseconds.
+--
+-- === Type Safety
+--
+-- The @anyValue@ function works with patterns of any value type @v@:
+--
+-- >>> anyValue (== "test") (pattern "test" :: Pattern String)
+-- True
+-- >>> anyValue (> 0) (pattern 42 :: Pattern Int)
+-- True
+--
+anyValue :: (v -> Bool) -> Pattern v -> Bool
+anyValue p = any p . toList
+
+-- | Check if all values in a pattern satisfy a predicate.
+--
+-- Returns `True` only if every value in the pattern (at any nesting level)
+-- satisfies the predicate, `False` otherwise. The function considers all values
+-- extracted from the pattern structure, including the pattern's own value and
+-- all element values recursively.
+--
+-- The @allValues@ function operates on flattened values extracted via
+-- @Foldable.toList@, treating values independently of structural context.
+-- This enables value-based queries like "are all values in this pattern valid?"
+-- without needing to know the exact structure or values.
+--
+-- === Relationship to Foldable
+--
+-- The @allValues@ function leverages the @Foldable@ instance:
+--
+-- @
+-- allValues p = all p . toList
+-- @
+--
+-- This ensures all values at all nesting levels are considered, consistent
+-- with @Foldable@ semantics where values are extracted and processed
+-- independently.
+--
+-- === Vacuous Truth
+--
+-- For empty patterns (atomic patterns with no elements), the @allValues@
+-- function evaluates the predicate on the pattern's value. This means:
+--
+-- * If the predicate matches the value: returns `True`
+-- * If the predicate doesn't match the value: returns `False`
+--
+-- Note: This is different from standard vacuous truth semantics for empty
+-- collections, as atomic patterns always have a value to evaluate.
+--
+-- === Examples
+--
+-- Atomic pattern:
+--
+-- >>> allValues (> 0) (pattern 5)
+-- True
+-- >>> allValues (> 10) (pattern 5)
+-- False
+--
+-- Pattern where all values match:
+--
+-- >>> pat = patternWith 1 [pattern 2, pattern 3]
+-- >>> allValues (> 0) pat
+-- True
+-- >>> allValues (> 1) pat
+-- False
+--
+-- Pattern where some values don't match:
+--
+-- >>> pat = patternWith 1 [pattern 2, pattern 0]
+-- >>> allValues (> 0) pat
+-- False
+--
+-- Nested pattern:
+--
+-- >>> pat = patternWith 1 [patternWith 2 [pattern 3]]
+-- >>> allValues (> 0) pat
+-- True
+-- >>> allValues (> 2) pat
+-- False
+--
+-- === Performance
+--
+-- The @allValues@ function completes in O(n) time where n is the total number
+-- of nodes, as it must check all values to verify the predicate holds for
+-- every value. For patterns with up to 1000 nodes, the function should
+-- complete in under 10 milliseconds.
+--
+-- === Type Safety
+--
+-- The @allValues@ function works with patterns of any value type @v@:
+--
+-- >>> allValues (== "test") (pattern "test" :: Pattern String)
+-- True
+-- >>> allValues (> 0) (pattern 42 :: Pattern Int)
+-- True
+--
+allValues :: (v -> Bool) -> Pattern v -> Bool
+allValues p = all p . toList

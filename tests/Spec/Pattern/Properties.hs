@@ -19,7 +19,7 @@ import Data.Monoid (All(..), Product(..), Sum(..))
 import Data.List (nub, sort)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Pattern.Core (Pattern(..), pattern, patternWith, fromList, flatten, size, depth, values, toTuple)
+import Pattern.Core (Pattern(..), pattern, patternWith, fromList, flatten, size, depth, values, toTuple, anyValue, allValues)
 import qualified Pattern.Core as PC
 import Test.Hspec
 import Test.QuickCheck hiding (elements)
@@ -1200,4 +1200,27 @@ spec = do
               functorResult = fmap f p
               applicativeResult = pure f <*> p
           in functorResult == applicativeResult
+  
+  describe "Value Predicate Functions Properties (User Story 1)" $ do
+    
+    describe "anyValue and allValues relationship" $ do
+      
+      it "T009: anyValue p = not (allValues (not . p))" $ do
+        -- Property: anyValue and allValues are complementary for any predicate
+        quickProperty $ \(p :: Pattern Int) (Fun _ pred) -> 
+          let p' = pred :: Int -> Bool
+          in anyValue p' p == not (allValues (not . p') p)
+      
+      it "T010: anyValue (const True) = True" $ do
+        -- Property: anyValue with always-true predicate always returns True
+        quickProperty $ \(p :: Pattern Int) -> 
+          anyValue (const True) p == True
+      
+      it "T011: allValues (const False) = False for non-empty patterns" $ do
+        -- Property: allValues with always-false predicate returns False for non-empty patterns
+        quickProperty $ \(p :: Pattern Int) -> 
+          let isEmpty = null (toList p)
+          in if isEmpty
+             then True  -- Vacuous truth for empty patterns
+             else allValues (const False) p == False
 
