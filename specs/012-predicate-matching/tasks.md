@@ -153,7 +153,7 @@
 - [x] T066 [P] Verify performance targets (1000 nodes, 100 levels depth) for all functions
 - [x] T067 Run full test suite with timeout: `timeout 60 cabal test` to verify all tests pass
 - [x] T068 Run quickstart.md validation to ensure examples work correctly
-- [ ] T069 Git commit: "docs: finalize predicate-based pattern matching feature"
+- [x] T069 Git commit: "docs: finalize predicate-based pattern matching feature"
 
 ---
 
