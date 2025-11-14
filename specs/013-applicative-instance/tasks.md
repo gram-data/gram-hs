@@ -222,21 +222,21 @@
 
 **Purpose**: Final improvements, documentation updates, and validation
 
-- [ ] T065 [P] Update module exports in src/Pattern.hs to re-export Applicative instance
-- [ ] T066 [P] Review and update quickstart.md examples if needed in specs/013-applicative-instance/quickstart.md
-- [ ] T067 [P] Review and update data-model.md if implementation details changed in specs/013-applicative-instance/data-model.md
-- [ ] T068 [P] Review and update contracts/type-signatures.md if API changed in specs/013-applicative-instance/contracts/type-signatures.md
-- [ ] T069 Run full test suite: `timeout 60 cabal test` in project root
-- [ ] T070 Verify all tests pass (unit tests, property-based tests, edge case tests)
-- [ ] T071 Verify code compiles without warnings: `cabal build` in project root
-- [ ] T072 Run Haddock documentation generation: `cabal haddock` in project root
-- [ ] T073 Verify Haddock documentation is complete and accurate
+- [x] T065 [P] Update module exports in src/Pattern.hs to re-export Applicative instance
+- [x] T066 [P] Review and update quickstart.md examples if needed in specs/013-applicative-instance/quickstart.md
+- [x] T067 [P] Review and update data-model.md if implementation details changed in specs/013-applicative-instance/data-model.md
+- [x] T068 [P] Review and update contracts/type-signatures.md if API changed in specs/013-applicative-instance/contracts/type-signatures.md
+- [x] T069 Run full test suite: `timeout 60 cabal test` in project root
+- [x] T070 Verify all tests pass (unit tests, property-based tests, edge case tests)
+- [x] T071 Verify code compiles without warnings: `cabal build` in project root
+- [x] T072 Run Haddock documentation generation: `cabal haddock` in project root
+- [x] T073 Verify Haddock documentation is complete and accurate
 
 **Checkpoint**: All polish tasks complete, documentation updated, all tests passing, code compiles cleanly.
 
 ### Git Commit for Polish
 
-- [ ] T074 Commit polish: `git add -A && git commit -m "docs: polish Applicative instance implementation
+- [x] T074 Commit polish: `git add -A && git commit -m "docs: polish Applicative instance implementation
 
 - Update module exports
 - Review and update documentation
