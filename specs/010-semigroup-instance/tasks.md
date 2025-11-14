@@ -49,23 +49,23 @@
 > 
 > **PERFORMANCE**: Always use timeouts when running tests (`timeout 60 cabal test` or equivalent). Tests should complete in <1 minute total. See Testing Performance Guidelines section below.
 
-- [ ] T001 [P] [US3] Write unit test for combining two atomic patterns in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T002 [P] [US3] Write unit test for combining atomic pattern with pattern having elements in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T003 [P] [US3] Write unit test for combining two patterns with elements in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T004 [P] [US3] Write unit test for combining patterns with different element counts in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T005 [P] [US3] Write unit test for combining patterns with String values (concatenation) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T006 [P] [US3] Write unit test for combining patterns with Sum Int values (addition) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T007 [P] [US3] Write unit test for combining patterns with Product Int values (multiplication) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T008 [P] [US3] Write unit test for element order preservation in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T009 [P] [US3] Write unit test for value combination using value type's Semigroup in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T010 [P] [US3] Write unit test for type constraint: `Semigroup v` requirement in tests/Spec/Pattern/CoreSpec.hs
+- [x] T001 [P] [US3] Write unit test for combining two atomic patterns in tests/Spec/Pattern/CoreSpec.hs
+- [x] T002 [P] [US3] Write unit test for combining atomic pattern with pattern having elements in tests/Spec/Pattern/CoreSpec.hs
+- [x] T003 [P] [US3] Write unit test for combining two patterns with elements in tests/Spec/Pattern/CoreSpec.hs
+- [x] T004 [P] [US3] Write unit test for combining patterns with different element counts in tests/Spec/Pattern/CoreSpec.hs
+- [x] T005 [P] [US3] Write unit test for combining patterns with String values (concatenation) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T006 [P] [US3] Write unit test for combining patterns with Sum Int values (addition) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T007 [P] [US3] Write unit test for combining patterns with Product Int values (multiplication) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T008 [P] [US3] Write unit test for element order preservation in tests/Spec/Pattern/CoreSpec.hs
+- [x] T009 [P] [US3] Write unit test for value combination using value type's Semigroup in tests/Spec/Pattern/CoreSpec.hs
+- [x] T010 [P] [US3] Write unit test for type constraint: `Semigroup v` requirement in tests/Spec/Pattern/CoreSpec.hs
 
 ### Implementation for User Story 3
 
-- [ ] T011 [US3] Implement `Semigroup` instance for `Pattern v` with `<>` operator in src/Pattern/Core.hs
-- [ ] T012 [US3] Add comprehensive Haddock documentation with examples for `Semigroup` instance in src/Pattern/Core.hs
-- [ ] T013 [US3] Verify `Semigroup` instance is exported from Pattern.Core module in src/Pattern/Core.hs
-- [ ] T014 [US3] Verify all tests pass for `Semigroup` instance
+- [x] T011 [US3] Implement `Semigroup` instance for `Pattern v` with `<>` operator in src/Pattern/Core.hs
+- [x] T012 [US3] Add comprehensive Haddock documentation with examples for `Semigroup` instance in src/Pattern/Core.hs
+- [x] T013 [US3] Verify `Semigroup` instance is exported from Pattern.Core module in src/Pattern/Core.hs
+- [x] T014 [US3] Verify all tests pass for `Semigroup` instance
 
 **Checkpoint**: ✅ At this point, User Story 3 should be fully functional and testable independently. `Semigroup` instance works correctly for combining patterns with value combination and element concatenation.
 
@@ -81,20 +81,20 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T015 [P] [US4] Write property-based test for associativity law: `(p1 <> p2) <> p3 = p1 <> (p2 <> p3)` in tests/Spec/Pattern/Properties.hs
-- [ ] T016 [P] [US4] Write property-based test for associativity with different value types (String, Sum Int, Product Int) in tests/Spec/Pattern/Properties.hs
-- [ ] T017 [P] [US4] Write property-based test for element order preservation: `elements (p1 <> p2) = elements p1 ++ elements p2` in tests/Spec/Pattern/Properties.hs
-- [ ] T018 [P] [US4] Write property-based test for value combination: `value (p1 <> p2) = value p1 <> value p2` in tests/Spec/Pattern/Properties.hs
-- [ ] T019 [P] [US4] Write property-based test for structure preservation in tests/Spec/Pattern/Properties.hs
-- [ ] T020 [P] [US4] Write unit test for combining nested patterns (preserving nested structure) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T021 [P] [US4] Write unit test for combining patterns with different nesting depths in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T022 [P] [US4] Write unit test for combining patterns with deeply nested structures (10+ levels) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T023 [P] [US4] Write unit test for combining patterns with many elements (100+ elements) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T015 [P] [US4] Write property-based test for associativity law: `(p1 <> p2) <> p3 = p1 <> (p2 <> p3)` in tests/Spec/Pattern/Properties.hs
+- [x] T016 [P] [US4] Write property-based test for associativity with different value types (String, Sum Int, Product Int) in tests/Spec/Pattern/Properties.hs
+- [x] T017 [P] [US4] Write property-based test for element order preservation: `elements (p1 <> p2) = elements p1 ++ elements p2` in tests/Spec/Pattern/Properties.hs
+- [x] T018 [P] [US4] Write property-based test for value combination: `value (p1 <> p2) = value p1 <> value p2` in tests/Spec/Pattern/Properties.hs
+- [x] T019 [P] [US4] Write property-based test for structure preservation in tests/Spec/Pattern/Properties.hs
+- [x] T020 [P] [US4] Write unit test for combining nested patterns (preserving nested structure) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T021 [P] [US4] Write unit test for combining patterns with different nesting depths in tests/Spec/Pattern/CoreSpec.hs
+- [x] T022 [P] [US4] Write unit test for combining patterns with deeply nested structures (10+ levels) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T023 [P] [US4] Write unit test for combining patterns with many elements (100+ elements) in tests/Spec/Pattern/CoreSpec.hs
 
 ### Implementation for User Story 4
 
-- [ ] T024 [US4] Verify `Semigroup` instance satisfies associativity law (no additional implementation needed, verify existing instance)
-- [ ] T025 [US4] Verify all tests pass for associativity law and edge cases
+- [x] T024 [US4] Verify `Semigroup` instance satisfies associativity law (no additional implementation needed, verify existing instance)
+- [x] T025 [US4] Verify all tests pass for associativity law and edge cases
 
 **Checkpoint**: ✅ At this point, User Stories 3 AND 4 should both work independently. `Semigroup` instance satisfies associativity law and handles all edge cases correctly.
 
@@ -106,17 +106,17 @@
 
 ### Integration Tests
 
-- [ ] T026 [P] Write integration test for `sconcat` with list of patterns in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T027 [P] Write integration test for `stimes` to repeat a pattern in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T028 [P] Write integration test for `Semigroup` instance with pattern constructors (`pattern`, `patternWith`, `fromList`) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T029 [P] Write integration test for `Semigroup` instance with type class instances (`Functor`, `Foldable`, `Traversable`) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T030 [P] Write integration test for combining patterns with non-commutative value type Semigroup in tests/Spec/Pattern/CoreSpec.hs
+- [x] T026 [P] Write integration test for `sconcat` with list of patterns in tests/Spec/Pattern/CoreSpec.hs
+- [x] T027 [P] Write integration test for `stimes` to repeat a pattern in tests/Spec/Pattern/CoreSpec.hs
+- [x] T028 [P] Write integration test for `Semigroup` instance with pattern constructors (`pattern`, `patternWith`, `fromList`) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T029 [P] Write integration test for `Semigroup` instance with type class instances (`Functor`, `Foldable`, `Traversable`) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T030 [P] Write integration test for combining patterns with non-commutative value type Semigroup in tests/Spec/Pattern/CoreSpec.hs
 
 ### Validation & Documentation
 
-- [ ] T031 Review and update module-level documentation in src/Pattern/Core.hs to include `Semigroup` instance
-- [ ] T032 Verify `Semigroup` instance is re-exported from main Pattern module in src/Pattern.hs
-- [ ] T033 Verify all tests pass (run full test suite with timeout)
+- [x] T031 Review and update module-level documentation in src/Pattern/Core.hs to include `Semigroup` instance
+- [x] T032 Verify `Semigroup` instance is re-exported from main Pattern module in src/Pattern.hs
+- [x] T033 Verify all tests pass (run full test suite with timeout)
 
 **Checkpoint**: ✅ At this point, all integration tests pass, documentation is updated, and `Semigroup` instance is fully integrated with the Pattern library.
 
