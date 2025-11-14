@@ -69,7 +69,7 @@
 
 ### Git Commit for User Story 1
 
-- [ ] T021 [US1] Commit User Story 1: `git add -A && git commit -m "feat: implement Applicative instance for Pattern (User Story 1)
+- [x] T021 [US1] Commit User Story 1: `git add -A && git commit -m "feat: implement Applicative instance for Pattern (User Story 1)
 
 - Implement pure function to wrap values in atomic patterns
 - Implement <*> operator with structure-preserving/zip-like semantics
@@ -91,30 +91,30 @@
 > 
 > **PERFORMANCE**: Always use timeouts when running tests (`timeout 60 cabal test` or equivalent). Tests should complete in <1 minute total.
 
-- [ ] T022 [P] [US2] Add property-based test for identity law (`pure id <*> v = v`) in tests/Spec/Pattern/Properties.hs
-- [ ] T023 [P] [US2] Add property-based test for composition law (`pure (.) <*> u <*> v <*> w = u <*> (v <*> w)`) in tests/Spec/Pattern/Properties.hs
-- [ ] T024 [P] [US2] Add property-based test for homomorphism law (`pure f <*> pure x = pure (f x)`) in tests/Spec/Pattern/Properties.hs
-- [ ] T025 [P] [US2] Add property-based test for interchange law (`u <*> pure y = pure ($ y) <*> u`) in tests/Spec/Pattern/Properties.hs
-- [ ] T026 [US2] Add Arbitrary instance for Pattern (a -> b) if needed for function pattern generation in tests/Spec/Pattern/Properties.hs
-- [ ] T027 [US2] Run property-based tests to verify laws: `timeout 60 cabal test` in project root
+- [x] T022 [P] [US2] Add property-based test for identity law (`pure id <*> v = v`) in tests/Spec/Pattern/Properties.hs
+- [x] T023 [P] [US2] Add property-based test for composition law (`pure (.) <*> u <*> v <*> w = u <*> (v <*> w)`) in tests/Spec/Pattern/Properties.hs
+- [x] T024 [P] [US2] Add property-based test for homomorphism law (`pure f <*> pure x = pure (f x)`) in tests/Spec/Pattern/Properties.hs
+- [x] T025 [P] [US2] Add property-based test for interchange law (`u <*> pure y = pure ($ y) <*> u`) in tests/Spec/Pattern/Properties.hs
+- [x] T026 [US2] Add Arbitrary instance for Pattern (a -> b) if needed for function pattern generation in tests/Spec/Pattern/Properties.hs
+- [x] T027 [US2] Run property-based tests to verify laws: `timeout 60 cabal test` in project root
 
 ### Implementation for User Story 2
 
 **Note**: If the implementation from User Story 1 already satisfies the laws, these tests should pass. If not, fix the implementation.
 
-- [ ] T028 [US2] Verify identity law holds for all pattern structures (atomic, with elements, nested)
-- [ ] T029 [US2] Verify composition law holds for all pattern structures
-- [ ] T030 [US2] Verify homomorphism law holds for all pattern structures
-- [ ] T031 [US2] Verify interchange law holds for all pattern structures
-- [ ] T032 [US2] Fix any law violations in src/Pattern/Core.hs if tests fail
-- [ ] T033 [US2] Run all property-based tests: `timeout 60 cabal test` in project root
-- [ ] T034 [US2] Verify all User Story 2 tests pass independently
+- [x] T028 [US2] Verify identity law holds for all pattern structures (atomic, with elements, nested)
+- [x] T029 [US2] Verify composition law holds for all pattern structures
+- [x] T030 [US2] Verify homomorphism law holds for all pattern structures
+- [x] T031 [US2] Verify interchange law holds for all pattern structures
+- [x] T032 [US2] Fix any law violations in src/Pattern/Core.hs if tests fail
+- [x] T033 [US2] Run all property-based tests: `timeout 60 cabal test` in project root
+- [x] T034 [US2] Verify all User Story 2 tests pass independently
 
 **Checkpoint**: At this point, all Applicative laws should be verified through property-based testing. The implementation should satisfy identity, composition, homomorphism, and interchange laws for all pattern structures.
 
 ### Git Commit for User Story 2
 
-- [ ] T035 [US2] Commit User Story 2: `git add -A && git commit -m "test: add property-based tests for Applicative laws (User Story 2)
+- [x] T035 [US2] Commit User Story 2: `git add -A && git commit -m "test: add property-based tests for Applicative laws (User Story 2)
 
 - Add property-based tests for identity law
 - Add property-based tests for composition law
