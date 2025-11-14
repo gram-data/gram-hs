@@ -181,32 +181,32 @@
 > 
 > **PERFORMANCE**: Always use timeouts when running tests (`timeout 60 cabal test` or equivalent). Tests should complete in <1 minute total.
 
-- [ ] T049 [P] [US4] Add unit test for `<*>` with patterns having empty elements lists in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T050 [P] [US4] Add unit test for `<*>` with mismatched element counts (function pattern has fewer elements) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T051 [P] [US4] Add unit test for `<*>` with mismatched element counts (value pattern has fewer elements) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T052 [P] [US4] Add unit test for `<*>` with deeply nested patterns (10+ levels) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T053 [P] [US4] Add unit test for `<*>` with atomic function pattern and pattern with multiple elements in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T054 [P] [US4] Add unit test for `<*>` with pattern with multiple function elements and atomic value pattern in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T055 [P] [US4] Add unit test for `pure` with different value types (strings, integers, custom types) in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T056 [US4] Run edge case tests to verify: `timeout 60 cabal test` in project root
+- [x] T049 [P] [US4] Add unit test for `<*>` with patterns having empty elements lists in tests/Spec/Pattern/CoreSpec.hs
+- [x] T050 [P] [US4] Add unit test for `<*>` with mismatched element counts (function pattern has fewer elements) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T051 [P] [US4] Add unit test for `<*>` with mismatched element counts (value pattern has fewer elements) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T052 [P] [US4] Add unit test for `<*>` with deeply nested patterns (10+ levels) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T053 [P] [US4] Add unit test for `<*>` with atomic function pattern and pattern with multiple elements in tests/Spec/Pattern/CoreSpec.hs
+- [x] T054 [P] [US4] Add unit test for `<*>` with pattern with multiple function elements and atomic value pattern in tests/Spec/Pattern/CoreSpec.hs
+- [x] T055 [P] [US4] Add unit test for `pure` with different value types (strings, integers, custom types) in tests/Spec/Pattern/CoreSpec.hs
+- [x] T056 [US4] Run edge case tests to verify: `timeout 60 cabal test` in project root
 
 ### Implementation for User Story 4
 
 **Note**: The implementation from User Story 1 should already handle these edge cases through zip-like truncation. These tests verify the behavior is correct.
 
-- [ ] T057 [US4] Verify zip-like truncation works correctly for mismatched element counts
-- [ ] T058 [US4] Verify deeply nested patterns work correctly (recursive application at all levels)
-- [ ] T059 [US4] Verify atomic patterns work correctly with patterns having elements
-- [ ] T060 [US4] Fix any edge case handling issues in src/Pattern/Core.hs if tests fail
-- [ ] T061 [US4] Add documentation for edge case behavior (zip-like truncation) in src/Pattern/Core.hs
-- [ ] T062 [US4] Run all edge case tests: `timeout 60 cabal test` in project root
-- [ ] T063 [US4] Verify all User Story 4 tests pass independently
+- [x] T057 [US4] Verify zip-like truncation works correctly for mismatched element counts
+- [x] T058 [US4] Verify deeply nested patterns work correctly (recursive application at all levels)
+- [x] T059 [US4] Verify atomic patterns work correctly with patterns having elements
+- [x] T060 [US4] Fix any edge case handling issues in src/Pattern/Core.hs if tests fail
+- [x] T061 [US4] Add documentation for edge case behavior (zip-like truncation) in src/Pattern/Core.hs
+- [x] T062 [US4] Run all edge case tests: `timeout 60 cabal test` in project root
+- [x] T063 [US4] Verify all User Story 4 tests pass independently
 
 **Checkpoint**: At this point, all edge cases should be handled correctly. Applicative operations should work reliably with empty patterns, mismatched structures, deeply nested patterns, and various value types.
 
 ### Git Commit for User Story 4
 
-- [ ] T064 [US4] Commit User Story 4: `git add -A && git commit -m "test: add edge case tests for Applicative operations (User Story 4)
+- [x] T064 [US4] Commit User Story 4: `git add -A && git commit -m "test: add edge case tests for Applicative operations (User Story 4)
 
 - Add tests for empty elements lists
 - Add tests for mismatched element counts (zip-like truncation)

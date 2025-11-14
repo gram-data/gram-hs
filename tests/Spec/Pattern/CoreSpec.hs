@@ -3913,3 +3913,82 @@ spec = do
               functorResult = fmap f p
               applicativeResult = pure f <*> p
           functorResult `shouldBe` applicativeResult
+    
+    describe "Edge Cases in Applicative Operations (User Story 4)" $ do
+      
+      describe "Empty elements lists" $ do
+        
+        it "T049: <*> with patterns having empty elements lists" $ do
+          let f = pure ((+1) :: Int -> Int)
+              x = pure 5 :: Pattern Int
+              result = f <*> x
+          value result `shouldBe` 6
+          elements result `shouldBe` ([] :: [Pattern Int])
+      
+      describe "Mismatched element counts" $ do
+        
+        it "T050: <*> with mismatched element counts (function pattern has fewer elements)" $ do
+          let fs = patternWith (id :: Int -> Int) [pure (*2)]  -- 1 element
+              xs = patternWith 5 [pure 3, pure 7]              -- 2 elements
+              result = fs <*> xs
+          value result `shouldBe` 5
+          length (elements result) `shouldBe` 1  -- Truncated to minimum
+          value (head (elements result)) `shouldBe` 6
+        
+        it "T051: <*> with mismatched element counts (value pattern has fewer elements)" $ do
+          let fs = patternWith (id :: Int -> Int) [pure (*2), pure (+10)]  -- 2 elements
+              xs = patternWith 5 [pure 3]                                   -- 1 element
+              result = fs <*> xs
+          value result `shouldBe` 5
+          length (elements result) `shouldBe` 1  -- Truncated to minimum
+          value (head (elements result)) `shouldBe` 6
+      
+      describe "Deeply nested patterns" $ do
+        
+        it "T052: <*> with deeply nested patterns (10+ levels)" $ do
+          -- Create deeply nested patterns with matching structures
+          let buildDeepValue n = if n <= 0 
+                                 then pure 1
+                                 else patternWith n [buildDeepValue (n - 1)]
+              buildDeepFunc n = if n <= 0
+                                then pure (id :: Int -> Int)
+                                else patternWith (id :: Int -> Int) [buildDeepFunc (n - 1)]
+              xs = buildDeepValue 10 :: Pattern Int
+              fs = buildDeepFunc 10 :: Pattern (Int -> Int)
+              result = fs <*> xs
+          -- Result should have same structure
+          depth result `shouldBe` 10
+          value result `shouldBe` 10
+      
+      describe "Atomic patterns with multi-element patterns" $ do
+        
+        it "T053: <*> with atomic function pattern and pattern with multiple elements" $ do
+          let f = pure ((+1) :: Int -> Int)
+              x = patternWith 5 [pure 3, pure 7]
+              result = f <*> x
+          value result `shouldBe` 6
+          length (elements result) `shouldBe` 2
+          value (head (elements result)) `shouldBe` 4
+          value (last (elements result)) `shouldBe` 8
+        
+        it "T054: <*> with pattern with multiple function elements and atomic value pattern" $ do
+          let f = patternWith ((+1) :: Int -> Int) [pure (*2), pure (+10)]
+              x = pure 5 :: Pattern Int
+              result = f <*> x
+          value result `shouldBe` 6
+          length (elements result) `shouldBe` 2
+          value (head (elements result)) `shouldBe` 10
+          value (last (elements result)) `shouldBe` 15
+      
+      describe "Different value types" $ do
+        
+        it "T055: pure with different value types (strings, integers, custom types)" $ do
+          let p1 = pure "hello" :: Pattern String
+              p2 = pure 42 :: Pattern Int
+              p3 = pure (Person "Alice" (Just 30)) :: Pattern Person
+          value p1 `shouldBe` "hello"
+          value p2 `shouldBe` 42
+          name (value p3) `shouldBe` "Alice"
+          elements p1 `shouldBe` ([] :: [Pattern String])
+          elements p2 `shouldBe` ([] :: [Pattern Int])
+          elements p3 `shouldBe` ([] :: [Pattern Person])

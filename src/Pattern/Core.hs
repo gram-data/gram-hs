@@ -1363,9 +1363,16 @@ instance Applicative Pattern where
     where
       -- Apply element functions to element values
       -- If one list is empty (atomic pattern), broadcast to all elements of the other
+      -- This handles the case where pure function/value is applied to pattern with elements
       applyElements [] ys = map (pure f <*>) ys  -- pure function broadcast to all value elements
       applyElements ys [] = map (<*> pure x) ys  -- pure value broadcast to all function elements
-      applyElements fs' xs' = zipWith (<*>) fs' xs'  -- zip-like: apply up to minimum length
+      applyElements fs' xs' = zipWith (<*>) fs' xs'  -- zip-like truncation: apply up to minimum length
+      
+      -- Edge case handling:
+      -- * Empty elements lists: Both patterns atomic, result is atomic (handled by root application)
+      -- * Mismatched element counts: Zip-like truncation applies functions to values up to minimum count
+      -- * Deeply nested patterns: Recursive application handles all nesting levels
+      -- * Atomic with elements: Broadcasting handles pure function/value with pattern elements
 
 -- | Foldable instance for Pattern.
 --
