@@ -806,7 +806,7 @@ instance Semigroup v => Semigroup (Pattern v) where
 -- Using mconcat to combine patterns:
 --
 -- >>> mconcat [pattern "a", pattern "b", pattern "c"]
--- Pattern {value = "abc", elements = [Pattern {value = "a", elements = []},Pattern {value = "b", elements = []},Pattern {value = "c", elements = []}]}
+-- Pattern {value = "abc", elements = []}
 --
 -- Using mconcat with empty list:
 --
