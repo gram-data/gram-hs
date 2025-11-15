@@ -215,22 +215,22 @@
 > 
 > **PERFORMANCE**: Always use timeouts when running tests (`timeout 60 cabal test` or equivalent). Tests should complete in <1 minute total.
 
-- [ ] T058 [P] [US5] Add unit test for `depthAt` with atomic pattern in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T059 [P] [US5] Add unit test for `depthAt` with nested pattern structure in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T060 [P] [US5] Add unit test for `sizeAt` with pattern with elements in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T061 [P] [US5] Add unit test for `sizeAt` with nested pattern structure in tests/Spec/Pattern/CoreSpec.hs
-- [ ] T062 [P] [US5] Add unit test for `pathAt` with pattern with elements in tests/Spec/Pattern/CoreSpec.hs (if pathFromRoot helper exists)
-- [ ] T063 [P] [US5] Add unit test for `pathAt` with nested pattern structure in tests/Spec/Pattern/CoreSpec.hs (if pathFromRoot helper exists)
-- [ ] T064 [US5] Run tests to verify they fail: `timeout 60 cabal test` in project root
+- [X] T058 [P] [US5] Add unit test for `depthAt` with atomic pattern in tests/Spec/Pattern/CoreSpec.hs
+- [X] T059 [P] [US5] Add unit test for `depthAt` with nested pattern structure in tests/Spec/Pattern/CoreSpec.hs
+- [X] T060 [P] [US5] Add unit test for `sizeAt` with pattern with elements in tests/Spec/Pattern/CoreSpec.hs
+- [X] T061 [P] [US5] Add unit test for `sizeAt` with nested pattern structure in tests/Spec/Pattern/CoreSpec.hs
+- [ ] T062 [P] [US5] Add unit test for `pathAt` with pattern with elements in tests/Spec/Pattern/CoreSpec.hs (if pathFromRoot helper exists) - SKIPPED: pathFromRoot does not exist
+- [ ] T063 [P] [US5] Add unit test for `pathAt` with nested pattern structure in tests/Spec/Pattern/CoreSpec.hs (if pathFromRoot helper exists) - SKIPPED: pathFromRoot does not exist
+- [X] T064 [US5] Run tests to verify they fail: `timeout 60 cabal test` in project root
 
 ### Implementation for User Story 5
 
-- [ ] T065 [US5] Implement `depthAt :: Pattern v -> Pattern Int` helper function in src/Pattern/Core.hs (uses `extend (\p -> depth p)`)
-- [ ] T066 [US5] Implement `sizeAt :: Pattern v -> Pattern Int` helper function in src/Pattern/Core.hs (uses `extend (\p -> size p)`)
-- [ ] T067 [US5] Implement `pathAt :: Pattern v -> Pattern [Int]` helper function in src/Pattern/Core.hs (uses `extend (\p -> pathFromRoot p)`) if pathFromRoot helper exists
-- [ ] T068 [US5] Add Haddock documentation for helper functions in src/Pattern/Core.hs (explain convenience functions, include examples)
-- [ ] T069 [US5] Run tests to verify implementation: `timeout 60 cabal test` in project root
-- [ ] T070 [US5] Verify all User Story 5 tests pass independently
+- [X] T065 [US5] Implement `depthAt :: Pattern v -> Pattern Int` helper function in src/Pattern/Core.hs (uses `extend (\p -> depth p)`)
+- [X] T066 [US5] Implement `sizeAt :: Pattern v -> Pattern Int` helper function in src/Pattern/Core.hs (uses `extend (\p -> size p)`)
+- [ ] T067 [US5] Implement `pathAt :: Pattern v -> Pattern [Int]` helper function in src/Pattern/Core.hs (uses `extend (\p -> pathFromRoot p)`) if pathFromRoot helper exists - SKIPPED: pathFromRoot does not exist
+- [X] T068 [US5] Add Haddock documentation for helper functions in src/Pattern/Core.hs (explain convenience functions, include examples)
+- [X] T069 [US5] Run tests to verify implementation: `timeout 60 cabal test` in project root
+- [X] T070 [US5] Verify all User Story 5 tests pass independently
 
 **Checkpoint**: At this point, User Story 5 should be fully functional and testable independently. Helper functions should work for all pattern structures, providing convenient access to common context-aware operations.
 

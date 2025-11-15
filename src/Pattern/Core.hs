@@ -3857,3 +3857,81 @@ instance Comonad Pattern where
   -- Pattern {value = 3, elements = [Pattern {value = 1, elements = []}, Pattern {value = 1, elements = []}]}
   extend :: (Pattern v -> w) -> Pattern v -> Pattern w
   extend f = fmap f . duplicate
+
+-- | Compute depth (nesting level) at each position in the pattern structure.
+--
+-- This helper function uses the Comonad instance to compute the depth of the
+-- pattern structure at each position. The depth represents the maximum nesting
+-- level from the current position to the deepest nested pattern.
+--
+-- === Examples
+--
+-- Atomic pattern:
+--
+-- >>> depthAt (pattern 5)
+-- Pattern {value = 0, elements = []}
+--
+-- Pattern with elements:
+--
+-- >>> let p = patternWith "root" [pattern "a", pattern "b"]
+-- >>> depthAt p
+-- Pattern {value = 1, elements = [Pattern {value = 0, elements = []}, Pattern {value = 0, elements = []}]}
+--
+-- Nested pattern:
+--
+-- >>> let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
+-- >>> depthAt p
+-- Pattern {value = 2, elements = [Pattern {value = 1, elements = [Pattern {value = 0, elements = []}]}, Pattern {value = 0, elements = []}]}
+--
+-- === Relationship to Comonad
+--
+-- This function demonstrates the power of the Comonad instance by providing
+-- convenient access to context-aware computations. It is equivalent to:
+--
+-- @
+-- depthAt = extend depth
+-- @
+--
+-- The function uses `extend` to apply the `depth` function at each position,
+-- giving each position access to its full structural context.
+depthAt :: Pattern v -> Pattern Int
+depthAt = extend depth
+
+-- | Compute size (total nodes) of subtree at each position.
+--
+-- This helper function uses the Comonad instance to compute the size of the
+-- pattern structure (total number of nodes) at each position. The size includes
+-- the current node and all nodes in its subtree.
+--
+-- === Examples
+--
+-- Atomic pattern:
+--
+-- >>> sizeAt (pattern 5)
+-- Pattern {value = 1, elements = []}
+--
+-- Pattern with elements:
+--
+-- >>> let p = patternWith "root" [pattern "a", pattern "b"]
+-- >>> sizeAt p
+-- Pattern {value = 3, elements = [Pattern {value = 1, elements = []}, Pattern {value = 1, elements = []}]}
+--
+-- Nested pattern:
+--
+-- >>> let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
+-- >>> sizeAt p
+-- Pattern {value = 4, elements = [Pattern {value = 2, elements = [Pattern {value = 1, elements = []}]}, Pattern {value = 1, elements = []}]}
+--
+-- === Relationship to Comonad
+--
+-- This function demonstrates the power of the Comonad instance by providing
+-- convenient access to context-aware computations. It is equivalent to:
+--
+-- @
+-- sizeAt = extend size
+-- @
+--
+-- The function uses `extend` to apply the `size` function at each position,
+-- giving each position access to its full structural context.
+sizeAt :: Pattern v -> Pattern Int
+sizeAt = extend size

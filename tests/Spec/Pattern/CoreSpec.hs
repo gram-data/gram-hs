@@ -18,7 +18,7 @@ import Data.Semigroup (sconcat, stimes)
 import qualified Data.Set as Set
 import Test.Hspec
 import Control.Comonad (extract, extend, duplicate)
-import Pattern.Core (Pattern(..), pattern, patternWith, fromList, toTuple, size, depth, values, anyValue, allValues, filterPatterns, findPattern, findAllPatterns, matches, contains)
+import Pattern.Core (Pattern(..), pattern, patternWith, fromList, toTuple, size, depth, values, anyValue, allValues, filterPatterns, findPattern, findAllPatterns, matches, contains, depthAt, sizeAt)
 import qualified Pattern.Core as PC
 
 -- Custom type for testing
@@ -4328,3 +4328,34 @@ spec = do
           let result = duplicate deepPat
           extract result `shouldBe` deepPat
           depth result `shouldBe` depth deepPat
+      
+      describe "context-aware helper functions (User Story 5)" $ do
+        
+        it "T058: depthAt with atomic pattern" $ do
+          let p = pattern 5
+          let result = depthAt p
+          extract result `shouldBe` (0 :: Int)
+          elements result `shouldBe` ([] :: [Pattern Int])
+        
+        it "T059: depthAt with nested pattern structure" $ do
+          let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
+          let result = depthAt p
+          extract result `shouldBe` (2 :: Int)  -- Root has depth 2
+          extract (elements result !! 0) `shouldBe` (1 :: Int)  -- "a" has depth 1
+          extract (elements result !! 1) `shouldBe` (0 :: Int)  -- "b" has depth 0
+          extract (elements (elements result !! 0) !! 0) `shouldBe` (0 :: Int)  -- "x" has depth 0
+        
+        it "T060: sizeAt with pattern with elements" $ do
+          let p = patternWith "root" [pattern "a", pattern "b"]
+          let result = sizeAt p
+          extract result `shouldBe` (3 :: Int)  -- Root: 3 nodes (root + a + b)
+          extract (elements result !! 0) `shouldBe` (1 :: Int)  -- "a": 1 node
+          extract (elements result !! 1) `shouldBe` (1 :: Int)  -- "b": 1 node
+        
+        it "T061: sizeAt with nested pattern structure" $ do
+          let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
+          let result = sizeAt p
+          extract result `shouldBe` (4 :: Int)  -- Root: 4 nodes (root + a + x + b)
+          extract (elements result !! 0) `shouldBe` (2 :: Int)  -- "a": 2 nodes (a + x)
+          extract (elements result !! 1) `shouldBe` (1 :: Int)  -- "b": 1 node
+          extract (elements (elements result !! 0) !! 0) `shouldBe` (1 :: Int)  -- "x": 1 node
