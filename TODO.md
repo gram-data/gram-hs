@@ -186,7 +186,7 @@ See [README.md](README.md#development-workflow) for complete workflow details.
 
 **Goal**: Complete basic typeclass coverage.
 
-**Status**: Ord instance complete ✅. Semigroup instance complete ✅. Monoid instance complete ✅. Other instances (Hashable, Applicative) can be evaluated as needed.
+**Status**: Ord instance complete ✅. Semigroup instance complete ✅. Monoid instance complete ✅. Hashable instance complete ✅. Applicative instance complete ✅. All planned typeclass instances complete.
 
 ### 8.3 Semigroup Instance ✅
 - [x] **STOP and REVIEW**: Identify clear use cases for combining patterns
@@ -281,55 +281,91 @@ See [README.md](README.md#development-workflow) for complete workflow details.
 - [x] Write tests: verify consistency with Functor (`fmap f x = pure f <*> x`)
 - [x] Write tests: edge cases (empty patterns, nested patterns, function application)
 
-**Goal**: Enable applicative-style pattern operations, if use cases are clear and semantics are well-defined.
+**Goal**: Enable applicative-style pattern operations, if use cases are clear and semantics are well-defined. ✅ **COMPLETE**
 
-**Status**: ✅ **COMPLETE** - Implemented with structure-preserving/zip-like semantics. All Applicative laws verified. Functor consistency verified. Edge cases handled. See `specs/013-applicative-instance/` for full specification and implementation details.
+**Applicative Instance Added**:
+1. **`Applicative` instance** - Enables applying functions stored in patterns to values stored in patterns using structure-preserving/zip-like semantics
+2. **`pure :: a -> Pattern a`** - Wraps a value in an atomic pattern (pattern with empty elements list)
+3. **`<*> :: Pattern (a -> b) -> Pattern a -> Pattern b`** - Applies pattern of functions to pattern of values using structure-preserving/zip-like semantics (root function to root value, element functions to corresponding element values)
+4. **Structure-preserving semantics** - Functions are applied at matching positions (root to root, element to element), preserving pattern structure
+5. **Zip-like truncation** - When function pattern and value pattern have different element counts, functions are applied to values up to the minimum element count, ignoring extra elements
+6. **Comprehensive tests** - All tests passing (comprehensive test coverage):
+   - Unit tests for `pure` and `<*>` operations (T005-T012)
+   - Property-based tests for all Applicative laws (identity, composition, homomorphism, interchange) (T022-T025)
+   - Property-based tests for Functor consistency (`fmap f x = pure f <*> x`) (T036-T040)
+   - Edge case tests (empty elements, mismatched structures, deep nesting) (T049-T055)
+7. **Complete Haddock documentation** - Module-level and instance-level documentation with examples
+8. **Type constraint** - Requires no additional constraints beyond standard Applicative requirements
+9. **All 74 tasks (T001-T074) completed** across 6 phases (setup, 4 user stories, polish)
+10. **See `specs/013-applicative-instance/`** for full specification and implementation details
 
 ---
 
-## Feature 9: Predicate-Based Pattern Matching
+## Feature 9: Predicate-Based Pattern Matching ✅
 
 ### 9.1 Value Predicate Functions
-- [ ] **STOP and REVIEW**: Identify clear use cases for value-based predicates
-- [ ] Evaluate semantics: should predicates match on values only, or also consider structure?
-- [ ] Consider: how do predicates relate to existing `Eq` and `Ord` instances?
-- [ ] Document use cases before proceeding
-- [ ] If proceeding: implement `anyValue :: (v -> Bool) -> Pattern v -> Bool`
-- [ ] If proceeding: implement `allValues :: (v -> Bool) -> Pattern v -> Bool`
-- [ ] Write tests: verify predicate matching on atomic patterns
-- [ ] Write tests: verify predicate matching on nested patterns
-- [ ] Write tests: edge cases (empty patterns, all match, none match)
+- [x] **STOP and REVIEW**: Identify clear use cases for value-based predicates
+- [x] Evaluate semantics: should predicates match on values only, or also consider structure?
+- [x] Consider: how do predicates relate to existing `Eq` and `Ord` instances?
+- [x] Document use cases before proceeding
+- [x] If proceeding: implement `anyValue :: (v -> Bool) -> Pattern v -> Bool`
+- [x] If proceeding: implement `allValues :: (v -> Bool) -> Pattern v -> Bool`
+- [x] Write tests: verify predicate matching on atomic patterns
+- [x] Write tests: verify predicate matching on nested patterns
+- [x] Write tests: edge cases (empty patterns, all match, none match)
 
-**Goal**: Enable value-based predicate matching for pattern queries.
+**Goal**: Enable value-based predicate matching for pattern queries. ✅ **COMPLETE**
 
 ### 9.2 Pattern Predicate Functions
-- [ ] **STOP and REVIEW**: Identify clear use cases for pattern-based predicates
-- [ ] Evaluate semantics: should predicates match on structure, values, or both?
-- [ ] Consider: how do pattern predicates relate to structural pattern matching?
-- [ ] Document use cases before proceeding
-- [ ] If proceeding: implement `filterPatterns :: (Pattern v -> Bool) -> Pattern v -> [Pattern v]`
-- [ ] If proceeding: implement `findPattern :: (Pattern v -> Bool) -> Pattern v -> Maybe (Pattern v)`
-- [ ] If proceeding: implement `findAllPatterns :: (Pattern v -> Bool) -> Pattern v -> [Pattern v]`
-- [ ] Write tests: verify pattern matching on various structures
-- [ ] Write tests: verify matching includes root pattern and all nested subpatterns
-- [ ] Write tests: edge cases (no matches, all match, deeply nested)
+- [x] **STOP and REVIEW**: Identify clear use cases for pattern-based predicates
+- [x] Evaluate semantics: should predicates match on structure, values, or both?
+- [x] Consider: how do pattern predicates relate to structural pattern matching?
+- [x] Document use cases before proceeding
+- [x] If proceeding: implement `filterPatterns :: (Pattern v -> Bool) -> Pattern v -> [Pattern v]`
+- [x] If proceeding: implement `findPattern :: (Pattern v -> Bool) -> Pattern v -> Maybe (Pattern v)`
+- [x] If proceeding: implement `findAllPatterns :: (Pattern v -> Bool) -> Pattern v -> [Pattern v]`
+- [x] Write tests: verify pattern matching on various structures
+- [x] Write tests: verify matching includes root pattern and all nested subpatterns
+- [x] Write tests: edge cases (no matches, all match, deeply nested)
 
-**Goal**: Enable pattern-based predicate matching for finding subpatterns.
+**Goal**: Enable pattern-based predicate matching for finding subpatterns. ✅ **COMPLETE**
 
 ### 9.3 Structural Pattern Matching
-- [ ] **STOP and REVIEW**: Identify clear use cases for structural pattern matching
-- [ ] Evaluate semantics: should matching be exact structure, or allow partial matching?
-- [ ] Consider: how does structural matching relate to `Eq` instance?
-- [ ] Document use cases before proceeding
-- [ ] If proceeding: implement `matches :: Pattern v -> Pattern v -> Bool` (structural matching)
-- [ ] If proceeding: implement `contains :: Pattern v -> Pattern v -> Bool` (subpattern containment)
-- [ ] Write tests: verify structural matching semantics
-- [ ] Write tests: verify subpattern containment detection
-- [ ] Write tests: edge cases (empty patterns, self-matching, nested matching)
+- [x] **STOP and REVIEW**: Identify clear use cases for structural pattern matching
+- [x] Evaluate semantics: should matching be exact structure, or allow partial matching?
+- [x] Consider: how does structural matching relate to `Eq` instance?
+- [x] Document use cases before proceeding
+- [x] If proceeding: implement `matches :: Pattern v -> Pattern v -> Bool` (structural matching)
+- [x] If proceeding: implement `contains :: Pattern v -> Pattern v -> Bool` (subpattern containment)
+- [x] Write tests: verify structural matching semantics
+- [x] Write tests: verify subpattern containment detection
+- [x] Write tests: edge cases (empty patterns, self-matching, nested matching)
 
-**Goal**: Enable structural pattern matching beyond exact equality.
+**Goal**: Enable structural pattern matching beyond exact equality. ✅ **COMPLETE**
 
 **Note**: Predicate-based matching extends beyond `Eq` to support flexible querying and filtering of patterns based on value properties or structural characteristics.
+
+**Predicate-Based Pattern Matching Added**:
+1. **Value Predicate Functions** - Operate on flattened values extracted via `Foldable.toList`:
+   - **`anyValue :: (v -> Bool) -> Pattern v -> Bool`** - Checks if any value in a pattern satisfies a predicate (O(n))
+   - **`allValues :: (v -> Bool) -> Pattern v -> Bool`** - Checks if all values in a pattern satisfy a predicate (O(n))
+2. **Pattern Predicate Functions** - Operate on pattern structures (including element sequences):
+   - **`filterPatterns :: (Pattern v -> Bool) -> Pattern v -> [Pattern v]`** - Filters all subpatterns (including root) matching a pattern predicate (O(n))
+   - **`findPattern :: (Pattern v -> Bool) -> Pattern v -> Maybe (Pattern v)`** - Finds the first subpattern (including root) matching a pattern predicate (O(n))
+   - **`findAllPatterns :: (Pattern v -> Bool) -> Pattern v -> [Pattern v]`** - Finds all subpatterns (including root) matching a pattern predicate (O(n), equivalent to `filterPatterns`)
+3. **Structural Pattern Matching Functions** - Perform structural pattern matching:
+   - **`matches :: (Eq v) => Pattern v -> Pattern v -> Bool`** - Checks if two patterns match structurally (O(n), equivalent to `==`)
+   - **`contains :: (Eq v) => Pattern v -> Pattern v -> Bool`** - Checks if a pattern contains a subpattern (O(n))
+4. **Key Distinction** - Value predicates operate on flattened values (all values at all nesting levels), while pattern predicates operate on pattern structures and can match on element sequences, repetition patterns, and structural arrangements
+5. **Comprehensive tests** - All tests passing (comprehensive test coverage):
+   - Unit tests for all functions (T001-T050)
+   - Property-based tests for predicate relationships and structural matching properties (T009-T011, T029-T031, T051-T054)
+   - Integration tests with existing Pattern operations and typeclass instances (T063-T064)
+   - Edge case tests (100+ nesting levels, 1000+ nodes) (T065)
+6. **Complete Haddock documentation** - Module-level and function-level documentation with examples
+7. **Type constraints** - Value predicates require no constraints; structural matching requires `Eq v`
+8. **All 69 tasks (T001-T069) completed** across 4 phases (3 user stories + polish)
+9. **See `specs/012-predicate-matching/`** for full specification and implementation details
 
 ---
 
@@ -458,7 +494,7 @@ See [README.md](README.md#development-workflow) for complete workflow details.
 
 ## Current Status
 
-**Current Phase**: Phase 8.2 (Other Instances Evaluation) - Semigroup complete ✅, Monoid complete ✅, Hashable complete ✅, evaluating remaining candidates (8.6)
+**Current Phase**: Phase 8.2 (Other Instances Evaluation) - Semigroup complete ✅, Monoid complete ✅, Hashable complete ✅, Applicative complete ✅. All planned typeclass instances complete.
 
 **Completed**:
 - ✅ Phase 1: Core Pattern type fully implemented with comprehensive tests (25 test cases)
@@ -559,13 +595,33 @@ See [README.md](README.md#development-workflow) for complete workflow details.
   - Complete Haddock documentation with examples
   - Module-level documentation updated
   - All 50 tasks (T001-T050) completed across 5 phases (MVP, verification, integration, polish)
+- ✅ Phase 8.6: Applicative Instance implemented with comprehensive tests:
+  - `Applicative` instance for `Pattern` with `pure` and `<*>` operations
+  - Structure-preserving/zip-like semantics for applying functions to values
+  - Property-based tests for all Applicative laws (identity, composition, homomorphism, interchange)
+  - Property-based tests for Functor consistency (`fmap f x = pure f <*> x`)
+  - Edge case tests (empty elements, mismatched structures, deep nesting)
+  - All tests passing (comprehensive test coverage)
+  - Complete Haddock documentation with examples
+  - All 74 tasks (T001-T074) completed across 6 phases (setup, 4 user stories, polish)
+  - See `specs/013-applicative-instance/` for full specification and implementation details
+- ✅ Phase 9: Predicate-Based Pattern Matching implemented with comprehensive tests:
+  - Value predicate functions (`anyValue`, `allValues`) operating on flattened values via `Foldable.toList`
+  - Pattern predicate functions (`filterPatterns`, `findPattern`, `findAllPatterns`) operating on pattern structures
+  - Structural matching functions (`matches`, `contains`) for pattern comparison and containment
+  - Key distinction: value predicates operate on flattened values, pattern predicates operate on structures
+  - Property-based tests for predicate relationships and structural matching properties
+  - Integration tests with existing Pattern operations and typeclass instances
+  - Edge case tests (100+ nesting levels, 1000+ nodes)
+  - All tests passing (comprehensive test coverage)
+  - Complete Haddock documentation with examples
+  - All 69 tasks (T001-T069) completed across 4 phases (3 user stories + polish)
+  - See `specs/012-predicate-matching/` for full specification and implementation details
 
 **Next Steps**: 
-1. Feature 8.6 (Applicative Instance) - ✅ COMPLETE
-2. Feature 9 (Predicate-Based Pattern Matching) - identify use cases and design semantics before proceeding
-3. Feature 10 (Comonad Instance) - identify use cases and design semantics before proceeding
-4. Feature 11 (Graph Views) or Feature 12 (Pattern Morphisms) if needed
-5. Feature 13 (Integration and Polish)
+1. Feature 10 (Comonad Instance) - identify use cases and design semantics before proceeding
+2. Feature 11 (Graph Views) or Feature 12 (Pattern Morphisms) if needed
+3. Feature 13 (Integration and Polish)
 
 ---
 
