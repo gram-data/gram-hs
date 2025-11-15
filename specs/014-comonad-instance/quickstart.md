@@ -85,7 +85,7 @@ let p = patternWith "root" [pattern "a", pattern "b"]
 let depthFunc p = depth p
     p = patternWith "root" [pattern "a", pattern "b"]
     depths = extend depthFunc p
--- depths = Pattern {value = 0, elements = [Pattern {value = 1, elements = []}, Pattern {value = 1, elements = []}]}
+-- depths = Pattern {value = 1, elements = [Pattern {value = 0, elements = []}, Pattern {value = 0, elements = []}]}
 
 -- Compute size at each position
 let sizeFunc p = size p
@@ -151,10 +151,10 @@ let depthFunc p = depth p
         ]
     depths = extend depthFunc p
 -- depths = Pattern {
---   value = 0,
+--   value = 2,
 --   elements = [
---     Pattern {value = 1, elements = [Pattern {value = 2, elements = []}]},
---     Pattern {value = 1, elements = []}
+--     Pattern {value = 1, elements = [Pattern {value = 0, elements = []}]},
+--     Pattern {value = 0, elements = []}
 --   ]
 -- }
 ```
@@ -171,7 +171,7 @@ If helper functions are implemented, they provide convenient access to common co
 -- Compute depth at each position
 let p = patternWith "root" [pattern "a", pattern "b"]
     depths = depthAt p
--- depths = Pattern {value = 0, elements = [Pattern {value = 1, elements = []}, Pattern {value = 1, elements = []}]}
+-- depths = Pattern {value = 1, elements = [Pattern {value = 0, elements = []}, Pattern {value = 0, elements = []}]}
 
 -- Compute size at each position
 let p = patternWith "root" [pattern "a", pattern "b"]
@@ -242,7 +242,7 @@ let p = patternWith "root" [pattern "a", pattern "b"]
 -- Comonad: Compute depth at each position
 let p = patternWith "root" [pattern "a", pattern "b"]
     depths = extend depth p
--- depths = Pattern {value = 0, elements = [Pattern {value = 1, elements = []}, Pattern {value = 1, elements = []}]}
+-- depths = Pattern {value = 1, elements = [Pattern {value = 0, elements = []}, Pattern {value = 0, elements = []}]}
 ```
 
 ### Comonad vs Traversable

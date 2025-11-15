@@ -189,7 +189,7 @@ extend :: (Pattern v -> w) -> Pattern v -> Pattern w
 let depthFunc p = depth p
     p = patternWith "root" [pattern "a", pattern "b"]
 in extend depthFunc p
--- Result: Pattern {value = 0, elements = [Pattern {value = 1, elements = []}, Pattern {value = 1, elements = []}]}
+-- Result: Pattern {value = 1, elements = [Pattern {value = 0, elements = []}, Pattern {value = 0, elements = []}]}
 
 -- Compute size at each position
 let sizeFunc p = size p
@@ -229,7 +229,7 @@ in extend customFunc p
 -- >>> let depthFunc p = depth p
 -- >>> let p = patternWith "root" [pattern "a", pattern "b"]
 -- >>> extend depthFunc p
--- Pattern {value = 0, elements = [Pattern {value = 1, elements = []}, Pattern {value = 1, elements = []}]}
+-- Pattern {value = 1, elements = [Pattern {value = 0, elements = []}, Pattern {value = 0, elements = []}]}
 --
 -- Compute size at each position:
 --
@@ -262,11 +262,11 @@ depthAt = extend (\p -> depth p)
 ```haskell
 -- Simple pattern
 depthAt (patternWith "root" [pattern "a", pattern "b"])
--- Result: Pattern {value = 0, elements = [Pattern {value = 1, elements = []}, Pattern {value = 1, elements = []}]}
+-- Result: Pattern {value = 1, elements = [Pattern {value = 0, elements = []}, Pattern {value = 0, elements = []}]}
 
 -- Nested pattern
 depthAt (patternWith "root" [patternWith "a" [pattern "x"]])
--- Result: Pattern {value = 0, elements = [Pattern {value = 1, elements = [Pattern {value = 2, elements = []}]}]}
+-- Result: Pattern {value = 2, elements = [Pattern {value = 1, elements = [Pattern {value = 0, elements = []}]}]}
 ```
 
 ---
