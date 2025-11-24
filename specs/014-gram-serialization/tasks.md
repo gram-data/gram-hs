@@ -145,19 +145,19 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T054 [US3] Examine tree-sitter-gram repository structure to locate test corpus files
-- [ ] T055 [US3] Copy or integrate tree-sitter-gram test corpus files to libs/gram/test-data/tree-sitter-gram-corpus/
-- [ ] T056 [P] [US3] Create test corpus loading function in libs/gram/tests/Spec/Gram/CorpusSpec.hs
-- [ ] T057 [P] [US3] Create test for parsing all corpus files in libs/gram/tests/Spec/Gram/CorpusSpec.hs
-- [ ] T058 [P] [US3] Create test for round-trip conversion (serialize then parse) for all corpus files in libs/gram/tests/Spec/Gram/CorpusSpec.hs
-- [ ] T059 [US3] Create test for comment handling (line comments, end-of-line comments) in libs/gram/tests/Spec/Gram/CorpusSpec.hs
-- [ ] T060 [US3] Create test for all value types round-trip conversion in libs/gram/tests/Spec/Gram/CorpusSpec.hs
-- [ ] T061 [US3] Create test for complex nested pattern structures round-trip conversion in libs/gram/tests/Spec/Gram/CorpusSpec.hs
-- [ ] T062 [US3] Create test for edge cases from corpus (empty patterns, deeply nested structures, large patterns) in libs/gram/tests/Spec/Gram/CorpusSpec.hs
+- [x] T054 [US3] Examine tree-sitter-gram repository structure to locate test corpus files
+- [x] T055 [US3] Copy or integrate tree-sitter-gram test corpus files to libs/gram/test-data/tree-sitter-gram-corpus/
+- [x] T056 [P] [US3] Create test corpus loading function in libs/gram/tests/Spec/Gram/CorpusSpec.hs
+- [x] T057 [P] [US3] Create test for parsing all corpus files in libs/gram/tests/Spec/Gram/CorpusSpec.hs
+- [x] T058 [P] [US3] Create test for round-trip conversion (serialize then parse) for all corpus files in libs/gram/tests/Spec/Gram/CorpusSpec.hs
+- [x] T059 [US3] Create test for comment handling (line comments, end-of-line comments) in libs/gram/tests/Spec/Gram/CorpusSpec.hs
+- [x] T060 [US3] Create test for all value types round-trip conversion in libs/gram/tests/Spec/Gram/CorpusSpec.hs
+- [x] T061 [US3] Create test for complex nested pattern structures round-trip conversion in libs/gram/tests/Spec/Gram/CorpusSpec.hs
+- [x] T062 [US3] Create test for edge cases from corpus (empty patterns, deeply nested structures, large patterns) in libs/gram/tests/Spec/Gram/CorpusSpec.hs
 
 ### Implementation for User Story 3
 
-- [ ] T063 [US3] Implement corpus file loading and test execution logic in libs/gram/tests/Spec/Gram/CorpusSpec.hs
+- [x] T063 [US3] Implement corpus file loading and test execution logic in libs/gram/tests/Spec/Gram/CorpusSpec.hs
 - [ ] T064 [US3] Verify all corpus files parse successfully (fix any parsing issues)
 - [ ] T065 [US3] Verify all corpus files pass round-trip conversion (fix any serialization/parsing mismatches)
 - [ ] T066 [US3] Verify comment handling works correctly for all corpus files

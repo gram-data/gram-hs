@@ -59,16 +59,19 @@ convertError :: ParseErrorBundle String Void -> ParseError
 convertError bundle = ParseError (errorBundlePretty bundle)
 
 -- | Strip comments from gram notation string.
+-- Handles both line comments (//) and end-of-line comments.
 stripComments :: String -> String
 stripComments = unlines . filter (not . null) . map stripLineComment . lines
   where
     stripLineComment line = case findComment line of
       Nothing -> line
       Just idx -> take idx line
-    findComment s = findComment' s 0
-    findComment' [] _ = Nothing
-    findComment' ('/' : '/' : _) idx = Just idx
-    findComment' (_ : xs) idx = findComment' xs (idx + 1)
+    findComment s = findComment' s 0 False
+    findComment' [] _ _ = Nothing
+    findComment' ('"' : xs) idx inString = findComment' xs (idx + 1) (not inString)
+    findComment' ('\\' : _ : xs) idx inString = findComment' xs (idx + 2) inString  -- Skip escaped char
+    findComment' ('/' : '/' : _) idx False = Just idx  -- Found comment, not in string
+    findComment' (_ : xs) idx inString = findComment' xs (idx + 1) inString
 
 -- | Parse optional whitespace (spaces and tabs only, no newlines).
 optionalSpace :: Parser ()
@@ -414,6 +417,8 @@ parseRelationshipKind =
   try (string "<=" >> return "<=") <|>
   try (string "=>" >> return "=>") <|>
   try (string "<~>" >> return "<~>") <|>
+  try (string "<~~" >> return "<~~") <|>  -- Squiggle arrow left
+  try (string "~~>" >> return "~~>") <|>  -- Squiggle arrow right
   try (string "<~" >> return "<~") <|>
   try (string "~>" >> return "~>") <|>
   try (string "~~" >> return "~~") <|>
@@ -520,29 +525,19 @@ fromGram input = do
     firstPattern <- if rootRecord == Nothing
       then Just <$> parsePattern  -- Pattern is required if no record
       else optional (try parsePattern)  -- Pattern is optional if we have a record, but try to parse it
-    -- Parse additional patterns (only if we have a first pattern and see pattern start)
-    -- For "record followed by node" case: { s : "a" }\n()
-    additionalPatterns <- if firstPattern == Nothing
-      then do
-        -- No first pattern, but check if there's a pattern after the record
-        optionalSpaceWithNewlines
-        nextChar <- lookAhead (optional (satisfy (const True)))
-        case nextChar of
-          Nothing -> return []  -- End of input, no additional patterns
-          Just c -> if c == '(' || c == '[' || isSymbolStart c
-            then do
-              -- There's a pattern after the record, parse it
-              p <- parsePattern
-              -- Try to parse more patterns (many will stop gracefully on failure)
-              rest <- many (try (do
-                optionalSpaceWithNewlines
-                nextChar2 <- lookAhead (satisfy (const True))
-                if nextChar2 == '(' || nextChar2 == '[' || isSymbolStart nextChar2
-                  then parsePattern
-                  else fail "no pattern"))
-              return (p : rest)
-            else return []  -- No pattern start, return empty
-      else return []  -- We have a first pattern, no additional patterns needed for now
+    -- Parse additional patterns on separate lines
+    -- Handle both "record followed by pattern" and "multiple patterns on separate lines"
+    additionalPatterns <- do
+      optionalSpaceWithNewlines
+      -- Try to parse more patterns (many will stop gracefully on failure)
+      many (try (do
+        -- Check if there's a pattern start character
+        nextChar <- lookAhead (satisfy (const True))
+        if nextChar == '(' || nextChar == '[' || isSymbolStart nextChar
+          then do
+            optionalSpaceWithNewlines
+            parsePattern
+          else fail "no pattern"))
     -- Allow trailing whitespace (including newlines) before eof
     optionalSpaceWithNewlines
     eof
