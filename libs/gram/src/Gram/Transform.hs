@@ -44,41 +44,63 @@ transformPattern (CST.Pattern elements) =
 
 transformElement :: CST.PatternElement -> P.Pattern S.Subject
 transformElement (CST.PEPath path) = transformPath path
-transformElement (CST.PESubject subj) = transformSubject subj
+transformElement (CST.PEBracketed b) = transformBracketed b
 
+-- | Transform a path into a Pattern.
+-- 
+-- 1. Single Node: (a) -> Pattern a []
+-- 2. Single Edge: (a)-[r]->(b) -> Pattern r [a, b]
+-- 3. Walk: (a)-[r1]->(b)-[r2]->(c) -> Pattern walk [Pattern r1 [a, b], Pattern r2 [b, c]]
 transformPath :: CST.Path -> P.Pattern S.Subject
-transformPath (CST.Path start segments) = transformPathRecursive start segments
+transformPath (CST.Path startNode segments) =
+  case segments of
+    [] -> transformNode startNode
+    [seg] -> 
+      -- Single Edge case: Return the edge pattern directly
+      -- (a)-[r]->(b) becomes [r | a, b]
+      let left = transformNode startNode
+          right = transformNode (CST.segmentNode seg)
+          rel = transformRelationship (CST.segmentRel seg)
+      in P.Pattern (P.value rel) [left, right]
+    _ -> 
+      -- Walk case (multiple segments): Return a Walk Pattern containing edges
+      -- (a)-[r1]->(b)-[r2]->(c) becomes [walk | [r1 | a, b], [r2 | b, c]]
+      let edges = constructWalkEdges startNode segments
+          -- Use a specific label for Walk container to distinguish it
+          walkSubject = S.Subject (S.Symbol "") (Set.singleton "Gram.Walk") Map.empty
+      in P.Pattern walkSubject edges
 
-transformPathRecursive :: CST.Node -> [CST.PathSegment] -> P.Pattern S.Subject
-transformPathRecursive node [] = transformNode node
-transformPathRecursive leftNode (seg:rest) =
-  let rightPattern = transformPathRecursive (CST.segmentNode seg) rest
-      relPattern = transformRelationship (CST.segmentRel seg)
-      leftPattern = transformNode leftNode
-  in P.Pattern (P.value relPattern) [leftPattern, rightPattern]
-
--- Override transformPath to use recursive version
--- transformPath (CST.Path start segments) = transformPathRecursive start segments
+-- | Construct a list of Edge Patterns from a start node and path segments.
+constructWalkEdges :: CST.Node -> [CST.PathSegment] -> [P.Pattern S.Subject]
+constructWalkEdges _ [] = []
+constructWalkEdges leftNode (seg:rest) =
+  let rightNode = CST.segmentNode seg
+      leftP = transformNode leftNode
+      rightP = transformNode rightNode
+      relP = transformRelationship (CST.segmentRel seg)
+      -- Create self-contained edge: [rel | left, right]
+      edge = P.Pattern (P.value relP) [leftP, rightP]
+  in edge : constructWalkEdges rightNode rest
 
 transformNode :: CST.Node -> P.Pattern S.Subject
 transformNode (CST.Node attrs) =
-  let subj = maybe emptySubject transformAttributes attrs
+  let subj = maybe emptySubject transformSubjectData attrs
   in P.Pattern subj []
 
-transformSubject :: CST.Subject -> P.Pattern S.Subject
-transformSubject (CST.Subject attrs nested) =
-  let subj = maybe emptySubject transformAttributes attrs
+transformBracketed :: CST.Bracketed -> P.Pattern S.Subject
+transformBracketed (CST.Bracketed attrs nested) =
+  let subj = maybe emptySubject transformSubjectData attrs
       nestedPats = map transformElement nested
   in P.Pattern subj nestedPats
 
 transformRelationship :: CST.Relationship -> P.Pattern S.Subject
 transformRelationship (CST.Relationship _ attrs) =
   -- Arrow string is currently ignored in Pattern Subject (as per design)
-  let subj = maybe emptySubject transformAttributes attrs
+  let subj = maybe emptySubject transformSubjectData attrs
   in P.Pattern subj []
 
-transformAttributes :: CST.Attributes -> S.Subject
-transformAttributes (CST.Attributes ident labels props) =
+transformSubjectData :: CST.SubjectData -> S.Subject
+transformSubjectData (CST.SubjectData ident labels props) =
   S.Subject
     (transformIdentifier ident)
     labels

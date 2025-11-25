@@ -9,8 +9,8 @@ module Gram.CST
   , PathSegment(..)
   , Node(..)
   , Relationship(..)
-  , Subject(..)
-  , Attributes(..)
+  , Bracketed(..)
+  , SubjectData(..)
   , Value(..)
   , RangeValue(..)
   , Identifier(..)
@@ -32,8 +32,6 @@ data Gram = Gram
 
 -- | A pattern sequence
 -- pattern: optional(annotations) + commaSep1(pattern_element)
--- For now, annotations are not fully specified in the grammar reference provided,
--- so we omit them or could add them later.
 data Pattern = Pattern
   { patternElements :: [PatternElement]
   } deriving (Show, Eq, Generic)
@@ -42,7 +40,7 @@ data Pattern = Pattern
 -- pattern_element: subject | path
 data PatternElement
   = PEPath Path
-  | PESubject Subject
+  | PEBracketed Bracketed
   deriving (Show, Eq, Generic)
 
 -- | A path structure (node connected by relationships)
@@ -61,7 +59,7 @@ data PathSegment = PathSegment
 -- | A node structure
 -- node: (attributes?)
 data Node = Node
-  { nodeAttributes :: Maybe Attributes
+  { nodeAttributes :: Maybe SubjectData
   } deriving (Show, Eq, Generic)
 
 -- | A relationship structure
@@ -69,21 +67,23 @@ data Node = Node
 -- In CST, we capture the arrow and the optional attributes
 data Relationship = Relationship
   { relArrow :: String        -- The raw arrow string, e.g., "-->", "<==>", "-[...]->"
-  , relAttributes :: Maybe Attributes
+  , relAttributes :: Maybe SubjectData
   } deriving (Show, Eq, Generic)
 
--- | A subject structure
+-- | A bracketed pattern structure
 -- subject: [attributes? | sub_pattern?]
-data Subject = Subject
-  { subjectAttributes :: Maybe Attributes
-  , subjectNested :: [PatternElement] -- Nested patterns after pipe
+-- Renamed from "Subject" to avoid confusion with the internal data type.
+data Bracketed = Bracketed
+  { bracketedAttributes :: Maybe SubjectData
+  , bracketedNested :: [PatternElement] -- Nested patterns after pipe
   } deriving (Show, Eq, Generic)
 
--- | Attributes container
-data Attributes = Attributes
-  { attrIdentifier :: Maybe Identifier
-  , attrLabels :: Set String
-  , attrProperties :: Map String Value
+-- | Subject data container (Identity, Labels, Properties)
+-- Renamed from "Attributes" to align with semantics.
+data SubjectData = SubjectData
+  { dataIdentifier :: Maybe Identifier
+  , dataLabels :: Set String
+  , dataProperties :: Map String Value
   } deriving (Show, Eq, Generic)
 
 -- | Identifiers
@@ -98,7 +98,5 @@ data Identifier
 
 -- | Values (mirroring Subject.Value but local to CST if needed, 
 -- or we can reuse Core types if they are purely data)
--- We will reuse Core.Value for leaf values to avoid redundant definitions,
--- assuming Core.Value is sufficient for CST needs (it seems to be).
 type Value = CoreVal.Value
 type RangeValue = CoreVal.RangeValue

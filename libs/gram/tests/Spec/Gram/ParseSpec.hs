@@ -126,9 +126,13 @@ spec = do
         it "parses two-hop path" $ do
           case fromGram "()-->()-->()" of
             Right p -> do
-              -- The parser now right-associates: () --> (() --> ())
-              -- So top level has 2 elements: left node and the rest of the path
+              -- The parser now maps walks to a flat sequence of Edge Patterns
+              -- (a)->(b)->(c) -> Pattern walk [Pattern r1 [a, b], Pattern r2 [b, c]]
+              -- So top level has 2 elements: edge 1 and edge 2
               length (elements p) `shouldBe` 2
+              -- Verify the structure of the elements (they should be edges)
+              let edges = elements p
+              all (\e -> length (elements e) == 2) edges `shouldBe` True
             Left err -> expectationFailure $ "Parse failed: " ++ show err
       
       describe "value types parsing (from corpus)" $ do

@@ -5,7 +5,7 @@ module Gram.Parse
   , ParseError(..)
   ) where
 
-import Gram.CST (Gram(..), Pattern(..), PatternElement(..), Path(..), PathSegment(..), Node(..), Relationship(..), Subject(..), Attributes(..), Identifier(..), Symbol(..))
+import Gram.CST (Gram(..), Pattern(..), PatternElement(..), Path(..), PathSegment(..), Node(..), Relationship(..), Bracketed(..), SubjectData(..), Identifier(..), Symbol(..))
 import qualified Gram.CST as CST
 import qualified Gram.Transform as Transform
 import qualified Pattern.Core as Core
@@ -289,18 +289,18 @@ parsePropertyRecord = do
 
 -- ... [CST Specific Parsers] ...
 
-parseAttributes :: Parser Attributes
-parseAttributes = do
+parseSubjectData :: Parser SubjectData
+parseSubjectData = do
   nextChar <- lookAhead (satisfy (const True))
   case nextChar of
     '{' -> do
       props <- try parsePropertyRecord
-      return $ Attributes Nothing Set.empty props
+      return $ SubjectData Nothing Set.empty props
     ':' -> do
       lbls <- parseLabels
       optionalSpace
       props <- optional (try parsePropertyRecord)
-      return $ Attributes Nothing lbls (maybe Map.empty id props)
+      return $ SubjectData Nothing lbls (maybe Map.empty id props)
     _ -> do
       ident <- parseIdentifier
       optionalSpace
@@ -316,24 +316,24 @@ parseAttributes = do
       props <- if hasRecord == Just '{'
         then parsePropertyRecord
         else return Map.empty
-      return $ Attributes (Just ident) lbls props
+      return $ SubjectData (Just ident) lbls props
 
 parseNode :: Parser Node
 parseNode = do
   void $ char '('
   optionalSpace
-  attrs <- try (Just <$> parseAttributes) <|> return Nothing
+  data' <- try (Just <$> parseSubjectData) <|> return Nothing
   optionalSpace
   void $ char ')'
-  return $ Node attrs
+  return $ Node data'
 
 parseReference :: Parser PatternElement
 parseReference = do
   ident <- parseIdentifier
   optionalSpace
-  -- Create a Subject CST element for the reference
-  let attrs = Attributes (Just ident) Set.empty Map.empty
-  return $ PESubject (Subject (Just attrs) [])
+  -- Create a Bracketed CST element for the reference
+  let data' = SubjectData (Just ident) Set.empty Map.empty
+  return $ PEBracketed (Bracketed (Just data') [])
 
 parseRelationshipKind :: Parser String
 parseRelationshipKind = 
@@ -357,7 +357,7 @@ parseRelationshipKind =
   string "--"
 
 -- | Parses the arrow part (including potential attributes)
-parseArrow :: Parser (String, Maybe Attributes)
+parseArrow :: Parser (String, Maybe SubjectData)
 parseArrow = 
   try parseInterruptedArrow <|>
   try parseSimpleArrowWithAttributes <|>
@@ -370,12 +370,12 @@ parseArrow =
     parseSimpleArrowWithAttributes = do
       void $ char '['
       optionalSpace
-      attrs <- optional parseAttributes
+      data' <- optional parseSubjectData
       optionalSpace
       void $ char ']'
       optionalSpace
       kind <- parseRelationshipKind
-      return (kind, attrs)
+      return (kind, data')
 
     parseInterruptedArrow = do
       -- Simplified for now, capturing the whole interrupted arrow logic is complex
@@ -391,7 +391,7 @@ parseArrow =
          ]
        void $ char '['
        optionalSpace
-       attrs <- optional parseAttributes
+       data' <- optional parseSubjectData
        optionalSpace
        void $ char ']'
        suffix <- choice
@@ -402,7 +402,7 @@ parseArrow =
          , try (string "=")
          , try (string "~")
          ]
-       return (prefix ++ "..." ++ suffix, attrs)
+       return (prefix ++ "..." ++ suffix, data')
 
 parsePath :: Parser Path
 parsePath = do
@@ -413,20 +413,20 @@ parsePath = do
 
 parsePathSegment :: Parser PathSegment
 parsePathSegment = do
-  (arrow, attrs) <- parseArrow
+  (arrow, data') <- parseArrow
   optionalSpace
   next <- parseNode
   optionalSpace
-  return $ PathSegment (Relationship arrow attrs) next
+  return $ PathSegment (Relationship arrow data') next
 
 parseSubPatternElement :: Parser PatternElement
-parseSubPatternElement = try (PESubject <$> parseSubject) <|> try (PEPath <$> parsePath) <|> try parseReference
+parseSubPatternElement = try (PEBracketed <$> parseBracketed) <|> try (PEPath <$> parsePath) <|> try parseReference
 
-parseSubject :: Parser Subject
-parseSubject = do
+parseBracketed :: Parser Bracketed
+parseBracketed = do
   void $ char '['
   optionalSpace
-  attrs <- optional parseAttributes
+  data' <- optional parseSubjectData
   optionalSpace
   nested <- optional (do
     void $ char '|'
@@ -436,10 +436,10 @@ parseSubject = do
     return elements)
   optionalSpace
   void $ char ']'
-  return $ Subject attrs (maybe [] id nested)
+  return $ Bracketed data' (maybe [] id nested)
 
 parsePatternElement :: Parser PatternElement
-parsePatternElement = try (PESubject <$> parseSubject) <|> (PEPath <$> parsePath)
+parsePatternElement = try (PEBracketed <$> parseBracketed) <|> (PEPath <$> parsePath)
 
 parsePattern :: Parser Pattern
 parsePattern = do
