@@ -56,16 +56,6 @@ jobs:
             cp -R "$doc_dir" "public/$pkg_name"
           done
           
-          # Create a landing page
-          echo '<!DOCTYPE html><html><head><title>Project Documentation</title></head><body><h1>Project Documentation</h1><ul>' > public/index.html
-          for d in public/*; do
-            if [ -d "$d" ]; then
-              pkg=$(basename "$d")
-              echo "<li><a href=\"$pkg/index.html\">$pkg</a></li>" >> public/index.html
-            fi
-          done
-          echo '</ul></body></html>' >> public/index.html
-          
           echo "dir=public" >> $GITHUB_OUTPUT
 
       - name: Setup Pages
