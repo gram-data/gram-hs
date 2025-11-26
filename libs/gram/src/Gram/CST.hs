@@ -68,10 +68,9 @@ data Node = Node
 
 -- | A relationship structure
 -- relationship_pattern
--- In CST, we capture the arrow and the optional annotations and subject
+-- In CST, we capture the arrow and the optional subject
 data Relationship = Relationship
   { relArrow :: String
-  , relAnnotations :: [Annotation]
   , relSubject :: Maybe SubjectData
   } deriving (Show, Eq, Generic)
 

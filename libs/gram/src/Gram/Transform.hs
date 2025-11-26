@@ -96,7 +96,7 @@ transformSubjectPattern (CST.SubjectPattern subjData nested) =
   in P.Pattern subj nestedPats
 
 transformRelationship :: CST.Relationship -> P.Pattern S.Subject
-transformRelationship (CST.Relationship _ _ subjData) =
+transformRelationship (CST.Relationship _ subjData) =
   -- Arrow string is currently ignored in Pattern Subject (as per design)
   let subj = maybe emptySubject transformSubjectData subjData
   in P.Pattern subj []

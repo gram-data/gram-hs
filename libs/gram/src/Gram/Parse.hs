@@ -365,14 +365,14 @@ parseRelationshipKind =
   string "--"
 
 -- | Parses the arrow part (including potential attributes)
-parseArrow :: Parser (String, [Annotation], Maybe SubjectData)
+parseArrow :: Parser (String, Maybe SubjectData)
 parseArrow = 
   try parseInterruptedArrow <|>
   parseSimpleArrow
   where
     parseSimpleArrow = do
       kind <- parseRelationshipKind
-      return (kind, [], Nothing)
+      return (kind, Nothing)
       
     parseInterruptedArrow = do
       -- Simplified for now, capturing the whole interrupted arrow logic is complex
@@ -388,7 +388,7 @@ parseArrow =
          ]
        void $ char '['
        optionalSpace
-       anns <- parseAnnotations
+       -- Annotations are no longer allowed in relationships
        optionalSpace
        data' <- optional parseSubjectData
        optionalSpace
@@ -401,7 +401,7 @@ parseArrow =
          , try (string "=")
          , try (string "~")
          ]
-       return (prefix ++ "..." ++ suffix, anns, data')
+       return (prefix ++ "..." ++ suffix, data')
 
 parsePath :: Parser Path
 parsePath = do
@@ -412,11 +412,11 @@ parsePath = do
 
 parsePathSegment :: Parser PathSegment
 parsePathSegment = do
-  (arrow, anns, data') <- parseArrow
+  (arrow, data') <- parseArrow
   optionalSpace
   next <- parseNode
   optionalSpace
-  return $ PathSegment (Relationship arrow anns data') next
+  return $ PathSegment (Relationship arrow data') next
 
 parseSubPatternElement :: Parser PatternElement
 parseSubPatternElement = try (PESubjectPattern <$> parseSubjectPattern) <|> try (PEPath <$> parsePath) <|> try parseReference
