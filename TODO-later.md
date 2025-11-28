@@ -13,7 +13,7 @@
 3. **Tasks**: Use `/speckit.tasks` to generate dependency-ordered task list
 4. **Implement**: Follow tasks, ensuring compliance with [Constitution](.specify/memory/constitution.md)
 5. **Test**: All code must have comprehensive tests
-6. **Merge**: After review and all tests pass, merge to `main`
+6. **Merge**: After review and all tests pass, submit a pull request
 
 See [README.md](README.md#development-workflow) for complete workflow details.
 

@@ -133,7 +133,7 @@ This project uses the Speckit workflow for feature development:
    - Comprehensive Haddock documentation
    - Test coverage for all public APIs
 
-5. **Merge**: After all tests pass and code review, merge the feature branch to `main`
+5. **Merge**: After all tests pass and code review, submit a pull request to merge the feature branch to `main`
 
 #### Constitution Compliance
 

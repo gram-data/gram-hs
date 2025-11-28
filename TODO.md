@@ -11,7 +11,7 @@
 3. **Tasks**: Use `/speckit.tasks` to generate dependency-ordered task list
 4. **Implement**: Follow tasks, ensuring compliance with [Constitution](.specify/memory/constitution.md)
 5. **Test**: All code must have comprehensive tests
-6. **Merge**: After review and all tests pass, merge to `main`
+6. **Merge**: After review and all tests pass, submit a pull request
 
 See [README.md](README.md#development-workflow) for complete workflow details.
 
@@ -481,7 +481,7 @@ See [README.md](README.md#development-workflow) for complete workflow details.
 
 ## Current Status
 
-**Current Phase**: Feature 10 (Comonad Instance) - Complete ✅. All planned typeclass instances complete.
+**Current Phase**: Feature 17 (Gram Serializer Updates) - Complete ✅.
 
 **Completed**:
 - ✅ Phase 1: Core Pattern type fully implemented with comprehensive tests (25 test cases)
@@ -623,6 +623,12 @@ See [README.md](README.md#development-workflow) for complete workflow details.
   - Corpus tests: 100% Pass (Negative, Positive, and Round-Trip).
   - See `libs/gram/SYNTAX_NOTES.md` for full syntax support details.
 
+- ✅ Phase 17: Gram Serializer Updates implemented with comprehensive tests:
+  - Serializer now detects and outputs `(a)-[r]->(b)` path syntax for Edge patterns.
+  - Serializer now detects and outputs `(a)->(b)->(c)` chained path syntax for Walk patterns.
+  - Round-trip structural correctness verified against full `tree-sitter-gram` corpus.
+  - See `libs/gram/SYNTAX_NOTES.md` for full details.
+
 **Next Steps**: 
 1. Feature 11 (Integration and Polish) - finalize exports, documentation, and testing
 2. See `TODO-later.md` for deferred features (Graph Views, Pattern Morphisms, Pattern Matching DSL)
@@ -637,4 +643,3 @@ See [README.md](README.md#development-workflow) for complete workflow details.
 - Each phase should feel complete and tested
 - If something feels unclear, stop and clarify before proceeding
 - The core Pattern type is the foundation - get it right first
-
