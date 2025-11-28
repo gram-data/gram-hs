@@ -128,12 +128,12 @@ spec = do
           case fromGram "(a)-[r]->(b)" of
             Right p -> do
               -- Check top-level is the relationship pattern
-              -- Note: Relationship name "r" is not currently captured in Subject data (per Gram.Transform design),
-              -- but the structure should be correct. 
-              -- The current design in Gram.Parse ignores the arrow string/label for the relationship Pattern value 
-              -- if it doesn't have a body [], so let's check the structure primarily.
+              -- Relationship identifier "r" IS captured in Subject data
               length (elements p) `shouldBe` 2
               
+              -- Verify relationship identity
+              value p `shouldBe` Subject (Symbol "r") Set.empty empty
+
               -- Check elements are nodes a and b
               let [left, right] = elements p
               value left `shouldBe` Subject (Symbol "a") Set.empty empty
