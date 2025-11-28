@@ -41,8 +41,8 @@ Some edge cases in `comments.txt` and `text_values.txt` involving specific combi
 
 ### 3. Graph Global / Top-level Structure
 `graph_global.txt` shows mixed records and patterns separated by newlines.
-- **Status**: Parsing fails on some combinations of top-level records followed immediately by array-like patterns `[...]`.
-- **Reason**: Ambiguity or strictness in top-level loop parsing logic.
+- **Status**: Fully Supported.
+- **Note**: Top-level records are parsed as the root subject's properties. Multiple patterns are elements of the root subject.
 
 ### 4. Relationship Nuances (Data Loss)
 Gram notation supports rich relationship syntax (`-->`, `<--`, `==>`).
@@ -50,16 +50,16 @@ Gram notation supports rich relationship syntax (`-->`, `<--`, `==>`).
   - The parser **accepts** all arrow variations.
   - The CST **preserves** the arrow string (e.g., `"==>"`).
   - The `Pattern` structure currently **discards** the arrow style (only preserves attributes).
-- **Future Work**: 
-  - Map the arrow style from the CST to a property in the Edge Pattern's Subject (e.g. `{arrow: "==>"}`).
+- **Serialization**:
+  - All relationships are normalized to `-->` (or `-[...]->`) during serialization.
+  - This ensures round-trip structural correctness, even if the specific arrow syntax changes.
 
 ## Corpus Conformance
 
 As of 2025-11-28:
 - **Negative Tests**: 100% Pass (all invalid syntax is correctly rejected).
 - **Positive Tests**: 100% Pass (all valid corpus examples parse correctly).
-- **Round-Trip Tests**: 100% Pass (all valid corpus examples round-trip correctly).
-  - Edge/Walk patterns and atomic patterns are correctly preserved.
-  - Empty patterns `(), ()` are correctly preserved.
-  - Quoting of identifiers and strings is correctly handled.
-
+- **Round-Trip Tests**: 100% Pass.
+  - Serializer now supports `(a)-[r]->(b)` path syntax.
+  - Serializer now supports `(a)->(b)->(c)` walk syntax.
+  - All valid corpus examples round-trip structurally (`parse . serialize . parse == parse`).

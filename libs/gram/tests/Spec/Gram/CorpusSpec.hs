@@ -196,7 +196,7 @@ testRoundTripCorpus = do
                 Right reparsedPattern -> 
                   if pattern == reparsedPattern
                     then []
-                    else [(file, name, original, "Round-trip structure mismatch")]
+                    else [(file, name, original, "Round-trip structure mismatch\nOriginal: " ++ show pattern ++ "\nReparsed: " ++ show reparsedPattern)]
                 Left err -> [(file, name, original, "Failed to reparse: " ++ show err)]
             Left _ -> []
           ) successfulParses

@@ -156,7 +156,9 @@ spec = do
           let elem1 = Pattern { value = Subject (Symbol "a") (Set.fromList ["Person"]) empty, elements = [] }
           let elem2 = Pattern { value = Subject (Symbol "b") (Set.fromList ["Person"]) empty, elements = [] }
           let outer = Pattern { value = Subject (Symbol "g") Set.empty empty, elements = [elem1, elem2] }
-          toGram outer `shouldBe` "[g | (a:Person), (b:Person)]"
+          -- Note: 2-element patterns are now normalized to edge syntax: (a)-[g]->(b)
+          -- This normalization ensures consistent round-trip behavior for edges.
+          toGram outer `shouldBe` "(a:Person)-[g]->(b:Person)"
         
         it "serializes deeply nested patterns" $ do
           let level3 = Pattern { value = Subject (Symbol "c") Set.empty empty, elements = [] }
@@ -170,18 +172,80 @@ spec = do
           let source = Pattern { value = Subject (Symbol "a") (Set.fromList ["Person"]) empty, elements = [] }
           let rel = Pattern { value = Subject (Symbol "r") (Set.fromList ["KNOWS"]) empty, elements = [] }
           let target = Pattern { value = Subject (Symbol "b") (Set.fromList ["Person"]) empty, elements = [] }
-          let relationship = Pattern { value = Subject (Symbol "g") Set.empty empty, elements = [source, rel, target] }
-          -- Note: Current serializer treats everything as [subject | elements] if elements exist.
-          -- It doesn't reconstruct arrow syntax ()-[]->() from the generic pattern structure yet.
-          toGram relationship `shouldBe` "[g | (a:Person), (r:KNOWS), (b:Person)]"
+          -- Edge Pattern structure: Pattern rel [source, target]
+          let relationship = Pattern { value = value rel, elements = [source, target] }
+          
+          -- Should serialize as path notation: (a:Person)-[r:KNOWS]->(b:Person)
+          toGram relationship `shouldBe` "(a:Person)-[r:KNOWS]->(b:Person)"
         
         it "serializes relationship with properties" $ do
           let source = Pattern { value = Subject (Symbol "a") (Set.fromList ["Person"]) empty, elements = [] }
           let relProps = fromList [("since", VInteger 2024)]
           let rel = Pattern { value = Subject (Symbol "r") (Set.fromList ["KNOWS"]) relProps, elements = [] }
           let target = Pattern { value = Subject (Symbol "b") (Set.fromList ["Person"]) empty, elements = [] }
-          let relationship = Pattern { value = Subject (Symbol "g") Set.empty empty, elements = [source, rel, target] }
-          toGram relationship `shouldBe` "[g | (a:Person), (r:KNOWS {since:2024}), (b:Person)]"
+          -- Edge Pattern structure: Pattern rel [source, target]
+          let relationship = Pattern { value = value rel, elements = [source, target] }
+          
+          toGram relationship `shouldBe` "(a:Person)-[r:KNOWS {since:2024}]->(b:Person)"
+
+        it "serializes anonymous relationship" $ do
+          let source = Pattern { value = Subject (Symbol "a") Set.empty empty, elements = [] }
+          let rel = Pattern { value = Subject (Symbol "") Set.empty empty, elements = [] } -- Anonymous
+          let target = Pattern { value = Subject (Symbol "b") Set.empty empty, elements = [] }
+          let relationship = Pattern { value = value rel, elements = [source, target] }
+          
+          toGram relationship `shouldBe` "(a)-->(b)"
+
+        it "serializes pattern with 3 elements as standard bracket pattern" $ do
+          let e1 = Pattern { value = Subject (Symbol "a") Set.empty empty, elements = [] }
+          let e2 = Pattern { value = Subject (Symbol "b") Set.empty empty, elements = [] }
+          let e3 = Pattern { value = Subject (Symbol "c") Set.empty empty, elements = [] }
+          let p = Pattern { value = Subject (Symbol "g") Set.empty empty, elements = [e1, e2, e3] }
+          
+          -- Should NOT be treated as an edge because it has 3 elements
+          toGram p `shouldBe` "[g | a, b, c]"
+
+      describe "walk pattern serialization" $ do
+        it "serializes two-step walk (a)->(b)->(c)" $ do
+          let a = Pattern { value = Subject (Symbol "a") Set.empty empty, elements = [] }
+          let b = Pattern { value = Subject (Symbol "b") Set.empty empty, elements = [] }
+          let c = Pattern { value = Subject (Symbol "c") Set.empty empty, elements = [] }
+          
+          let rel1 = Pattern { value = Subject (Symbol "r1") Set.empty empty, elements = [] }
+          let rel2 = Pattern { value = Subject (Symbol "r2") Set.empty empty, elements = [] }
+          
+          -- Edge 1: (a)-[r1]->(b)
+          let edge1 = Pattern { value = value rel1, elements = [a, b] }
+          -- Edge 2: (b)-[r2]->(c)
+          let edge2 = Pattern { value = value rel2, elements = [b, c] }
+          
+          -- Walk structure: [Gram.Walk | edge1, edge2]
+          -- Note: Transform.hs uses "Gram.Walk" label for the walk container
+          let walk = Pattern { 
+                value = Subject (Symbol "") (Set.singleton "Gram.Walk") empty,
+                elements = [edge1, edge2] 
+              }
+          
+          toGram walk `shouldBe` "(a)-[r1]->(b)-[r2]->(c)"
+          
+        it "serializes walk with anonymous relationships" $ do
+          let a = Pattern { value = Subject (Symbol "a") Set.empty empty, elements = [] }
+          let b = Pattern { value = Subject (Symbol "b") Set.empty empty, elements = [] }
+          let c = Pattern { value = Subject (Symbol "c") Set.empty empty, elements = [] }
+          
+          let rel = Pattern { value = Subject (Symbol "") Set.empty empty, elements = [] }
+          
+          let edge1 = Pattern { value = value rel, elements = [a, b] }
+          let edge2 = Pattern { value = value rel, elements = [b, c] }
+          
+          let walk = Pattern { 
+                value = Subject (Symbol "") (Set.singleton "Gram.Walk") empty,
+                elements = [edge1, edge2] 
+              }
+          
+          toGram walk `shouldBe` "(a)-->(b)-->(c)"
+
+
       
       describe "edge cases" $ do
         it "serializes pattern with empty property record" $ do
