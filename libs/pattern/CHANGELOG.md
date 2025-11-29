@@ -1,5 +1,9 @@
-# Revision history for pattern
+# CHANGELOG
 
-## 0.1.0.0 -- YYYY-mm-dd
+## [0.1.0] - 2025-11-29
+### Added
+- Feature 019: Integration and Polish - finalized API exports, completed Haddock documentation, and verified rigorous semantics via property tests.
 
-* First version. Released on an unsuspecting world.
+## [0.0.1] - 2025-11-29
+### Added
+- Initial release

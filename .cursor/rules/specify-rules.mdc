@@ -38,9 +38,9 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 019-integration-polish: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 - 018-pattern-path-semantics: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 - 016-gram-parsing-conformance: Added Haskell (GHC 9.x) + `megaparsec` (parsing), `hspec` (testing)
-- 014-gram-serialization: Added Haskell (GHC 9.10.3, 9.8.4)
 
 
 <!-- MANUAL ADDITIONS START -->
