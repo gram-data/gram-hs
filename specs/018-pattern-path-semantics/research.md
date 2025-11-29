@@ -37,5 +37,5 @@
 
 ## Future Considerations
 - Adding source spans to `Gram.CST` for better error reporting.
-- optimizing validation for very large files (incremental validation).
+- Optimizing validation for very large files (incremental validation).
 
