@@ -41,9 +41,13 @@
 -- Internal implementation details and helper functions are not exported through
 -- this module, ensuring a clean public API.
 module Pattern
-  ( module Pattern.Core
+  ( -- * Core Pattern Type and Operations
+    module Pattern.Core
+    -- * Graph Views and Interpretations
   , module Pattern.Views
+    -- * Graph Operations
   , module Pattern.Graph
+    -- * Morphisms and Transformations
   , module Pattern.Morphisms
   ) where
 
@@ -51,4 +55,3 @@ import Pattern.Core
 import Pattern.Views
 import Pattern.Graph
 import Pattern.Morphisms
-
