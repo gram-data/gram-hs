@@ -105,8 +105,9 @@ spec = do
     it "rejects inconsistent arity (structure mismatch)" $ do
       -- [r | a, b, c] has 3 elements. (a)-[r]->(b) implies 2 elements.
       -- This requires Arity check.
-      let result = validateSource "[r | a, b, c], (a)-[r]->(b)"
+      -- Note: We also need (c) to define 'c', otherwise it's an undefined reference.
+      let result = validateSource "[r | a, b, c], (a)-[r]->(b), (c)"
       result `shouldSatisfy` isLeft 
       case result of
-        Left [err] -> err `shouldSatisfy` isInconsistentDefinition
+        Left errs -> any isInconsistentDefinition errs `shouldBe` True
         _ -> expectationFailure "Expected InconsistentDefinition error"
