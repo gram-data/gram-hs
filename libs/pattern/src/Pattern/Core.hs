@@ -1,3 +1,47 @@
+{-# LANGUAGE InstanceSigs #-}
+module Pattern.Core
+  ( -- * Pattern Type
+    Pattern(..)
+    -- * Construction Functions
+  , pattern
+  , patternWith
+  , fromList
+    -- * Query Functions
+  , length
+  , size
+  , depth
+  , values
+    -- * Predicate Functions
+  , anyValue
+  , allValues
+  , filterPatterns
+  , findPattern
+  , findAllPatterns
+  , matches
+  , contains
+    -- * Foldable/Traversable Extras
+  , flatten
+  , toTuple
+    -- * Context/Comonad Functions
+  , extract
+  , duplicate
+  , extend
+  , depthAt
+  , sizeAt
+  , indicesAt
+  ) where
+
+import Prelude hiding (length, pattern)
+import qualified Prelude
+import Data.Foldable (toList)
+import Data.Traversable (foldMapDefault, fmapDefault)
+import Data.Semigroup (Semigroup(..), sconcat, stimes)
+import Data.Monoid (Monoid(..), mconcat)
+import Data.Hashable (Hashable(..))
+import Control.Comonad (Comonad(..))
+import Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.List.NonEmpty as NE
+
 -- | Core Pattern data type and basic operations.
 --
 -- This module defines the fundamental Pattern type as a recursive structure
@@ -210,7 +254,7 @@
 -- >>> map value (elements pattern)
 -- ["elem1","elem2"]
 --
--- Nested patterns (arbitrary depth):
+-- Nested pattern:
 --
 -- >>> level3 = pattern "level3"
 -- >>> level2 = patternWith "level2" [level3]
@@ -220,335 +264,68 @@
 -- "root"
 -- >>> value (head (elements nested))
 -- "level1"
---
--- Atomic patterns with different value types:
---
--- >>> leafString = pattern "text"
--- >>> leafInt = pattern 42
--- >>> value leafString
--- "text"
--- >>> value leafInt
--- 42
---
--- Patterns with varying numbers of elements:
---
--- >>> zeroElements = pattern "zero"
--- >>> oneElement = patternWith "one" [pattern "elem"]
--- >>> manyElements = patternWith "many" [pattern "e1", pattern "e2"]
--- >>> length (elements zeroElements)
--- 0
--- >>> length (elements oneElement)
--- 1
--- >>> length (elements manyElements)
--- 2
-{-# LANGUAGE InstanceSigs #-}
-module Pattern.Core
-  ( -- * Pattern Type
-    Pattern(..)
-    -- * Construction Functions
-  , pattern
-  , patternWith
-  , fromList
-    -- * Query Functions
-  , length
-  , size
-  , depth
-  , values
-    -- Note: 'value' is exported via Pattern(..) as a field accessor
-    -- * Predicate Functions
-  , anyValue
-  , allValues
-  , filterPatterns
-  , findPattern
-  , findAllPatterns
-  , matches
-  , contains
-    -- * Helper Functions
-  , flatten
-  , toTuple
-    -- * Comonad Helper Functions
-  , depthAt
-  , sizeAt
-  , indicesAt
-    -- * Typeclass Instances
-    -- All typeclass instances are exported automatically via Pattern(..)
-    -- Instances: Show, Ord, Semigroup, Monoid, Hashable, Functor, Applicative, Foldable, Traversable, Comonad
-  ) where
-
-import Prelude hiding (length)
-import qualified Prelude as P
-import Control.Comonad (Comonad(..))
-import Data.Foldable (toList)
-import Data.Hashable (Hashable(..))
-import Data.Monoid (Monoid(..))
-import Data.Traversable (Traversable(..))
-
--- | A recursive structure representing a decorated sequence pattern.
---
--- Conceptually, a Pattern is a decorated sequence: the elements form the pattern
--- itself, and the value provides decoration about that pattern.
--- For example, the pattern "A B B A" with decoration "Enclosed rhyme" represents
--- a specific sequence pattern (A B B A) that is classified as an "Enclosed rhyme".
--- The Pattern type represents such decorated sequences where each element is itself
--- a Pattern, enabling recursive nesting.
---
--- Patterns form the foundation for representing graph elements and sequences.
--- Each pattern decorates a sequence of pattern elements with a value of any type.
--- The recursive structure enables compositional and nested patterns while maintaining
--- the decorated sequence semantic.
---
--- The Pattern type is intentionally minimal - it provides just the structure
--- needed for recursive sequence representation. Classification functions
--- (identifying nodes, relationships, subgraphs) will be added in future phases.
---
--- === Type Parameter @v@
---
--- The @v@ type parameter allows patterns to store decorations of any type.
--- All patterns in a structure must share the same value type @v@. This type
--- consistency is enforced by Haskell's type system, ensuring type safety when
--- working with patterns.
---
--- For example, @Pattern String@ represents patterns with string decorations,
--- @Pattern Int@ represents patterns with integer decorations, and @Pattern Person@
--- represents patterns with custom Person decorations. All elements in a pattern's
--- sequence must have the same decoration type as the pattern itself.
---
--- === Pattern Structural Classifications
---
--- Patterns have structural classifications based on their element structure:
---
--- * Atomic pattern: @elements == []@ - a sequence with no elements. Atomic patterns are the fundamental building blocks from which all other patterns are constructed.
--- * Singular pattern: @length (elements p) == 1@ - a sequence with exactly one element
--- * Pattern with elements: @elements@ contains one or more pattern elements
--- * Nested pattern: patterns containing patterns containing patterns, enabling arbitrary nesting
---
--- === Graph Interpretations (Views)
---
--- Patterns can be **interpreted** as graph elements through different views.
--- These are interpretations/views of pattern structures, not pattern variants themselves:
---
--- * Atomic patterns can be interpreted as nodes through graph views
--- * Patterns with 2 elements can be interpreted as relationships through graph views
--- * Patterns with elements can be interpreted as subgraphs through graph views
---
--- **Note**: Patterns are a data structure for representing graphs (like an adjacency matrix
--- or adjacency list), optimized for expressiveness of layered, hierarchical graph structures
--- rather than performance optimization over a single, "flat" graph.
---
--- === Examples
---
--- Creating an atomic pattern:
---
--- >>> atom = pattern "A"
---
--- Creating a pattern with elements (can be interpreted as a relationship):
---
--- >>> elem1 = pattern "A"
--- >>> elem2 = pattern "B"
--- >>> pattern = patternWith "knows" [elem1, elem2]
---
--- Creating a pattern with multiple elements (can be interpreted as a subgraph):
---
--- >>> graph = patternWith "myGraph" [elem1, elem2, pattern]
---
-data Pattern v = Pattern 
-  { -- | The decoration (value) associated with this pattern.
-    --
-    -- The @value@ field stores decoration about what kind of pattern it is.
-    -- This can be any type @v@, such as a string identifier, an integer, or a
-    -- custom data type. The value is decoration about the pattern sequence itself,
-    -- not part of the pattern. The elements form the pattern; the value describes it.
-    --
-    -- Type parameter @v@ allows for different decoration types. All patterns in a
-    -- structure must share the same value type (enforced by the type system).
-    --
-    -- The @value@ field accessor provides direct access to a pattern's decoration
-    -- value without any computation. This is the primary way to access pattern
-    -- decoration values for querying, analysis, and transformation operations.
-    --
-    -- === Accessing Pattern Values
-    --
-    -- The @value@ field accessor works with patterns of any value type and at any
-    -- nesting level. Each pattern in a nested structure has its own value that can
-    -- be accessed independently.
-    --
-    -- === Examples
-    --
-    -- Atomic pattern with string value:
-    --
-    -- >>> value (pattern "test")
-    -- "test"
-    --
-    -- Atomic pattern with integer value:
-    --
-    -- >>> value (pattern 42)
-    -- 42
-    --
-    -- Pattern with elements (accesses root value):
-    --
-    -- >>> value (patternWith "group" [pattern "atom"])
-    -- "group"
-    --
-    -- Accessing values at different nesting levels:
-    --
-    -- >>> inner = pattern "inner"
-    -- >>> middle = patternWith "middle" [inner]
-    -- >>> outer = patternWith "outer" [middle]
-    -- >>> pattern = patternWith "root" [outer]
-    -- >>> value pattern
-    -- "root"
-    -- >>> value outer
-    -- "outer"
-    -- >>> value middle
-    -- "middle"
-    -- >>> value inner
-    -- "inner"
-    --
-    -- Pattern with custom type value:
-    --
-    -- >>> data Person = Person { name :: String, age :: Maybe Int } deriving (Show)
-    -- >>> person = Person "Alice" (Just 30)
-    -- >>> value (pattern person)
-    -- Person {name = "Alice", age = Just 30}
-    --
-    -- === Relationship to values function
-    --
-    -- The @value@ field accessor returns a single value (the pattern's own value),
-    -- while the @values@ function returns all values from the entire pattern structure:
-    --
-    -- @
-    -- value p == head (values p)
-    -- @
-    --
-    -- The @value@ field provides O(1) access to the pattern's decoration, while
-    -- @values@ extracts all values recursively.
-    --
-    -- === Performance
-    --
-    -- The @value@ field accessor is a direct field access operation with O(1) time
-    -- complexity. No computation is required - it simply returns the stored value.
-    --
-    -- === Type Safety
-    --
-    -- The @value@ field accessor works with patterns of any value type @v@:
-    --
-    -- >>> value (pattern "test" :: Pattern String)
-    -- "test"
-    -- >>> value (pattern 42 :: Pattern Int)
-    -- 42
-    --
-    value    :: v
-    
-    -- | The pattern itself, represented as a sequence of elements.
-    --
-    -- The @elements@ field IS the pattern - it contains the sequence that defines
-    -- the pattern. An empty list @[]@ represents a pattern with no elements
-    -- (empty sequence). A non-empty list represents a pattern containing one or
-    -- more pattern elements in sequence.
-    --
-    -- The elements maintain their sequence order and are accessible in that order.
-    -- This order is essential to the pattern. Each element in the sequence is itself
-    -- a Pattern, enabling recursive nesting where patterns can contain patterns
-    -- containing patterns, etc., enabling arbitrary nesting depth while maintaining
-    -- the pattern sequence semantic.
-    --
-    -- === Examples
-    --
-    -- Pattern with no elements (empty sequence):
-    --
-    -- >>> elements (pattern "empty")
-    -- []
-    --
-    -- Singular pattern (one element):
-    --
-    -- >>> elem = pattern "elem"
-    -- >>> elements (patternWith "pattern" [elem])
-    -- [Pattern {value = "elem", elements = []}]
-    --
-    -- Pattern with multiple elements:
-    --
-    -- >>> elem1 = pattern "elem1"
-    -- >>> elem2 = pattern "elem2"
-    -- >>> elements (patternWith "pattern" [elem1, elem2])
-    -- [Pattern {value = "elem1", elements = []},Pattern {value = "elem2", elements = []}]
-  , elements :: [Pattern v]
+data Pattern v = Pattern
+  { value    :: v          -- ^ Decoration about what kind of pattern it is
+  , elements :: [Pattern v] -- ^ The pattern itself, represented as a sequence of elements
   }
   deriving (Eq)
 
--- | Show instance for Pattern.
+-- | 'Show' instance for 'Pattern'.
 --
--- Displays patterns in a readable format showing both the value and elements.
--- The output format is: @Pattern {value = <value>, elements = [<elements>]}@
---
--- This instance requires that the value type @v@ has a @Show@ instance.
+-- Displays the pattern in a readable format: @Pattern "value" [elements]@.
+-- Requires the value type @v@ to be an instance of 'Show'.
 --
 -- === Examples
 --
 -- >>> show (pattern "test")
--- "Pattern {value = \"test\", elements = []}"
+-- "Pattern \"test\" []"
 --
 -- >>> show (pattern 42)
--- "Pattern {value = 42, elements = []}"
---
+-- "Pattern 42 []"
 instance Show v => Show (Pattern v) where
-  show (Pattern v els) = 
-    "Pattern {value = " ++ show v ++ ", elements = " ++ show els ++ "}"
+  show (Pattern v []) = "Pattern " ++ show v ++ " []"
+  show (Pattern v es) = "Pattern " ++ show v ++ " " ++ show es
 
--- | Ord instance for Pattern.
+-- | 'Ord' instance for 'Pattern'.
 --
 -- Provides lexicographic ordering for patterns based on their structure.
--- Patterns are ordered by comparing their value first, then their elements
--- recursively. This ordering is consistent with the `Eq` instance and enables
--- patterns to be used as keys in `Data.Map` and elements in `Data.Set`.
+-- Patterns are compared by their value first, then by their elements recursively.
+-- This ordering is consistent with the 'Eq' instance: if two patterns are equal,
+-- they compare as 'EQ'.
 --
--- === Ordering Rules
+-- The ordering rules are:
+-- 1. Compare values: if values differ, their order determines the pattern order.
+-- 2. If values are equal, compare elements lists lexicographically.
 --
--- The `Ord` instance uses lexicographic ordering:
+-- This instance enables patterns to be used as keys in 'Data.Map', elements in 'Data.Set',
+-- and anywhere else that requires total ordering.
 --
--- 1. **Value comparison first**: If two patterns have different values,
---    ordering is determined by comparing the values using the `Ord` instance
---    for the value type.
---
--- 2. **Element comparison second**: If two patterns have the same value,
---    ordering is determined by comparing their elements lists lexicographically.
---    Elements are compared recursively using the same ordering rules.
---
--- 3. **Structure preservation**: Patterns with different structures are
---    distinguished even if they have the same flattened values. This ensures
---    that ordering respects the pattern's structure as represented by `toTuple`.
---
--- === Consistency with Eq
---
--- The `Ord` instance is consistent with the `Eq` instance:
---
--- * Patterns that are equal according to `Eq` compare as `EQ`
--- * Patterns that are not equal according to `Eq` compare as `LT` or `GT`
--- * Ordering uses the same comparison order as `Eq` (value first, then elements)
+-- Requires the value type @v@ to be an instance of 'Ord'.
 --
 -- === Examples
 --
--- Atomic patterns with different values:
+-- Comparing atomic patterns:
 --
 -- >>> compare (pattern "a") (pattern "b")
 -- LT
 -- >>> compare (pattern "b") (pattern "a")
 -- GT
 --
--- Patterns with same value but different elements:
+-- Comparing patterns with elements (value takes precedence):
 --
 -- >>> p1 = patternWith "root" [pattern "a"]
 -- >>> p2 = patternWith "root" [pattern "b"]
 -- >>> compare p1 p2
 -- LT
 --
--- Patterns with same value and same elements:
+-- Comparing identical patterns:
 --
 -- >>> p1 = patternWith "root" [pattern "a", pattern "b"]
 -- >>> p2 = patternWith "root" [pattern "a", pattern "b"]
 -- >>> compare p1 p2
 -- EQ
 --
--- Nested patterns (recursive comparison):
+-- Deep structural comparison:
 --
 -- >>> inner1 = pattern "inner1"
 -- >>> inner2 = pattern "inner2"
@@ -557,7 +334,7 @@ instance Show v => Show (Pattern v) where
 -- >>> compare outer1 outer2
 -- LT
 --
--- Using comparison operators:
+-- Using standard operators:
 --
 -- >>> (pattern "a") < (pattern "b")
 -- True
@@ -566,96 +343,40 @@ instance Show v => Show (Pattern v) where
 -- >>> (pattern "b") > (pattern "a")
 -- True
 --
--- Using min and max:
+-- Min and Max:
 --
 -- >>> min (pattern "a") (pattern "b")
--- Pattern {value = "a", elements = []}
+-- Pattern "a" []
 -- >>> max (pattern "a") (pattern "b")
--- Pattern {value = "b", elements = []}
---
--- === Type Constraint
---
--- The `Ord` instance requires that the value type `v` has an `Ord` instance:
---
--- @
--- instance Ord v => Ord (Pattern v)
--- @
---
--- This ensures that pattern values can be compared, which is necessary for
--- lexicographic ordering. Attempting to use `Ord` operations on patterns with
--- non-orderable value types will result in a compile-time error.
---
--- === Relationship to toTuple
---
--- The ordering semantics are based on `toTuple()` structure-preserving
--- representation. Comparing two patterns is equivalent to comparing their
--- tuple representations:
---
--- @
--- compare p1 p2 == compare (toTuple p1) (toTuple p2)
--- @
---
--- This ensures that ordering distinguishes patterns with different structures
--- even if they have the same flattened values.
---
+-- Pattern "b" []
 instance Ord v => Ord (Pattern v) where
-  compare (Pattern v1 els1) (Pattern v2 els2) =
-    compare v1 v2 `mappend` compare els1 els2
+  compare (Pattern v1 es1) (Pattern v2 es2) =
+    case compare v1 v2 of
+      EQ -> compare es1 es2
+      other -> other
 
--- | Semigroup instance for Pattern.
+-- | 'Semigroup' instance for 'Pattern'.
 --
--- Enables combining patterns by concatenating their elements and combining their
--- values using the value type's Semigroup instance. This enables incremental pattern
--- construction using standard Haskell combinators like `<>`, `sconcat`, and `stimes`.
+-- Enables combining two patterns into a new pattern.
 --
--- === Combination Semantics
+-- Semantics:
+-- * Values are combined using the value type's 'Semigroup' instance (`<>`).
+-- * Elements are concatenated using list concatenation (`++`).
 --
--- The Semigroup instance combines patterns following the decorated sequence model:
+-- This aligns with the decorated sequence model:
+-- * The pattern sequence becomes the concatenation of the two sequences.
+-- * The decoration becomes the combination of the two decorations.
 --
--- * **Value combination**: Values are combined using the value type's Semigroup instance:
---   @value (p1 <> p2) = value p1 <> value p2@
---
--- * **Element concatenation**: Elements are concatenated in order, preserving sequence semantics:
---   @elements (p1 <> p2) = elements p1 ++ elements p2@
---
--- * **Structure preservation**: The decorated sequence model is preserved - elements form the
---   pattern, value is decoration. Combining patterns extends the pattern sequence while
---   combining decorations.
---
--- === Semigroup Laws
---
--- The Semigroup instance satisfies the associativity law, which is verified through
--- property-based testing in the test suite:
---
--- **Associativity Law**: For all patterns @p1@, @p2@, @p3 :: Pattern v@ where @Semigroup v@,
---
--- @
--- (p1 <> p2) <> p3 = p1 <> (p2 <> p3)
--- @
---
--- This law ensures that pattern combination is associative, enabling safe use of
--- standard Semigroup combinators like `sconcat` and `stimes`.
---
--- === Type Constraint
---
--- The Semigroup instance requires that the value type @v@ has a Semigroup instance:
---
--- @
--- instance Semigroup v => Semigroup (Pattern v)
--- @
---
--- This ensures that pattern values can be combined, which is necessary for pattern
--- combination. Attempting to use `<>` on patterns with non-semigroup value types will
--- result in a compile-time error.
+-- Requires the value type @v@ to be an instance of 'Semigroup'.
 --
 -- === Examples
 --
--- Combining atomic patterns with String values (concatenation):
+-- Combining atomic patterns:
 --
 -- >>> p1 = pattern "hello"
 -- >>> p2 = pattern "world"
 -- >>> p1 <> p2
--- Pattern {value = "helloworld", elements = []}
+-- Pattern "helloworld" []
 --
 -- Combining patterns with elements:
 --
@@ -664,31 +385,35 @@ instance Ord v => Ord (Pattern v) where
 -- >>> p1 = patternWith "prefix" [elem1, elem2]
 -- >>> p2 = patternWith "suffix" [pattern "c"]
 -- >>> p1 <> p2
--- Pattern {value = "prefixsuffix", elements = [Pattern {value = "a", elements = []},Pattern {value = "b", elements = []},Pattern {value = "c", elements = []}]}
+-- Pattern "prefixsuffix" [Pattern "a" [],Pattern "b" [],Pattern "c" []]
 --
--- Combining patterns with Sum Int values (addition):
+-- Using Sum semigroup:
 --
+-- >>> import Data.Monoid (Sum(..))
 -- >>> p1 = pattern (Sum 5)
 -- >>> p2 = pattern (Sum 3)
 -- >>> getSum (value (p1 <> p2))
 -- 8
 --
--- Combining patterns with Product Int values (multiplication):
+-- Using Product semigroup:
 --
+-- >>> import Data.Monoid (Product(..))
 -- >>> p1 = pattern (Product 5)
 -- >>> p2 = pattern (Product 3)
 -- >>> getProduct (value (p1 <> p2))
 -- 15
 --
--- Using standard Semigroup combinators:
+-- Using sconcat for list of non-empty patterns:
 --
 -- >>> sconcat (pattern "a" :| [pattern "b", pattern "c"])
--- Pattern {value = "abc", elements = []}
+-- Pattern "abc" []
+--
+-- Using stimes for repetition:
 --
 -- >>> stimes 3 (patternWith "x" [pattern "y"])
--- Pattern {value = "xxx", elements = [Pattern {value = "y", elements = []},Pattern {value = "y", elements = []},Pattern {value = "y", elements = []}]}
+-- Pattern "xxx" [Pattern "y" [],Pattern "y" [],Pattern "y" []]
 --
--- Combining nested patterns:
+-- Complex combination:
 --
 -- >>> inner1 = pattern "inner1"
 -- >>> inner2 = pattern "inner2"
@@ -701,295 +426,98 @@ instance Ord v => Ord (Pattern v) where
 -- "root1root2"
 -- >>> length (elements result)
 -- 2
---
--- === Edge Cases
---
--- The Semigroup instance handles all pattern structures correctly:
---
--- **Atomic patterns** (no elements):
---
--- >>> pattern "a" <> pattern "b"
--- Pattern {value = "ab", elements = []}
---
--- **Patterns with different element counts**:
---
--- >>> patternWith "a" [pattern "e1"] <> patternWith "b" [pattern "e2", pattern "e3"]
--- Pattern {value = "ab", elements = [Pattern {value = "e1", elements = []},Pattern {value = "e2", elements = []},Pattern {value = "e3", elements = []}]}
---
--- **Patterns with different nesting depths**:
---
--- >>> patternWith "a" [pattern "leaf"] <> patternWith "b" [patternWith "middle" [pattern "inner"]]
--- Pattern {value = "ab", elements = [Pattern {value = "leaf", elements = []},Pattern {value = "middle", elements = [Pattern {value = "inner", elements = []}]}]}
---
--- **Deeply nested patterns**:
---
--- The instance correctly handles patterns with arbitrary nesting depth, preserving
--- the nested structure in the combined result.
---
--- === Performance
---
--- The Semigroup instance has O(n+m) time complexity where n and m are the number of
--- elements in the two patterns being combined. Value combination is O(1) for most
--- Semigroup instances, and element concatenation is O(n+m) for list concatenation.
---
--- === Relationship to Decorated Sequence Model
---
--- The Semigroup instance aligns with the decorated sequence conceptual model:
---
--- * **Elements form the pattern**: Concatenation extends the pattern sequence by
---   appending elements from the right pattern to elements from the left pattern
---
--- * **Value is decoration**: Value combination provides decoration about the combined
---   pattern, using the value type's Semigroup semantics
---
--- This ensures that pattern combination maintains the semantic that elements form
--- the pattern itself while values provide decoration about that pattern.
---
--- === Integration with Standard Semigroup Combinators
---
--- The Semigroup instance enables standard Semigroup combinators:
---
--- * `sconcat :: NonEmpty (Pattern v) -> Pattern v`: Combines a non-empty list of patterns
--- * `stimes :: Integral n => n -> Pattern v -> Pattern v`: Repeats a pattern n times
---
--- These combinators work correctly with Pattern types and follow standard Semigroup
--- semantics.
---
 instance Semigroup v => Semigroup (Pattern v) where
-  -- | Combine two patterns by combining their values and concatenating their elements.
-  --
-  -- The combination operation:
-  --
-  -- 1. Combines values using the value type's Semigroup instance: @v1 <> v2@
-  -- 2. Concatenates elements in order: @els1 ++ els2@
-  --
-  -- This preserves the decorated sequence model where elements form the pattern
-  -- and values provide decoration.
-  --
-  -- === Examples
-  --
-  -- Combining atomic patterns:
-  --
-  -- >>> pattern "a" <> pattern "b"
-  -- Pattern {value = "ab", elements = []}
-  --
-  -- Combining patterns with elements:
-  --
-  -- >>> patternWith "a" [pattern "e1"] <> patternWith "b" [pattern "e2"]
-  -- Pattern {value = "ab", elements = [Pattern {value = "e1", elements = []},Pattern {value = "e2", elements = []}]}
-  --
-  -- === Associativity
-  --
-  -- The operation is associative:
-  --
-  -- @
-  -- (p1 <> p2) <> p3 = p1 <> (p2 <> p3)
-  -- @
-  --
-  -- This is verified through property-based testing.
-  --
-  Pattern v1 els1 <> Pattern v2 els2 = Pattern (v1 <> v2) (els1 ++ els2)
+  (Pattern v1 es1) <> (Pattern v2 es2) = Pattern (v1 <> v2) (es1 ++ es2)
+  
+  -- | Optimized sconcat implementation
+  sconcat :: NonEmpty (Pattern v) -> Pattern v
+  sconcat ps = Pattern 
+    (sconcat (fmap value ps)) 
+    (concatMap elements (toList ps))
 
--- | Monoid instance for Pattern.
+  -- | Optimized stimes implementation
+  stimes :: Integral b => b -> Pattern v -> Pattern v
+  stimes n (Pattern v es) = Pattern
+    (stimes n v)
+    (concat (replicate (fromIntegral n) es))
+
+-- | 'Monoid' instance for 'Pattern'.
 --
--- Extends the Semigroup instance by providing an identity element (`mempty`).
--- The identity pattern has `mempty` value (from value type's Monoid) and empty
--- elements list, enabling identity-based operations and standard Monoid combinators
--- (e.g., `mconcat`) while preserving the decorated sequence model.
+-- Extends the 'Semigroup' instance by providing an identity element ('mempty').
 --
--- === Identity Semantics
+-- Semantics:
+-- * 'mempty' is a pattern with 'mempty' value and empty elements list.
+-- * 'mappend' is equivalent to '<>'.
+-- * 'mconcat' combines a list of patterns (optimized).
 --
--- The Monoid instance provides an identity pattern:
+-- Identity Laws:
+-- * `mempty <> p = p`
+-- * `p <> mempty = p`
 --
--- * **Identity pattern**: `mempty = pattern mempty` (equivalent to `Pattern { value = mempty, elements = [] }`)
---   where `mempty` on the right side is from the value type's Monoid instance
---
--- * **Left identity**: `mempty <> p = p` for all patterns `p`
---
--- * **Right identity**: `p <> mempty = p` for all patterns `p`
---
--- * **Consistency**: Uses same `<>` implementation as Semigroup instance
---
--- === Monoid Laws
---
--- The Monoid instance satisfies the standard monoid laws, which are verified
--- through property-based testing in the test suite:
---
--- **Left Identity Law**: For all patterns @p :: Pattern v@ where @Monoid v@,
---
--- @
--- mempty <> p = p
--- @
---
--- **Right Identity Law**: For all patterns @p :: Pattern v@ where @Monoid v@,
---
--- @
--- p <> mempty = p
--- @
---
--- Both laws hold for all pattern structures (atomic, with elements, nested)
--- and all value types, as verified by property-based tests.
---
--- === Type Constraint
---
--- The Monoid instance requires that the value type @v@ has a Monoid instance:
---
--- @
--- instance Monoid v => Monoid (Pattern v)
--- @
---
--- This ensures that pattern values can provide identity elements, which is
--- necessary for the identity pattern. Attempting to use `mempty` on patterns
--- with non-monoid value types will result in a compile-time error.
+-- Requires the value type @v@ to be an instance of 'Monoid'.
 --
 -- === Examples
 --
--- Identity pattern with String values (empty string):
+-- Identity element:
 --
 -- >>> mempty :: Pattern String
--- Pattern {value = "", elements = []}
---
--- Identity pattern with Sum Int values (Sum 0):
---
+-- Pattern "" []
 -- >>> mempty :: Pattern (Sum Int)
--- Pattern {value = Sum 0, elements = []}
+-- Pattern (Sum {getSum = 0}) []
 --
--- Left identity law:
+-- Identity laws:
 --
 -- >>> mempty <> pattern "test"
--- Pattern {value = "test", elements = []}
---
--- Right identity law:
---
+-- Pattern "test" []
 -- >>> pattern "test" <> mempty
--- Pattern {value = "test", elements = []}
+-- Pattern "test" []
 --
--- Using mconcat to combine patterns:
+-- Combining list of patterns:
 --
 -- >>> mconcat [pattern "a", pattern "b", pattern "c"]
--- Pattern {value = "abc", elements = []}
+-- Pattern "abc" []
 --
--- Using mconcat with empty list:
+-- Empty list returns mempty:
 --
 -- >>> mconcat [] :: Pattern String
--- Pattern {value = "", elements = []}
---
--- === Consistency with Semigroup
---
--- The Monoid instance is consistent with the Semigroup instance:
---
--- * The `<>` operation is inherited from Semigroup
--- * `p1 <> p2` produces the same result whether using Semigroup or Monoid instance
--- * The identity pattern naturally extends Semigroup semantics
---
--- === Relationship to Decorated Sequence Model
---
--- The Monoid instance aligns with the decorated sequence conceptual model:
---
--- * **Elements form the pattern**: Identity has empty elements (no pattern sequence)
--- * **Value is decoration**: Identity has `mempty` value (no decoration)
---
--- When combining with identity, the pattern sequence and decoration remain unchanged,
--- which is the expected behavior for an identity element.
---
--- === Standard Monoid Combinators
---
--- The Monoid instance enables standard Monoid combinators:
---
--- * `mconcat :: [Pattern v] -> Pattern v`: Combines a list of patterns (returns `mempty` for empty list)
--- * `mappend :: Pattern v -> Pattern v -> Pattern v`: Alias for `<>` (inherited from Semigroup)
---
--- These combinators work correctly with Pattern types and follow standard Monoid semantics.
---
+-- Pattern "" []
 instance Monoid v => Monoid (Pattern v) where
-  -- | The identity element for pattern combination.
-  --
-  -- Returns a pattern with `mempty` value (from value type's Monoid) and empty
-  -- elements list. This serves as the identity element for the `<>` operation,
-  -- satisfying both left and right identity laws.
-  --
-  -- === Identity Laws
-  --
-  -- The identity pattern satisfies:
-  --
-  -- * **Left identity**: `mempty <> p = p` for all patterns `p`
-  -- * **Right identity**: `p <> mempty = p` for all patterns `p`
-  --
-  -- === Examples
-  --
-  -- Identity pattern for String values:
-  --
-  -- >>> mempty :: Pattern String
-  -- Pattern {value = "", elements = []}
-  --
-  -- Identity pattern for Sum Int values:
-  --
-  -- >>> mempty :: Pattern (Sum Int)
-  -- Pattern {value = Sum 0, elements = []}
-  --
-  -- Using identity in combination:
-  --
-  -- >>> mempty <> pattern "test"
-  -- Pattern {value = "test", elements = []}
-  --
-  -- >>> pattern "test" <> mempty
-  -- Pattern {value = "test", elements = []}
-  --
-  mempty = pattern mempty
-  -- Note: <> is inherited from Semigroup instance
-  -- Implementation: mempty = Pattern { value = mempty, elements = [] }
+  mempty = Pattern mempty []
+  mappend = (<>)
+  
+  -- | Optimized mconcat implementation
+  mconcat :: [Pattern v] -> Pattern v
+  mconcat ps = Pattern
+    (mconcat (map value ps))
+    (concatMap elements ps)
 
--- | Hashable instance for Pattern.
+-- | 'Hashable' instance for 'Pattern'.
 --
--- Enables using patterns as keys in `HashMap` and elements in `HashSet` for
--- efficient hash-based lookups and deduplication. The instance provides O(1)
--- average-case performance compared to O(log n) for ordered containers.
+-- Enables using patterns as keys in 'Data.HashMap' and elements in 'Data.HashSet'.
+-- Patterns are hashed based on their structure (value and elements recursively).
 --
--- === Hash Semantics
+-- Semantics:
+-- * Hashing combines the hash of the value and the hash of the elements list.
+-- * Structural equality implies hash equality (if p1 == p2, then hash p1 == hash p2).
+-- * Different structures with same flattened values produce different hashes.
 --
--- The `Hashable` instance uses structure-preserving hashing: patterns are hashed
--- based on their structure (value and elements recursively), ensuring that equal
--- patterns (according to `Eq`) produce the same hash value while providing good
--- distribution to minimize collisions.
---
--- **Structure-preserving**: Hash patterns based on their structure (value and elements),
--- not flattened values. This distinguishes patterns with different structures even
--- if they have the same flattened values.
---
--- **Consistent with Eq**: For all patterns `p1` and `p2`, if `p1 == p2`, then
--- `hash p1 == hash p2`. This is a fundamental requirement for `Hashable` instances
--- and enables correct behavior in hash-based containers.
---
--- **Recursive**: Nested patterns are hashed recursively, ensuring deep structures
--- contribute to the hash value correctly.
---
--- **Good distribution**: Patterns with different structures produce different hash
--- values in the majority of cases, minimizing collisions.
---
--- === Hash Consistency with Eq
---
--- The hash function is designed to be consistent with the `Eq` instance:
---
--- * `Eq` compares value first, then elements recursively
--- * `Hashable` hashes value first, then elements recursively
--- * This ensures equal patterns produce the same hash
+-- Requires the value type @v@ to be an instance of 'Hashable'.
 --
 -- === Examples
 --
 -- Hashing atomic patterns:
 --
 -- >>> hash (pattern "a" :: Pattern String)
--- <hash value>
---
+-- ...
 -- >>> hash (pattern "b" :: Pattern String)
--- <different hash value>
+-- ...
 --
 -- Hashing patterns with elements:
 --
 -- >>> hash (patternWith "root" [pattern "a", pattern "b"] :: Pattern String)
--- <hash value>
+-- ...
 --
--- Hash consistency with Eq:
+-- Hash consistency with equality:
 --
 -- >>> let p1 = pattern "test" :: Pattern String
 -- >>> let p2 = pattern "test" :: Pattern String
@@ -998,198 +526,63 @@ instance Monoid v => Monoid (Pattern v) where
 -- >>> hash p1 == hash p2
 -- True
 --
--- Structure-preserving hashing (different structures produce different hashes):
+-- Structure distinguishes hash:
 --
 -- >>> let p1 = patternWith "a" [pattern "b", pattern "c"] :: Pattern String
 -- >>> let p2 = patternWith "a" [patternWith "b" [pattern "c"]] :: Pattern String
 -- >>> hash p1 /= hash p2
 -- True
 --
--- Using patterns in HashMap:
+-- Using in HashMap:
 --
 -- >>> import qualified Data.HashMap.Strict as HashMap
 -- >>> let m = HashMap.fromList [(pattern "a", 1), (pattern "b", 2)] :: HashMap (Pattern String) Int
 -- >>> HashMap.lookup (pattern "a") m
 -- Just 1
 --
--- Using patterns in HashSet:
+-- Using in HashSet:
 --
 -- >>> import qualified Data.HashSet as HashSet
 -- >>> let s = HashSet.fromList [pattern "a", pattern "b", pattern "c"] :: HashSet (Pattern String)
 -- >>> HashSet.member (pattern "a") s
 -- True
---
--- === Edge Cases
---
--- **Atomic patterns** (no elements):
---
--- >>> hash (pattern "atom" :: Pattern String)
--- <hash value>
---
--- **Patterns with many elements**:
---
--- >>> let elems = map pattern ["a", "b", "c", "d", "e"]
--- >>> hash (patternWith "root" elems :: Pattern String)
--- <hash value>
---
--- **Deeply nested patterns**:
---
--- >>> let deep = patternWith "level1" [patternWith "level2" [patternWith "level3" [pattern "value"]]]
--- >>> hash (deep :: Pattern String)
--- <hash value>
---
--- **Patterns with same flattened values but different structures**:
---
--- >>> let p1 = patternWith "a" [pattern "b", pattern "c"] :: Pattern String
--- >>> let p2 = patternWith "a" [patternWith "b" [pattern "c"]] :: Pattern String
--- >>> hash p1 /= hash p2
--- True
---
--- === Type Constraint
---
--- The `Hashable` instance requires that the value type `v` has a `Hashable` instance:
---
--- >>> hash (pattern "test" :: Pattern String)  -- String has Hashable instance
--- <hash value>
---
--- If the value type doesn't have a `Hashable` instance, the pattern cannot be hashed:
---
--- >>> -- This would fail to compile if CustomType doesn't have Hashable instance
--- >>> -- hash (pattern customValue :: Pattern CustomType)
---
--- === Performance
---
--- Hash computation is O(n) where n is the number of nodes in the pattern structure.
--- For patterns with up to 1000 nodes, hash computation should complete in under 10 milliseconds.
---
--- Hash-based container operations:
---
--- * `HashMap` lookups: O(1) average-case, O(n) worst-case (with collisions)
--- * `HashSet` membership: O(1) average-case, O(n) worst-case (with collisions)
---
--- === Comparison with Ordered Containers
---
--- Hash-based containers (`HashMap`, `HashSet`) provide O(1) average-case operations
--- but do not maintain sorted order. Ordered containers (`Data.Map`, `Data.Set`) provide
--- O(log n) operations but maintain sorted order. Choose based on whether ordering is
--- needed and performance requirements.
---
 instance Hashable v => Hashable (Pattern v) where
-  -- | Hash a pattern using structure-preserving hashing.
-  --
-  -- The hash is computed by hashing the pattern's value first, then its elements
-  -- recursively. This ensures that equal patterns (according to `Eq`) produce the
-  -- same hash value while providing good distribution.
-  --
-  -- === Implementation
-  --
-  -- The implementation follows standard Haskell conventions for recursive types:
-  --
-  -- @
-  -- hashWithSalt s (Pattern v els) = s `hashWithSalt` v `hashWithSalt` els
-  -- @
-  --
-  -- Where `els` is hashed as a list, which recursively hashes each element pattern
-  -- using the `Hashable` instance for `[Pattern v]` (which requires `Hashable (Pattern v)`).
-  --
-  -- === Examples
-  --
-  -- Hashing with default salt:
-  --
-  -- >>> hash (pattern "test" :: Pattern String)
-  -- <hash value>
-  --
-  -- Hashing with custom salt:
-  --
-  -- >>> hashWithSalt 42 (pattern "test" :: Pattern String)
-  -- <hash value>
-  --
-  hashWithSalt s (Pattern v els) = s `hashWithSalt` v `hashWithSalt` els
+  hashWithSalt salt (Pattern v es) = 
+    salt `hashWithSalt` v `hashWithSalt` es
 
--- | Functor instance for Pattern.
+-- | 'Functor' instance for 'Pattern'.
 --
--- Transforms values in patterns while preserving pattern structure (element count,
--- nesting depth, element order). The transformation function is applied recursively
--- to all values in the pattern structure, including values at all nesting levels.
+-- Maps a function over the values decorating the pattern structure.
+-- Preserves the pattern structure (number and order of elements).
 --
--- The Functor instance enables value transformation without manual pattern reconstruction.
--- This is essential for pattern composition, type conversion, and functional transformations
--- that are fundamental to practical pattern manipulation.
---
--- === Structure Preservation
---
--- The Functor instance preserves pattern structure during transformation:
---
--- * Element count: The number of elements remains unchanged
--- * Nesting depth: The nesting structure is preserved
--- * Element order: The order of elements is maintained
---
--- Only the values are transformed; the pattern structure itself remains identical.
---
--- === Functor Laws
---
--- The Functor instance satisfies the standard functor laws, which are verified
--- through property-based testing in the test suite:
---
--- **Identity Law**: For all patterns @p :: Pattern v@,
---
--- @
--- fmap id p = id p
--- @
---
--- This law states that applying the identity function to a pattern produces
--- the exact same pattern. The identity function leaves all values unchanged,
--- so the pattern structure and values remain identical.
---
--- **Composition Law**: For all patterns @p :: Pattern a@ and functions
--- @f :: b -> c@ and @g :: a -> b@,
---
--- @
--- fmap (f . g) p = (fmap f . fmap g) p
--- @
---
--- This law states that applying a composition of two functions to a pattern
--- produces the same result as applying each function sequentially. This enables
--- safe composition of transformations and predictable behavior when chaining
--- multiple transformations.
---
--- Both laws hold for all pattern structures (atomic, with elements, nested)
--- and all value types, as verified by property-based tests.
+-- Laws:
+-- * Identity: `fmap id == id`
+-- * Composition: `fmap (f . g) == fmap f . fmap g`
 --
 -- === Examples
 --
--- Transforming atomic pattern with string value:
---
 -- >>> atom = pattern "test"
 -- >>> fmap (map toUpper) atom
--- Pattern {value = "TEST", elements = []}
---
--- Transforming pattern with multiple elements:
+-- Pattern "TEST" []
 --
 -- >>> elem1 = pattern "hello"
 -- >>> elem2 = pattern "world"
 -- >>> pattern = patternWith "greeting" [elem1, elem2]
 -- >>> fmap (map toUpper) pattern
--- Pattern {value = "GREETING", elements = [Pattern {value = "HELLO", elements = []},Pattern {value = "WORLD", elements = []}]}
---
--- Transforming pattern with integer values:
+-- Pattern "GREETING" [Pattern "HELLO" [],Pattern "WORLD" []]
 --
 -- >>> elem1 = pattern 5
 -- >>> elem2 = pattern 10
 -- >>> pattern = patternWith 20 [elem1, elem2]
 -- >>> fmap (* 2) pattern
--- Pattern {value = 40, elements = [Pattern {value = 10, elements = []},Pattern {value = 20, elements = []}]}
---
--- Transforming nested pattern structure (3 levels):
+-- Pattern 40 [Pattern 10 [],Pattern 20 []]
 --
 -- >>> inner = pattern "inner"
 -- >>> middle = patternWith "middle" [inner]
 -- >>> outer = patternWith "outer" [middle]
 -- >>> pattern = patternWith "root" [outer]
 -- >>> fmap (map toUpper) pattern
--- Pattern {value = "ROOT", elements = [Pattern {value = "OUTER", elements = [Pattern {value = "MIDDLE", elements = [Pattern {value = "INNER", elements = []}]}]}]}
---
--- Transforming deeply nested pattern structure (4+ levels):
+-- Pattern "ROOT" [Pattern "OUTER" [Pattern "MIDDLE" [Pattern "INNER" []]]]
 --
 -- >>> level4 = pattern "level4"
 -- >>> level3 = patternWith "level3" [level4]
@@ -1197,2887 +590,568 @@ instance Hashable v => Hashable (Pattern v) where
 -- >>> level1 = patternWith "level1" [level2]
 -- >>> pattern = patternWith "root" [level1]
 -- >>> fmap (map toUpper) pattern
--- Pattern {value = "ROOT", elements = [Pattern {value = "LEVEL1", elements = [Pattern {value = "LEVEL2", elements = [Pattern {value = "LEVEL3", elements = [Pattern {value = "LEVEL4", elements = []}]}]}]}]}
---
--- Transforming pattern with varying nesting depths in different branches:
+-- Pattern "ROOT" [Pattern "LEVEL1" [Pattern "LEVEL2" [Pattern "LEVEL3" [Pattern "LEVEL4" []]]]]
 --
 -- >>> branch1 = patternWith "b1" [pattern "b1leaf"]
 -- >>> branch2 = patternWith "b2" [patternWith "b2mid" [pattern "b2leaf"]]
 -- >>> branch3 = pattern "b3"
 -- >>> pattern = patternWith "root" [branch1, branch2, branch3]
 -- >>> fmap (map toUpper) pattern
--- Pattern {value = "ROOT", elements = [Pattern {value = "B1", elements = [Pattern {value = "B1LEAF", elements = []}]},Pattern {value = "B2", elements = [Pattern {value = "B2MID", elements = [Pattern {value = "B2LEAF", elements = []}]}]},Pattern {value = "B3", elements = []}]}
---
--- Type transformation (String to Int):
+-- Pattern "ROOT" [Pattern "B1" [Pattern "B1LEAF" []],Pattern "B2" [Pattern "B2MID" [Pattern "B2LEAF" []]],Pattern "B3" []]
 --
 -- >>> elem1 = pattern "5"
 -- >>> elem2 = pattern "10"
 -- >>> pattern = patternWith "20" [elem1, elem2]
 -- >>> fmap (read :: String -> Int) pattern
--- Pattern {value = 20, elements = [Pattern {value = 5, elements = []},Pattern {value = 10, elements = []}]}
---
--- === Edge Cases
---
--- The Functor instance handles all pattern structures correctly:
---
--- **Atomic patterns** (no elements):
+-- Pattern 20 [Pattern 5 [],Pattern 10 []]
 --
 -- >>> atom = Pattern { value = "atom", elements = [] }
 -- >>> fmap (map toUpper) atom
--- Pattern {value = "ATOM", elements = []}
---
--- **Singular patterns** (one element):
+-- Pattern "ATOM" []
 --
 -- >>> elem = Pattern { value = "elem", elements = [] }
 -- >>> pattern = Pattern { value = "singular", elements = [elem] }
 -- >>> fmap (map toUpper) pattern
--- Pattern {value = "SINGULAR", elements = [Pattern {value = "ELEM", elements = []}]}
---
--- **Pair patterns** (two elements):
+-- Pattern "SINGULAR" [Pattern "ELEM" []]
 --
 -- >>> elem1 = Pattern { value = "first", elements = [] }
 -- >>> elem2 = Pattern { value = "second", elements = [] }
 -- >>> pattern = Pattern { value = "pair", elements = [elem1, elem2] }
 -- >>> fmap (map toUpper) pattern
--- Pattern {value = "PAIR", elements = [Pattern {value = "FIRST", elements = []},Pattern {value = "SECOND", elements = []}]}
---
--- **Extended patterns** (many elements):
+-- Pattern "PAIR" [Pattern "FIRST" [],Pattern "SECOND" []]
 --
 -- >>> elems = [Pattern { value = "a", elements = [] }, Pattern { value = "b", elements = [] }, Pattern { value = "c", elements = [] }]
 -- >>> pattern = Pattern { value = "extended", elements = elems }
 -- >>> fmap (map toUpper) pattern
--- Pattern {value = "EXTENDED", elements = [Pattern {value = "A", elements = []},Pattern {value = "B", elements = []},Pattern {value = "C", elements = []}]}
---
--- **Type transformations** (Int to String):
+-- Pattern "EXTENDED" [Pattern "A" [],Pattern "B" [],Pattern "C" []]
 --
 -- >>> elem1 = Pattern { value = 5, elements = [] }
 -- >>> elem2 = Pattern { value = 10, elements = [] }
 -- >>> pattern = Pattern { value = 20, elements = [elem1, elem2] }
 -- >>> fmap show pattern
--- Pattern {value = "20", elements = [Pattern {value = "5", elements = []},Pattern {value = "10", elements = []}]}
---
+-- Pattern "20" [Pattern "5" [],Pattern "10" []]
 instance Functor Pattern where
-  fmap f (Pattern v els) = Pattern (f v) (map (fmap f) els)
+  fmap f (Pattern v es) = Pattern (f v) (map (fmap f) es)
 
--- | Applicative instance for Pattern.
+-- | 'Applicative' instance for 'Pattern'.
 --
--- Enables applying functions stored in patterns to values stored in patterns
--- using structure-preserving/zip-like semantics. The Applicative instance
--- provides a way to apply functions in a structured context, extending the
--- capabilities of the Functor instance.
+-- Enables applying functions stored in patterns to values stored in patterns.
 --
--- === Structure-Preserving Semantics
+-- Semantics:
+-- * 'pure' creates an atomic pattern with the given value (empty elements list).
+-- * '<*>' applies the function pattern to the value pattern using structure-preserving semantics:
+--   - The root function is applied to the root value.
+--   - Element functions are applied to corresponding element values (zip-like).
+--   - If element counts differ, the result has the minimum number of elements (truncation).
 --
--- The Applicative instance uses structure-preserving/zip-like semantics:
+-- Note on Semantics:
+-- The Applicative instance uses "zip-like" semantics for elements, similar to 'ZipList'.
+-- This means structure is preserved where it overlaps. This is distinct from the
+-- Cartesian product semantics of standard List Applicative.
 --
--- * Root function is applied to root value
--- * Element functions are applied to element values at corresponding positions
--- * Function application is applied recursively to nested patterns
--- * Zip-like truncation handles mismatched element counts (applies up to minimum count)
---
--- This preserves pattern structure during function application, maintaining
--- the decorated sequence model where elements form the pattern itself.
---
--- === Applicative Laws
---
--- The Applicative instance satisfies all Applicative laws:
---
--- **Identity Law**: @pure id <*> v = v@
---
--- Applying the identity function to a pattern produces the same pattern unchanged.
---
--- **Composition Law**: @pure (.) <*> u <*> v <*> w = u <*> (v <*> w)@
---
--- Applying a composition of functions is equivalent to applying each function sequentially.
---
--- **Homomorphism Law**: @pure f <*> pure x = pure (f x)@
---
--- Applying a pure function to a pure value equals pure application.
---
--- **Interchange Law**: @u <*> pure y = pure ($ y) <*> u@
---
--- Applying a function pattern to a pure value equals applying a pure function to the value pattern.
---
--- These laws are verified through property-based testing to ensure mathematical correctness.
---
--- === Consistency with Functor
---
--- The Applicative instance is consistent with the Functor instance:
---
--- @
--- fmap f x = pure f <*> x
--- @
---
--- This relationship ensures that Functor operations can be expressed using
--- Applicative operations, maintaining categorical consistency. This consistency
--- is verified through property-based testing to ensure it holds for all pattern
--- structures (atomic, with elements, nested) and all value type transformations.
+-- Laws:
+-- * Identity: `pure id <*> v == v`
+-- * Composition: `pure (.) <*> u <*> v <*> w == u <*> (v <*> w)`
+-- * Homomorphism: `pure f <*> pure x == pure (f x)`
+-- * Interchange: `u <*> pure y == pure ($ y) <*> u`
 --
 -- === Examples
 --
--- Atomic patterns:
+-- Pure creates atomic pattern:
+--
+-- >>> pure 5
+-- Pattern 5 []
+--
+-- Applying function pattern to value pattern:
 --
 -- >>> let f = pure (+1)
 -- >>> let x = pure 5
 -- >>> f <*> x
--- Pattern {value = 6, elements = []}
+-- Pattern 6 []
 --
--- Patterns with elements:
+-- Zip-like application for elements:
 --
 -- >>> let fs = patternWith id [pure (*2), pure (+10)]
 -- >>> let xs = patternWith 5 [pure 3, pure 7]
 -- >>> fs <*> xs
--- Pattern {value = 5, elements = [Pattern {value = 6, elements = []}, Pattern {value = 17, elements = []}]}
+-- Pattern 5 [Pattern 6 [],Pattern 17 []]
 --
--- Nested patterns:
+-- Nested application:
 --
 -- >>> let fs = patternWith id [patternWith (*2) [pure (*3)], patternWith (+1) []]
 -- >>> let xs = patternWith 1 [patternWith 2 [pure 3], patternWith 4 []]
 -- >>> fs <*> xs
--- Pattern {value = 1, elements = [Pattern {value = 4, elements = [Pattern {value = 9, elements = []}]}, Pattern {value = 5, elements = []}]}
+-- Pattern 1 [Pattern 4 [Pattern 9 []],Pattern 5 []]
 --
--- Mismatched element counts (zip-like truncation):
+-- Truncation (mismatched element counts):
 --
 -- >>> let fs = patternWith id [pure (*2)]  -- 1 element
 -- >>> let xs = patternWith 5 [pure 3, pure 7]   -- 2 elements
 -- >>> fs <*> xs
--- Pattern {value = 5, elements = [Pattern {value = 6, elements = []}]}
---
--- === Edge Cases
---
--- The Applicative instance handles all pattern structures correctly:
---
--- **Atomic patterns**: Function and value are both atomic, result is atomic
--- **Patterns with elements**: Functions and values have matching elements, applied positionally
--- **Nested patterns**: Functions and values have matching nesting, applied recursively
--- **Mismatched structures**: Zip-like truncation applies up to minimum element count
---
+-- Pattern 5 [Pattern 6 []]
 instance Applicative Pattern where
-  -- | Wrap a value in an atomic pattern.
-  --
-  -- Creates a pattern with the provided value and an empty elements list.
-  -- This enables values to be used in applicative operations with patterns.
-  --
-  -- === Examples
-  --
-  -- >>> pure 5
-  -- Pattern {value = 5, elements = []}
-  --
-  -- >>> pure "hello"
-  -- Pattern {value = "hello", elements = []}
-  --
-  -- >>> pure (+1) <*> pure 5
-  -- Pattern {value = 6, elements = []}
-  --
+  pure :: a -> Pattern a
   pure x = Pattern x []
-  
-  -- | Apply functions stored in a pattern to values stored in a pattern.
-  --
-  -- Uses structure-preserving/zip-like semantics: applies functions to values
-  -- at corresponding positions (root to root, element to element). When element
-  -- counts differ, applies functions to values up to the minimum element count,
-  -- ignoring extra elements in the longer pattern.
-  --
-  -- === Structure-Preserving Semantics
-  --
-  -- The operator preserves pattern structure during function application:
-  --
-  -- * Root function is applied to root value
-  -- * Element functions are applied to element values at corresponding positions
-  -- * Function application is applied recursively to nested patterns
-  -- * Zip-like truncation handles mismatched element counts
-  --
-  -- === Examples
-  --
-  -- Atomic patterns:
-  --
-  -- >>> let f = pure (+1)
-  -- >>> let x = pure 5
-  -- >>> f <*> x
-  -- Pattern {value = 6, elements = []}
-  --
-  -- Patterns with elements:
-  --
-  -- >>> let fs = patternWith id [pure (*2), pure (+10)]
-  -- >>> let xs = patternWith 5 [pure 3, pure 7]
-  -- >>> fs <*> xs
-  -- Pattern {value = 5, elements = [Pattern {value = 6, elements = []}, Pattern {value = 17, elements = []}]}
-  --
-  -- Mismatched element counts (truncation):
-  --
-  -- >>> let fs = patternWith id [pure (*2)]  -- 1 element
-  -- >>> let xs = patternWith 5 [pure 3, pure 7]   -- 2 elements
-  -- >>> fs <*> xs
-  -- Pattern {value = 5, elements = [Pattern {value = 6, elements = []}]}
-  --
-  Pattern f fs <*> Pattern x xs = 
-    Pattern (f x) (applyElements fs xs)
-    where
-      -- Apply element functions to element values
-      -- If one list is empty (atomic pattern), broadcast to all elements of the other
-      -- This handles the case where pure function/value is applied to pattern with elements
-      applyElements [] ys = map (pure f <*>) ys  -- pure function broadcast to all value elements
-      applyElements ys [] = map (<*> pure x) ys  -- pure value broadcast to all function elements
-      applyElements fs' xs' = zipWith (<*>) fs' xs'  -- zip-like truncation: apply up to minimum length
-      
-      -- Edge case handling:
-      -- * Empty elements lists: Both patterns atomic, result is atomic (handled by root application)
-      -- * Mismatched element counts: Zip-like truncation applies functions to values up to minimum count
-      -- * Deeply nested patterns: Recursive application handles all nesting levels
-      -- * Atomic with elements: Broadcasting handles pure function/value with pattern elements
 
--- | Foldable instance for Pattern.
+  (<*>) :: Pattern (a -> b) -> Pattern a -> Pattern b
+  (Pattern f fs) <*> (Pattern x xs) = Pattern (f x) (zipWith (<*>) fs xs)
+
+-- | 'Comonad' instance for 'Pattern'.
 --
--- Enables folding over all values in a pattern structure, including the pattern's
--- own value and all element values at all nesting levels. The Foldable instance
--- provides value aggregation capabilities, allowing developers to compute statistics,
--- combine values, and perform calculations over pattern structures without manually
--- traversing the pattern tree.
+-- Enables context-aware computations where functions have access to the full
+-- structural context (parent, siblings, depth, indices) around each value.
 --
--- === Value Aggregation
+-- Semantics:
+-- * 'extract' returns the decoration value at the current focus (root).
+-- * 'duplicate' creates a pattern where each position contains the full pattern
+--   structure focused at that position. This allows each position to "see" its
+--   structural context.
+-- * 'extend' applies a context-aware function to each position in the pattern.
 --
--- The Foldable instance processes all values in the pattern structure:
---
--- * The pattern's own value is included in folding operations
--- * All element values are processed recursively
--- * Values from all nesting levels are included
---
--- This enables efficient aggregation operations like summing integers, concatenating
--- strings, counting elements, or computing custom statistics over pattern values.
---
--- === Folding Order
---
--- The @foldr@ operation processes values in right-to-left order:
---
--- * Element values are processed first (right-to-left through the elements list)
--- * The pattern's own value is processed last
---
--- This order ensures that when building data structures or applying operations that
--- depend on processing order, the pattern's own value is combined with the already
--- processed element values.
---
--- === Foldable Laws
---
--- The Foldable instance satisfies standard foldable laws and properties. These laws
--- ensure mathematical correctness and predictable behavior for all foldable operations.
---
--- **Law 1: toList extracts all values**
---
--- For any pattern @p :: Pattern a@, @toList p@ extracts all values from the pattern
--- structure as a flat list. The pattern's own value and all element values at all
--- nesting levels are included exactly once:
---
--- @
--- toList (Pattern v els) = v : concatMap toList els
--- @
---
--- This law ensures that @toList@ processes all values in the pattern structure
--- without duplication or omission.
---
--- **Law 2: foldr processes all values**
---
--- For any pattern @p :: Pattern a@, function @f :: a -> b -> b@, and initial value @z :: b@,
--- @foldr f z p@ processes all values in the pattern structure exactly once:
---
--- @
--- foldr f z (Pattern v els) = f v (foldr (\e acc -> foldr f acc e) z els)
--- @
---
--- This law ensures that @foldr@ processes the pattern's own value and all element
--- values recursively, maintaining right-associative semantics.
---
--- **Law 3: foldl processes all values**
---
--- For any pattern @p :: Pattern a@, function @f :: b -> a -> b@, and initial value @z :: b@,
--- @foldl f z p@ processes all values in the pattern structure exactly once:
---
--- @
--- foldl f z (Pattern v els) = foldl (\acc e -> foldl f acc e) (f z v) els
--- @
---
--- This law ensures that @foldl@ processes the pattern's own value first, then all
--- element values recursively, maintaining left-associative semantics.
---
--- **Law 4: foldMap with monoids**
---
--- For any pattern @p :: Pattern a@, function @f :: a -> m@ where @m@ is a monoid,
--- @foldMap f p@ maps all values to monoids and combines them:
---
--- @
--- foldMap f (Pattern v els) = f v <> foldMap (\e -> foldMap f e) els
--- @
---
--- This law ensures that @foldMap@ processes all values and combines them using
--- monoid operations, enabling efficient aggregation.
---
--- **Law 5: Relationship between toList and foldr**
---
--- For any pattern @p :: Pattern a@, @toList p@ is equivalent to @foldr (:) [] p@:
---
--- @
--- toList p = foldr (:) [] p
--- @
---
--- This law ensures that @toList@ is correctly derived from @foldr@ and extracts
--- all values as a flat list.
---
--- **Law 6: Commutative operations produce same results**
---
--- For any pattern @p :: Pattern a@ and commutative operation @f@, @foldr f z p@
--- and @foldl f z p@ produce the same result:
---
--- @
--- foldr (+) 0 p = foldl (+) 0 p  -- for commutative operations
--- @
---
--- This law ensures that for commutative operations like addition and multiplication,
--- both folding directions produce identical results.
---
--- **Property: Order preservation**
---
--- For any pattern @p :: Pattern a@, multiple calls to @toList p@ produce the same
--- result in the same order:
---
--- @
--- toList p == toList p  -- always true, order is preserved
--- @
---
--- This property ensures that @toList@ is deterministic and preserves the order
--- of values in the pattern structure.
---
--- **Property: All values processed**
---
--- For any pattern @p :: Pattern a@, the number of values in @toList p@ equals the
--- total number of values in the pattern structure (pattern's value plus all element
--- values at all nesting levels):
---
--- @
--- length (toList p) = countValues p
--- @
---
--- where @countValues@ manually counts all values in the pattern structure.
---
--- These laws and properties are verified through property-based testing to ensure
--- mathematical correctness for all pattern structures (atomic, with elements, nested).
+-- Laws:
+-- * Left Identity: `extract . extend f == f`
+-- * Right Identity: `extend extract == id`
+-- * Associativity: `extend f . extend g == extend (f . extend g)`
 --
 -- === Examples
 --
--- Summing integer values from an atomic pattern:
+-- Extract returns the root value:
+--
+-- >>> p = pattern 5
+-- >>> extract p
+-- 5
+--
+-- Duplicate creates context structure:
+--
+-- >>> p = patternWith "root" [pattern "child"]
+-- >>> d = duplicate p
+-- >>> value d
+-- Pattern "root" [Pattern "child" []]
+-- >>> value (head (elements d))
+-- Pattern "child" []
+--
+-- Extend applies context-aware function:
+--
+-- >>> p = patternWith 1 [pattern 2, pattern 3]
+-- >>> -- Calculate sum of subtree at each position
+-- >>> sumSubtree (Pattern v es) = v + sum (map (extract . fmap sumSubtree) es)
+-- >>> -- Note: proper implementation would use sizeAt or similar helper
+-- >>> extend (const "context") p
+-- Pattern "context" [Pattern "context" [],Pattern "context" []]
+instance Comonad Pattern where
+  extract :: Pattern a -> a
+  extract (Pattern v _) = v
+
+  duplicate :: Pattern a -> Pattern (Pattern a)
+  duplicate p@(Pattern _ es) = Pattern p (map duplicate es)
+
+  extend :: (Pattern a -> b) -> Pattern a -> Pattern b
+  extend f p@(Pattern _ es) = Pattern (f p) (map (extend f) es)
+
+-- | 'Foldable' instance for 'Pattern'.
+--
+-- folds over the values decorating the pattern structure.
+--
+-- The fold order is defined by the recursive structure:
+-- 1. The value at the current node
+-- 2. The elements in the elements list (recursively)
+--
+-- === Examples
+--
+-- >>> atom = pattern "test"
+-- >>> toList atom
+-- ["test"]
+--
+-- >>> pattern = patternWith "root" [pattern "a", pattern "b"]
+-- >>> toList pattern
+-- ["root","a","b"]
+--
+-- >>> sum (patternWith 1 [pattern 2, pattern 3])
+-- 6
+instance Foldable Pattern where
+  foldMap f (Pattern v es) = f v <> foldMap (foldMap f) es
+
+-- | 'Traversable' instance for 'Pattern'.
+--
+-- Enables effectful traversal over pattern values while preserving structure.
+--
+-- Semantics:
+-- * Applies an effectful function to each value.
+-- * Sequences the effects.
+-- * Reconstructs the pattern structure with the results.
+--
+-- Laws:
+-- * Naturality: `t . traverse f = traverse (t . f)`
+-- * Identity: `traverse Identity = Identity`
+-- * Composition: `traverse (Compose . fmap g . f) = Compose . fmap (traverse g) . traverse f`
+--
+-- === Examples
+--
+-- Basic traversal with Identity (equivalent to fmap):
+--
+-- >>> import Data.Functor.Identity
+-- >>> pattern = patternWith 1 [pattern 2]
+-- >>> runIdentity $ traverse (Identity . (*2)) pattern
+-- Pattern 2 [Pattern 4 []]
+--
+-- Traversal with Maybe (validation):
+--
+-- >>> let validate x = if x > 0 then Just x else Nothing
+-- >>> pattern = patternWith 1 [pattern 2]
+-- >>> traverse validate pattern
+-- Just (Pattern 1 [Pattern 2 []])
+--
+-- >>> invalid = patternWith 1 [pattern (-1)]
+-- >>> traverse validate invalid
+-- Nothing
+--
+-- Sequencing effects:
+--
+-- >>> pattern = patternWith (Just 1) [pattern (Just 2)]
+-- >>> sequenceA pattern
+-- Just (Pattern 1 [Pattern 2 []])
+--
+-- Atomic pattern:
 --
 -- >>> atom = pattern 5
--- >>> foldr (+) 0 atom
--- 5
+-- >>> traverse (Just . (*2)) atom
+-- Just (Pattern 10 [])
 --
--- Summing integer values from a pattern with multiple elements:
+-- Pattern with multiple elements:
 --
--- >>> elem1 = pattern 10
--- >>> elem2 = pattern 20
--- >>> pattern = patternWith 100 [elem1, elem2]
--- >>> foldr (+) 0 pattern
--- 130
+-- >>> let validate x = if x > 0 then Just x else Nothing
+-- >>> elem1 = pattern 5
+-- >>> elem2 = pattern 10
+-- >>> pattern = patternWith 20 [elem1, elem2]
+-- >>> traverse validate pattern
+-- Just (Pattern 20 [Pattern 5 [],Pattern 10 []])
 --
--- Concatenating string values from a pattern:
+-- Nested pattern structure:
 --
--- >>> elem1 = pattern "hello"
--- >>> elem2 = pattern "world"
--- >>> pattern = patternWith "greeting" [elem1, elem2]
--- >>> foldr (++) "" pattern
--- "greetinghelloworld"
---
--- Summing values from a nested pattern structure:
---
+-- >>> let validate x = if x > 0 then Just x else Nothing
 -- >>> inner = pattern 1
 -- >>> middle = patternWith 2 [inner]
--- >>> outer = patternWith 3 [middle]
--- >>> pattern = patternWith 4 [outer]
--- >>> foldr (+) 0 pattern
--- 10
---
--- Counting all values in a pattern:
---
--- >>> elem1 = pattern "a"
--- >>> elem2 = pattern "b"
--- >>> pattern = patternWith "root" [elem1, elem2]
--- >>> foldr (\_ acc -> acc + 1) 0 pattern
--- 3
---
--- === Edge Cases
---
--- The Foldable instance handles all pattern structures correctly:
---
--- **Atomic patterns** (no elements):
---
--- >>> atom = pattern 42
--- >>> foldr (+) 0 atom
--- 42
--- >>> toList atom
--- [42]
--- >>> foldl (+) 0 atom
--- 42
--- >>> getSum (foldMap Sum atom)
--- 42
---
--- **Patterns with empty elements list**:
---
--- >>> pattern = pattern 10
--- >>> foldr (+) 0 pattern
--- 10
--- >>> toList pattern
--- [10]
--- >>> foldl (+) 0 pattern
--- 10
---
--- **Singular patterns** (one element):
---
--- >>> elem = pattern 5
--- >>> pattern = patternWith 10 [elem]
--- >>> foldr (+) 0 pattern
--- 15
--- >>> toList pattern
--- [10, 5]
--- >>> foldl (+) 0 pattern
--- 15
---
--- **Patterns with many elements**:
---
--- >>> elems = map pattern [1..5]
--- >>> pattern = patternWith 100 elems
--- >>> foldr (+) 0 pattern
--- 115
--- >>> length (toList pattern)
--- 6
--- >>> head (toList pattern)
--- 100
---
--- **Nested patterns** (multiple levels):
---
--- >>> level3 = pattern 1
--- >>> level2 = patternWith 2 [level3]
--- >>> level1 = patternWith 3 [level2]
--- >>> pattern = patternWith 4 [level1]
--- >>> foldr (+) 0 pattern
--- 10
--- >>> toList pattern
--- [4, 3, 2, 1]
---
--- **Deep nesting** (3+ levels):
---
--- >>> level4 = pattern 1
--- >>> level3 = patternWith 2 [level4]
--- >>> level2 = patternWith 3 [level3]
--- >>> level1 = patternWith 4 [level2]
--- >>> pattern = patternWith 5 [level1]
--- >>> foldr (+) 0 pattern
--- 15
--- >>> toList pattern
--- [5, 4, 3, 2, 1]
---
--- **Patterns with different value types**:
---
--- String values:
---
--- >>> elem1 = pattern "hello"
--- >>> elem2 = pattern "world"
--- >>> pattern = patternWith "greeting" [elem1, elem2]
--- >>> foldr (++) "" pattern
--- "greetinghelloworld"
--- >>> toList pattern
--- ["greeting", "hello", "world"]
---
--- Integer values:
---
--- >>> elem1 = pattern 10
--- >>> elem2 = pattern 20
--- >>> pattern = patternWith 100 [elem1, elem2]
--- >>> foldr (+) 0 pattern
--- 130
--- >>> getSum (foldMap Sum pattern)
--- 130
---
--- **Order preservation**:
---
--- >>> elem1 = pattern "first"
--- >>> elem2 = pattern "second"
--- >>> elem3 = pattern "third"
--- >>> pattern = patternWith "root" [elem1, elem2, elem3]
--- >>> toList pattern
--- ["root", "first", "second", "third"]
--- >>> foldr (:) [] pattern
--- ["root", "first", "second", "third"]
---
--- **Nested patterns with varying depths**:
---
--- >>> branch1 = patternWith 10 [pattern 1]
--- >>> branch2 = patternWith 20 [patternWith 2 [pattern 3]]
--- >>> branch3 = pattern 30
--- >>> pattern = patternWith 100 [branch1, branch2, branch3]
--- >>> foldr (+) 0 pattern
--- 166
--- >>> length (toList pattern)
--- 7
---
-instance Foldable Pattern where
-  -- | Right-associative fold over pattern values.
-  --
-  -- Processes all values in the pattern structure, including the pattern's own value
-  -- and all element values at all nesting levels. Element values are processed first
-  -- (right-to-left through the elements list), then the pattern's own value is combined
-  -- with the accumulated result.
-  --
-  -- === Processing Order
-  --
-  -- The @foldr@ operation processes values in a specific order:
-  --
-  -- 1. Element values are processed first (right-to-left through the elements list)
-  -- 2. The pattern's own value is processed last (combined with accumulated elements)
-  --
-  -- When building lists with @foldr (:) []@ or using @toList@, this results in the
-  -- pattern's own value appearing first in the list, followed by element values in order.
-  --
-  -- === Examples
-  --
-  -- Atomic pattern:
-  --
-  -- >>> atom = pattern 5
-  -- >>> foldr (+) 0 atom
-  -- 5
-  --
-  -- Pattern with multiple elements (order: elements first, then pattern's value):
-  --
-  -- >>> elem1 = pattern 10
-  -- >>> elem2 = pattern 20
-  -- >>> pattern = patternWith 100 [elem1, elem2]
-  -- >>> foldr (+) 0 pattern
-  -- 130
-  --
-  -- Building a list preserves order (pattern's value first, then elements):
-  --
-  -- >>> toList pattern
-  -- [100, 10, 20]
-  --
-  -- Nested pattern structure:
-  --
-  -- >>> inner = pattern 1
-  -- >>> middle = patternWith 2 [inner]
-  -- >>> pattern = patternWith 3 [middle]
-  -- >>> foldr (+) 0 pattern
-  -- 6
-  --
-  -- Order preservation in nested structures:
-  --
-  -- >>> toList pattern
-  -- [3, 2, 1]
-  --
-  -- === Right-Associativity
-  --
-  -- The @foldr@ operation is right-associative, meaning operations are grouped from
-  -- right to left. For commutative operations like addition, this produces the same
-  -- result as left-associative folding. For non-commutative operations, the order
-  -- matters and is preserved as described above.
-  --
-  -- Example with commutative operation (addition):
-  --
-  -- >>> elem1 = pattern 10
-  -- >>> elem2 = pattern 20
-  -- >>> pattern = patternWith 100 [elem1, elem2]
-  -- >>> foldr (+) 0 pattern
-  -- 130
-  -- >>> foldr (+) 0 (toList pattern)
-  -- 130
-  --
-  -- Example with non-commutative operation (list building):
-  --
-  -- >>> elem1 = pattern "a"
-  -- >>> elem2 = pattern "b"
-  -- >>> pattern = patternWith "root" [elem1, elem2]
-  -- >>> toList pattern
-  -- ["root", "a", "b"]
-  --
-  foldr f z (Pattern v els) = f v (foldr (\e acc -> foldr f acc e) z els)
-  
-  -- | Left-associative fold over pattern values.
-  --
-  -- Processes all values in the pattern structure, including the pattern's own value
-  -- and all element values at all nesting levels. Values are processed in left-to-right
-  -- order: the pattern's own value is processed first, then element values are processed
-  -- recursively from left to right.
-  --
-  -- === Processing Order
-  --
-  -- The @foldl@ operation processes values in a specific order:
-  --
-  -- 1. The pattern's own value is processed first (combined with initial accumulator)
-  -- 2. Element values are processed recursively from left to right
-  --
-  -- This order ensures that when applying operations that require strict left-to-right
-  -- evaluation, the pattern's own value is combined first, followed by element values
-  -- in their natural order.
-  --
-  -- === Examples
-  --
-  -- Atomic pattern:
-  --
-  -- >>> atom = pattern 5
-  -- >>> foldl (+) 0 atom
-  -- 5
-  --
-  -- Pattern with multiple elements (order: pattern's value first, then elements left-to-right):
-  --
-  -- >>> elem1 = pattern 10
-  -- >>> elem2 = pattern 20
-  -- >>> pattern = patternWith 100 [elem1, elem2]
-  -- >>> foldl (+) 0 pattern
-  -- 130
-  --
-  -- Computing running total with left-associative operations:
-  --
-  -- >>> foldl (-) 0 pattern
-  -- -130
-  --
-  -- Nested pattern structure:
-  --
-  -- >>> inner = pattern 1
-  -- >>> middle = patternWith 2 [inner]
-  -- >>> pattern = patternWith 3 [middle]
-  -- >>> foldl (+) 0 pattern
-  -- 6
-  --
-  -- === Left-Associativity
-  --
-  -- The @foldl@ operation is left-associative, meaning operations are grouped from
-  -- left to right. For commutative operations like addition, this produces the same
-  -- result as right-associative folding. For non-commutative operations, the order
-  -- matters and is preserved as described above.
-  --
-  -- Example with commutative operation (addition):
-  --
-  -- >>> elem1 = Pattern { value = 10, elements = [] }
-  -- >>> elem2 = Pattern { value = 20, elements = [] }
-  -- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
-  -- >>> foldl (+) 0 pattern
-  -- 130
-  -- >>> foldl (+) 0 (toList pattern)
-  -- 130
-  --
-  -- Example with non-commutative operation (subtraction):
-  --
-  -- >>> elem1 = Pattern { value = 5, elements = [] }
-  -- >>> elem2 = Pattern { value = 3, elements = [] }
-  -- >>> pattern = Pattern { value = 10, elements = [elem1, elem2] }
-  -- >>> foldl (-) 0 pattern
-  -- -18
-  --
-  foldl f z (Pattern v els) = Prelude.foldl (\acc e -> foldl f acc e) (f z v) els
-  
-  -- | Map values to monoids and combine them efficiently.
-  --
-  -- Maps each value in the pattern structure to a monoid and combines them
-  -- using monoid operations. This provides a declarative approach for common
-  -- aggregation patterns like summing, concatenating, or counting without
-  -- explicitly writing fold functions.
-  --
-  -- The @foldMap@ operation processes all values in the pattern structure,
-  -- including the pattern's own value and all element values at all nesting
-  -- levels. Values are mapped to monoids and combined using the monoid's
-  -- @mappend@ operation (or @<>@).
-  --
-  -- === Examples
-  --
-  -- Summing integer values with Sum monoid:
-  --
-  -- >>> elem1 = Pattern { value = 10, elements = [] }
-  -- >>> elem2 = Pattern { value = 20, elements = [] }
-  -- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
-  -- >>> getSum (foldMap Sum pattern)
-  -- 130
-  --
-  -- Concatenating string values with list monoid:
-  --
-  -- >>> elem1 = Pattern { value = "hello", elements = [] }
-  -- >>> elem2 = Pattern { value = "world", elements = [] }
-  -- >>> pattern = Pattern { value = "greeting", elements = [elem1, elem2] }
-  -- >>> foldMap (: []) pattern
-  -- ["greeting", "hello", "world"]
-  --
-  -- Logical AND with All monoid:
-  --
-  -- >>> elem1 = Pattern { value = True, elements = [] }
-  -- >>> elem2 = Pattern { value = True, elements = [] }
-  -- >>> pattern = Pattern { value = True, elements = [elem1, elem2] }
-  -- >>> getAll (foldMap All pattern)
-  -- True
-  --
-  -- Nested pattern structure:
-  --
-  -- >>> inner = Pattern { value = 1, elements = [] }
-  -- >>> middle = Pattern { value = 2, elements = [inner] }
-  -- >>> pattern = Pattern { value = 3, elements = [middle] }
-  -- >>> getSum (foldMap Sum pattern)
-  -- 6
-  --
-  -- === Monoid Operations
-  --
-  -- The @foldMap@ operation uses monoid operations to combine mapped values:
-  --
-  -- * @Sum@ monoid: Addition for numeric values
-  -- * @Product@ monoid: Multiplication for numeric values
-  -- * @All@ monoid: Logical AND for boolean values
-  -- * @Any@ monoid: Logical OR for boolean values
-  -- * List monoid: Concatenation for lists
-  -- * Custom monoids: Any type with a Monoid instance
-  --
-  -- === Efficiency
-  --
-  -- The @foldMap@ operation is implemented efficiently using the pattern's
-  -- @foldr@ implementation. For monoids that support efficient combination,
-  -- this provides optimal performance for aggregation operations.
-  --
-  -- Example with Sum monoid (efficient):
-  --
-  -- >>> getSum (foldMap Sum (Pattern { value = 5, elements = [] }))
-  -- 5
-  --
-  -- Example with list monoid (efficient concatenation):
-  --
-  -- >>> foldMap (: []) (Pattern { value = "test", elements = [] })
-  -- ["test"]
-  --
-  -- Note: @foldMap@ is automatically derived from @foldr@ and works correctly
-  -- for all pattern structures. The default implementation processes all values
-  -- in the pattern structure, including the pattern's own value and all element
-  -- values at all nesting levels.
-  
-  -- Note: @toList@ is automatically derived from @foldr@ and extracts all values
-  -- as a flat list. The pattern's own value and all element values at all
-  -- nesting levels are included in the result.
-
--- | Traversable instance for Pattern.
---
--- Enables effectful traversal over all values in a pattern structure while
--- preserving pattern structure (element count, nesting depth, element order).
--- The Traversable instance provides the @traverse@ operation that applies
--- effectful functions to all values in the pattern structure, combining effects
--- using applicative semantics.
---
--- === Effectful Traversal
---
--- The Traversable instance processes all values in the pattern structure:
---
--- * The pattern's own value is processed first
--- * All element values are processed recursively
--- * Values from all nesting levels are included
--- * Effects are combined using applicative semantics
---
--- This enables operations like validation, state threading, IO operations, and
--- error handling over pattern values while maintaining pattern structure.
---
--- === Structure Preservation
---
--- The Traversable instance preserves pattern structure during traversal:
---
--- * Element count: The number of elements remains unchanged
--- * Nesting depth: The nesting structure is preserved
--- * Element order: The order of elements is maintained
---
--- Only the values are transformed; the pattern structure itself remains identical.
---
--- === Effect Combination
---
--- Effects are combined using standard applicative semantics for each applicative functor:
---
--- * **Maybe**: Short-circuits to Nothing if any value produces Nothing
--- * **Either**: Short-circuits to Left with first error if any value produces Left
--- * **[]**: Collects all results from all values
--- * **Identity**: Preserves structure without effects
--- * **IO**: Performs all IO operations and combines results
--- * **State**: Threads state through all values
---
--- === Traversable Laws
---
--- The Traversable instance satisfies the standard traversable laws, which are verified
--- through property-based testing in the test suite:
---
--- **Naturality Law**: For any applicative transformation @t@ and function @f@,
---
--- @
--- t . traverse f = traverse (t . f)
--- @
---
--- This law ensures that applicative transformations commute with traversal.
---
--- **Identity Law**: For all patterns @p :: Pattern a@,
---
--- @
--- traverse Identity p = Identity p
--- @
---
--- This law states that traversing with the Identity applicative functor produces
--- the same pattern wrapped in Identity.
---
--- **Composition Law**: For all patterns @p :: Pattern a@ and functions @f@ and @g@,
---
--- @
--- traverse (Compose . fmap g . f) p = Compose . fmap (traverse g) . traverse f $ p
--- @
---
--- This law ensures that composition of traversals equals sequential traversal.
---
--- All laws hold for all pattern structures (atomic, with elements, nested) and all
--- value types, as verified by property-based tests.
---
--- === Examples
---
--- Traversing atomic pattern with Identity (no effects):
---
--- >>> atom = Pattern { value = "test", elements = [] }
--- >>> traverse Identity atom
--- Identity (Pattern {value = "test", elements = []})
---
--- Traversing atomic pattern with Maybe (validation):
---
--- >>> let validate x = if x > 0 then Just x else Nothing
--- >>> traverse validate (Pattern { value = 5, elements = [] })
--- Just (Pattern {value = 5, elements = []})
---
--- >>> traverse validate (Pattern { value = -3, elements = [] })
--- Nothing
---
--- Traversing atomic pattern with Either (error handling):
---
--- >>> let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
--- >>> traverse validate (Pattern { value = 5, elements = [] })
--- Right (Pattern {value = 5, elements = []})
---
--- >>> traverse validate (Pattern { value = -3, elements = [] })
--- Left "Invalid: -3"
---
--- Traversing pattern with multiple elements:
---
--- >>> let validate x = if x > 0 then Just x else Nothing
--- >>> elem1 = Pattern { value = 5, elements = [] }
--- >>> elem2 = Pattern { value = 10, elements = [] }
--- >>> pattern = Pattern { value = 20, elements = [elem1, elem2] }
+-- >>> pattern = patternWith 3 [middle]
 -- >>> traverse validate pattern
--- Just (Pattern {value = 20, elements = [Pattern {value = 5, elements = []},Pattern {value = 10, elements = []}]})
+-- Just (Pattern 3 [Pattern 2 [Pattern 1 []]])
 --
--- Traversing nested pattern structure:
---
--- >>> let validate x = if x > 0 then Just x else Nothing
--- >>> inner = Pattern { value = 1, elements = [] }
--- >>> middle = Pattern { value = 2, elements = [inner] }
--- >>> outer = Pattern { value = 3, elements = [middle] }
--- >>> pattern = Pattern { value = 4, elements = [outer] }
--- >>> traverse validate pattern
--- Just (Pattern {value = 4, elements = [Pattern {value = 3, elements = [Pattern {value = 2, elements = [Pattern {value = 1, elements = []}]}]}]})
---
--- === Edge Cases
---
--- The Traversable instance handles all pattern structures correctly:
---
--- **Atomic patterns** (no elements):
---
--- >>> traverse Identity (Pattern { value = "atom", elements = [] })
--- Identity (Pattern {value = "atom", elements = []})
---
--- **Singular patterns** (one element):
---
--- >>> elem = Pattern { value = "elem", elements = [] }
--- >>> pattern = Pattern { value = "singular", elements = [elem] }
--- >>> traverse Identity pattern
--- Identity (Pattern {value = "singular", elements = [Pattern {value = "elem", elements = []}]})
---
--- **Patterns with many elements**:
---
--- >>> elems = [Pattern { value = "a", elements = [] }, Pattern { value = "b", elements = [] }]
--- >>> pattern = Pattern { value = "root", elements = elems }
--- >>> traverse Identity pattern
--- Identity (Pattern {value = "root", elements = [Pattern {value = "a", elements = []},Pattern {value = "b", elements = []}]})
---
--- **Deep nesting** (3+ levels):
---
--- >>> level3 = Pattern { value = "level3", elements = [] }
--- >>> level2 = Pattern { value = "level2", elements = [level3] }
--- >>> level1 = Pattern { value = "level1", elements = [level2] }
--- >>> pattern = Pattern { value = "root", elements = [level1] }
--- >>> traverse Identity pattern
--- Identity (Pattern {value = "root", elements = [Pattern {value = "level1", elements = [Pattern {value = "level2", elements = [Pattern {value = "level3", elements = []}]}]}]})
---
--- === Validation Use Cases
---
--- The Traversable instance enables validation of pattern values using Maybe or Either
--- applicative functors. Validation functions can check values and return success or
--- failure, with effects combined using applicative semantics.
---
--- **Validation with Maybe** (simple success/failure):
+-- Effect failure propagation:
 --
 -- >>> let validate x = if x > 0 then Just x else Nothing
--- >>> elem1 = Pattern { value = 5, elements = [] }
--- >>> elem2 = Pattern { value = 10, elements = [] }
--- >>> pattern = Pattern { value = 20, elements = [elem1, elem2] }
--- >>> traverse validate pattern
--- Just (Pattern {value = 20, elements = [Pattern {value = 5, elements = []},Pattern {value = 10, elements = []}]})
---
--- >>> let validate x = if x > 0 then Just x else Nothing
--- >>> elem1 = Pattern { value = 5, elements = [] }
--- >>> elem2 = Pattern { value = -3, elements = [] }
--- >>> pattern = Pattern { value = 20, elements = [elem1, elem2] }
+-- >>> inner = pattern (-1) -- Invalid value
+-- >>> middle = patternWith 2 [inner]
+-- >>> pattern = patternWith 3 [middle]
 -- >>> traverse validate pattern
 -- Nothing
---
--- **Validation with Either** (success with error messages):
---
--- >>> let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
--- >>> elem1 = Pattern { value = 5, elements = [] }
--- >>> elem2 = Pattern { value = 10, elements = [] }
--- >>> pattern = Pattern { value = 20, elements = [elem1, elem2] }
--- >>> traverse validate pattern
--- Right (Pattern {value = 20, elements = [Pattern {value = 5, elements = []},Pattern {value = 10, elements = []}]})
---
--- >>> let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
--- >>> elem1 = Pattern { value = 5, elements = [] }
--- >>> elem2 = Pattern { value = -3, elements = [] }
--- >>> pattern = Pattern { value = 20, elements = [elem1, elem2] }
--- >>> traverse validate pattern
--- Left "Invalid: -3"
---
--- **Validation on nested patterns**:
---
--- >>> let validate x = if x > 0 then Just x else Nothing
--- >>> inner = Pattern { value = 1, elements = [] }
--- >>> middle = Pattern { value = 2, elements = [inner] }
--- >>> outer = Pattern { value = 3, elements = [middle] }
--- >>> pattern = Pattern { value = 4, elements = [outer] }
--- >>> traverse validate pattern
--- Just (Pattern {value = 4, elements = [Pattern {value = 3, elements = [Pattern {value = 2, elements = [Pattern {value = 1, elements = []}]}]}]})
---
--- >>> let validate x = if x > 0 then Just x else Nothing
--- >>> inner = Pattern { value = -1, elements = [] }
--- >>> middle = Pattern { value = 2, elements = [inner] }
--- >>> outer = Pattern { value = 3, elements = [middle] }
--- >>> pattern = Pattern { value = 4, elements = [outer] }
--- >>> traverse validate pattern
--- Nothing
---
--- === Error Handling Patterns
---
--- The Traversable instance supports two error handling patterns:
---
--- **Maybe pattern**: Use when you only need to know if validation succeeded or failed.
--- Short-circuits to Nothing on first failure. Useful for simple validation where error
--- messages are not needed.
---
--- **Either pattern**: Use when you need error messages explaining why validation failed.
--- Short-circuits to Left with first error encountered. Useful for validation where
--- detailed error reporting is required.
---
--- Both patterns ensure that validation fails if any value at any nesting level is invalid,
--- providing comprehensive validation coverage for entire pattern structures.
---
 instance Traversable Pattern where
-  -- | Effectful traversal over pattern values.
-  --
-  -- Applies an effectful function to all values in the pattern structure while
-  -- preserving pattern structure. The function is applied to the pattern's own
-  -- value first, then recursively to all element values at all nesting levels.
-  -- Effects are combined using applicative semantics.
-  --
-  -- === Processing Order
-  --
-  -- The @traverse@ operation processes values in a specific order:
-  --
-  -- 1. The pattern's own value is processed first
-  -- 2. Element values are processed recursively from left to right
-  --
-  -- This order ensures that when building data structures or applying operations
-  -- that depend on processing order, the pattern's own value is processed first,
-  -- followed by element values in their natural order.
-  --
-  -- === Examples
-  --
-  -- Atomic pattern:
-  --
-  -- >>> traverse Identity (pattern 5)
-  -- Identity (Pattern {value = 5, elements = []})
-  --
-  -- Pattern with multiple elements:
-  --
-  -- >>> let validate x = if x > 0 then Just x else Nothing
-  -- >>> elem1 = pattern 5
-  -- >>> elem2 = pattern 10
-  -- >>> pattern = patternWith 20 [elem1, elem2]
-  -- >>> traverse validate pattern
-  -- Just (Pattern {value = 20, elements = [Pattern {value = 5, elements = []},Pattern {value = 10, elements = []}]})
-  --
-  -- Nested pattern structure:
-  --
-  -- >>> let validate x = if x > 0 then Just x else Nothing
-  -- >>> inner = pattern 1
-  -- >>> middle = patternWith 2 [inner]
-  -- >>> pattern = patternWith 3 [middle]
-  -- >>> traverse validate pattern
-  -- Just (Pattern {value = 3, elements = [Pattern {value = 2, elements = [Pattern {value = 1, elements = []}]}]})
-  --
-  traverse f (Pattern v els) = 
-    Pattern <$> f v <*> traverse (traverse f) els
-  
-  -- | Sequence applicative effects from a pattern.
-  --
-  -- Converts a pattern containing applicative values into an applicative
-  -- value containing a pattern. Effects are combined using applicative semantics.
-  -- This is equivalent to @traverse id@.
-  --
-  -- === Effect Sequencing
-  --
-  -- The @sequenceA@ operation processes all values in the pattern structure:
-  --
-  -- * The pattern's own value is processed first
-  -- * All element values are processed recursively
-  -- * Values from all nesting levels are included
-  -- * Effects are combined using applicative semantics
-  --
-  -- This enables collecting effects from pattern values and working with
-  -- effectful patterns in a structured way.
-  --
-  -- === Structure Preservation
-  --
-  -- The @sequenceA@ operation preserves pattern structure during sequencing:
-  --
-  -- * Element count: The number of elements remains unchanged
-  -- * Nesting depth: The nesting structure is preserved
-  -- * Element order: The order of elements is maintained
-  --
-  -- Only the values are unwrapped from their applicative contexts; the pattern
-  -- structure itself remains identical.
-  --
-  -- === Effect Combination
-  --
-  -- Effects are combined using standard applicative semantics for each applicative functor:
-  --
-  -- * **Maybe**: Returns Just pattern if all values are Just, Nothing otherwise (short-circuits on first Nothing)
-  -- * **Either**: Returns Right pattern if all values are Right, Left with first error otherwise (short-circuits on first Left)
-  -- * **[]**: Collects all combinations of values
-  -- * **Identity**: Unwraps Identity values
-  -- * **IO**: Performs all IO operations and combines results
-  -- * **State**: Threads state through all values
-  --
-  -- === Relationship to traverse
-  --
-  -- The @sequenceA@ operation is equivalent to @traverse id@:
-  --
-  -- @
-  -- sequenceA = traverse id
-  -- @
-  --
-  -- This relationship ensures that sequencing effects is consistent with
-  -- effectful traversal operations.
-  --
-  -- === Examples
-  --
-  -- Sequencing pattern containing Identity values:
-  --
-  -- >>> atom = pattern (Identity "test")
-  -- >>> sequenceA atom
-  -- Identity (Pattern {value = "test", elements = []})
-  --
-  -- Sequencing pattern containing Maybe values (all Just):
-  --
-  -- >>> elem1 = pattern (Just 5)
-  -- >>> elem2 = pattern (Just 10)
-  -- >>> pattern = patternWith (Just 20) [elem1, elem2]
-  -- >>> sequenceA pattern
-  -- Just (Pattern {value = 20, elements = [Pattern {value = 5, elements = []},Pattern {value = 10, elements = []}]})
-  --
-  -- Sequencing pattern containing Maybe values (one Nothing):
-  --
-  -- >>> elem1 = pattern (Just 5)
-  -- >>> elem2 = pattern Nothing
-  -- >>> pattern = patternWith (Just 20) [elem1, elem2]
-  -- >>> sequenceA pattern
-  -- Nothing
-  --
-  -- Sequencing pattern containing Either values (all Right):
-  --
-  -- >>> elem1 = pattern (Right 5)
-  -- >>> elem2 = pattern (Right 10)
-  -- >>> pattern = patternWith (Right 20) [elem1, elem2]
-  -- >>> sequenceA pattern
-  -- Right (Pattern {value = 20, elements = [Pattern {value = 5, elements = []},Pattern {value = 10, elements = []}]})
-  --
-  -- Sequencing pattern containing Either values (one Left):
-  --
-  -- >>> elem1 = pattern (Right 5)
-  -- >>> elem2 = pattern (Left "error")
-  -- >>> pattern = patternWith (Right 20) [elem1, elem2]
-  -- >>> sequenceA pattern
-  -- Left "error"
-  --
-  -- Sequencing nested pattern structure:
-  --
-  -- >>> inner = pattern (Just 1)
-  -- >>> middle = patternWith (Just 2) [inner]
-  -- >>> outer = patternWith (Just 3) [middle]
-  -- >>> pattern = patternWith (Just 4) [outer]
-  -- >>> sequenceA pattern
-  -- Just (Pattern {value = 4, elements = [Pattern {value = 3, elements = [Pattern {value = 2, elements = [Pattern {value = 1, elements = []}]}]}]})
-  --
-  -- === Edge Cases
-  --
-  -- The @sequenceA@ operation handles all pattern structures correctly:
-  --
-  -- **Atomic patterns** (no elements):
-  --
-  -- >>> sequenceA (pattern (Just 5))
-  -- Just (Pattern {value = 5, elements = []})
-  --
-  -- **Singular patterns** (one element):
-  --
-  -- >>> elem = pattern (Just 5)
-  -- >>> pattern = patternWith (Just 10) [elem]
-  -- >>> sequenceA pattern
-  -- Just (Pattern {value = 10, elements = [Pattern {value = 5, elements = []}]})
-  --
-  -- **Patterns with many elements**:
-  --
-  -- >>> elems = [pattern (Just 1), pattern (Just 2)]
-  -- >>> pattern = patternWith (Just 100) elems
-  -- >>> sequenceA pattern
-  -- Just (Pattern {value = 100, elements = [Pattern {value = 1, elements = []},Pattern {value = 2, elements = []}]})
-  --
-  -- **Deep nesting** (3+ levels):
-  --
-  -- >>> level3 = pattern (Just 1)
-  -- >>> level2 = patternWith (Just 2) [level3]
-  -- >>> level1 = patternWith (Just 3) [level2]
-  -- >>> pattern = patternWith (Just 4) [level1]
-  -- >>> sequenceA pattern
-  -- Just (Pattern {value = 4, elements = [Pattern {value = 3, elements = [Pattern {value = 2, elements = [Pattern {value = 1, elements = []}]}]}]})
-  --
-  sequenceA = traverse id
+  traverse f (Pattern v es) = Pattern <$> f v <*> traverse (traverse f) es
 
--- | Create an atomic pattern (pattern with no elements) from a value.
+-- * Construction Functions
+
+-- | Create an atomic pattern (a pattern with no elements) from a value.
 --
--- This function provides a convenient way to create atomic patterns without
--- using verbose record syntax. The resulting pattern is functionally identical
--- to one created with @Pattern { value = x, elements = [] }@.
+-- This is a convenience constructor for creating simple patterns.
 --
 -- === Examples
 --
--- Create an atomic pattern with a string value:
+-- >>> pattern "atom"
+-- Pattern "atom" []
 --
--- >>> atom = pattern "atom1"
--- >>> value atom
--- "atom1"
--- >>> elements atom
--- []
---
--- Create an atomic pattern with an integer value:
---
--- >>> num = pattern 42
--- >>> value num
--- 42
---
--- Create an atomic pattern with a custom type:
---
--- >>> data Person = Person { name :: String, age :: Maybe Int }
--- >>> person = pattern (Person "Alice" (Just 30))
--- >>> value person
--- Person {name = "Alice", age = Just 30}
---
--- === Functional Equivalence
---
--- The following are equivalent:
---
--- >>> pattern "test" == Pattern { value = "test", elements = [] }
--- True
+-- >>> pattern 42
+-- Pattern 42 []
 pattern :: v -> Pattern v
-pattern v = Pattern { value = v, elements = [] }
+pattern v = Pattern v []
 
--- | Create a pattern with elements from a value and a list of pattern elements.
+-- | Create a pattern with explicit elements.
 --
--- This function provides a convenient way to create patterns with elements
--- without using verbose record syntax. The resulting pattern is functionally
--- identical to one created with @Pattern { value = x, elements = ps }@.
---
--- The function preserves the order of elements in the input list and handles
--- all element counts: 0 (atomic pattern), 1 (singular pattern), 2 (pair),
--- or many (extended pattern).
+-- This is a convenience constructor for creating complex patterns.
 --
 -- === Examples
 --
--- Create a singular pattern (one element):
+-- >>> patternWith "root" [pattern "child"]
+-- Pattern "root" [Pattern "child" []]
 --
--- >>> singular = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
--- >>> length (elements singular)
+-- >>> patternWith "pair" [pattern 1, pattern 2]
+-- Pattern "pair" [Pattern 1 [],Pattern 2 []]
+patternWith :: v -> [Pattern v] -> Pattern v
+patternWith v es = Pattern v es
+
+-- | Create a pattern from a list of values.
+--
+-- Creates a pattern where the first argument is the decoration value,
+-- and the list of values are converted to atomic patterns and used as elements.
+--
+-- === Examples
+--
+-- >>> fromList "root" ["a", "b", "c"]
+-- Pattern "root" [Pattern "a" [],Pattern "b" [],Pattern "c" []]
+fromList :: v -> [v] -> Pattern v
+fromList v vs = patternWith v (map pattern vs)
+
+-- * Query Functions
+
+-- | Returns the number of direct elements in a pattern's sequence.
+--
+-- This operation is O(1).
+--
+-- === Examples
+--
+-- >>> length (pattern "atom")
+-- 0
+--
+-- >>> length (patternWith "pair" [pattern 1, pattern 2])
+-- 2
+length :: Pattern v -> Int
+length (Pattern _ es) = Prelude.length es
+
+-- | Returns the total number of nodes in a pattern structure.
+--
+-- Counts the root node plus all nodes in all nested subpatterns.
+-- This operation is O(n) where n is the total number of nodes.
+--
+-- === Examples
+--
+-- >>> size (pattern "atom")
 -- 1
 --
--- Create a pair pattern (two elements):
---
--- >>> pair = patternWith "knows" [pattern "Alice", pattern "Bob"]
--- >>> length (elements pair)
+-- >>> size (patternWith "root" [pattern "child"])
 -- 2
 --
--- Create an extended pattern (many elements):
---
--- >>> extended = patternWith "graph" [pattern "elem1", pattern "elem2", pattern "elem3"]
--- >>> length (elements extended)
+-- >>> size (patternWith "root" [pattern "a", pattern "b"])
 -- 3
---
--- Empty list produces atomic pattern:
---
--- >>> atomic = patternWith "empty" []
--- >>> elements atomic
--- []
--- >>> atomic == pattern "empty"
--- True
---
--- === Functional Equivalence
---
--- The following are equivalent:
---
--- >>> patternWith "test" [pattern "elem"] == Pattern { value = "test", elements = [Pattern { value = "elem", elements = [] }] }
--- True
---
--- === Element Order
---
--- Element order is preserved:
---
--- >>> p1 = patternWith "seq" [pattern "a", pattern "b"]
--- >>> p2 = patternWith "seq" [pattern "b", pattern "a"]
--- >>> p1 == p2
--- False
-patternWith :: v -> [Pattern v] -> Pattern v
-patternWith v ps = Pattern { value = v, elements = ps }
-
--- | Create a pattern from a list of values by converting each value to an atomic pattern.
---
--- This function provides a convenient way to create patterns from lists of raw values.
--- Each value in the list is automatically converted to an atomic pattern, then all
--- atomic patterns are combined into a single pattern with the given decoration.
---
--- The function preserves the order of values in the input list and handles all
--- element counts: 0 (atomic pattern), 1 (singular pattern), 2 (pair), or many
--- (extended pattern).
---
--- === Examples
---
--- Create a pattern from a list of strings:
---
--- >>> p = fromList "graph" ["Alice", "Bob", "Charlie"]
--- >>> value p
--- "graph"
--- >>> length (elements p)
--- 3
--- >>> map value (elements p)
--- ["Alice","Bob","Charlie"]
---
--- Create a pattern from a list of integers:
---
--- >>> nums = fromList "numbers" [1, 2, 3, 4, 5]
--- >>> length (elements nums)
--- 5
---
--- Empty list produces atomic pattern:
---
--- >>> atomic = fromList "empty" []
--- >>> elements atomic
--- []
--- >>> atomic == pattern "empty"
--- True
---
--- === Functional Equivalence
---
--- The following are equivalent:
---
--- >>> fromList "test" ["a", "b"] == patternWith "test" [pattern "a", pattern "b"]
--- True
---
--- === Implementation
---
--- This function is implemented as:
---
--- @
--- fromList decoration values = patternWith decoration (map pattern values)
--- @
-fromList :: v -> [v] -> Pattern v
-fromList decoration values = patternWith decoration (map pattern values)
-
--- | Extract a pattern as a tuple preserving its structure.
---
--- Returns a tuple @(v, [Pattern v])@ where the first element is the pattern's
--- value and the second element is the list of element patterns. This function
--- preserves the pattern's structure by keeping elements as Pattern values
--- rather than flattening them.
---
--- The tuple representation directly reflects the Pattern's structure:
--- the value (decoration) and the list of pattern elements. This enables
--- structure-preserving operations and makes the pattern's composition explicit.
---
--- === Examples
---
--- Atomic pattern (no elements):
---
--- >>> atom = Pattern { value = "test", elements = [] }
--- >>> toTuple atom
--- ("test", [])
---
--- Pattern with multiple elements:
---
--- >>> elem1 = Pattern { value = "a", elements = [] }
--- >>> elem2 = Pattern { value = "b", elements = [] }
--- >>> pattern = Pattern { value = "root", elements = [elem1, elem2] }
--- >>> toTuple pattern
--- ("root", [Pattern {value = "a", elements = []},Pattern {value = "b", elements = []}])
---
--- Nested pattern structure:
---
--- >>> inner = Pattern { value = "inner", elements = [] }
--- >>> middle = Pattern { value = "middle", elements = [inner] }
--- >>> pattern = Pattern { value = "root", elements = [middle] }
--- >>> toTuple pattern
--- ("root", [Pattern {value = "middle", elements = [Pattern {value = "inner", elements = []}]}])
---
--- Pattern with integer values:
---
--- >>> elem1 = Pattern { value = 10, elements = [] }
--- >>> elem2 = Pattern { value = 20, elements = [] }
--- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
--- >>> toTuple pattern
--- (100, [Pattern {value = 10, elements = []},Pattern {value = 20, elements = []}])
---
--- === Structure Preservation
---
--- The @toTuple@ function preserves the pattern's structure:
---
--- * Elements remain as Pattern values (not flattened to their values)
--- * Nested structures are preserved in the elements list
--- * The pattern's value and elements are accessible separately
---
--- This is different from @toList@ which flattens all values into a single list.
--- Use @toTuple@ when you need to work with the pattern's value and elements
--- separately while maintaining the structural relationship.
---
--- === Edge Cases
---
--- **Atomic patterns** (no elements):
---
--- >>> atom = Pattern { value = "atom", elements = [] }
--- >>> toTuple atom
--- ("atom", [])
---
--- **Singular patterns** (one element):
---
--- >>> elem = Pattern { value = "elem", elements = [] }
--- >>> pattern = Pattern { value = "singular", elements = [elem] }
--- >>> toTuple pattern
--- ("singular", [Pattern {value = "elem", elements = []}])
---
--- **Patterns with many elements**:
---
--- >>> elems = [Pattern { value = "a", elements = [] }, Pattern { value = "b", elements = [] }, Pattern { value = "c", elements = [] }]
--- >>> pattern = Pattern { value = "root", elements = elems }
--- >>> toTuple pattern
--- ("root", [Pattern {value = "a", elements = []},Pattern {value = "b", elements = []},Pattern {value = "c", elements = []}])
---
-toTuple :: Pattern v -> (v, [Pattern v])
-toTuple (Pattern v els) = (v, els)
-
--- | Extract all values from a pattern as a flat list, explicitly flattening all nesting levels.
---
--- This function extracts all values from the pattern structure, including the pattern's own value
--- and all element values at all nesting levels, into a single flat list. The function is equivalent
--- to @toList@ (standard Foldable behavior) but is provided explicitly for clarity and to make
--- flattening operations intentional.
---
--- The @flatten@ function processes all values in the pattern structure:
---
--- * The pattern's own value is included in the result
--- * All element values are processed recursively
--- * Values from all nesting levels are included
--- * The result is always a flat list (no nested lists)
---
--- === Relationship to toList
---
--- The @flatten@ function is equivalent to @toList@ (standard Foldable behavior):
---
--- @
--- flatten p = toList p
--- @
---
--- Both functions extract all values as a flat list. Use @flatten@ when you want to make the
--- flattening operation explicit, or use @toList@ for standard Foldable behavior.
---
--- === Examples
---
--- Atomic pattern:
---
--- >>> atom = Pattern { value = "test", elements = [] }
--- >>> flatten atom
--- ["test"]
---
--- Pattern with multiple elements:
---
--- >>> elem1 = Pattern { value = "a", elements = [] }
--- >>> elem2 = Pattern { value = "b", elements = [] }
--- >>> pattern = Pattern { value = "root", elements = [elem1, elem2] }
--- >>> flatten pattern
--- ["root", "a", "b"]
---
--- Nested pattern structure:
---
--- >>> inner = Pattern { value = "inner", elements = [] }
--- >>> middle = Pattern { value = "middle", elements = [inner] }
--- >>> pattern = Pattern { value = "root", elements = [middle] }
--- >>> flatten pattern
--- ["root", "middle", "inner"]
---
--- Pattern with integer values:
---
--- >>> elem1 = Pattern { value = 10, elements = [] }
--- >>> elem2 = Pattern { value = 20, elements = [] }
--- >>> pattern = Pattern { value = 100, elements = [elem1, elem2] }
--- >>> flatten pattern
--- [100, 10, 20]
---
--- Using flatten for aggregation:
---
--- >>> pattern = Pattern { value = 10, elements = [Pattern { value = 5, elements = [] }, Pattern { value = 3, elements = [] }] }
--- >>> sum (flatten pattern)
--- 18
---
--- === Edge Cases
---
--- **Atomic patterns** (no elements):
---
--- >>> atom = Pattern { value = 42, elements = [] }
--- >>> flatten atom
--- [42]
---
--- **Patterns with empty elements list**:
---
--- >>> pattern = Pattern { value = 10, elements = [] }
--- >>> flatten pattern
--- [10]
---
--- **Singular patterns** (one element):
---
--- >>> elem = Pattern { value = 5, elements = [] }
--- >>> pattern = Pattern { value = 10, elements = [elem] }
--- >>> flatten pattern
--- [10, 5]
---
--- **Patterns with many elements**:
---
--- >>> elems = map (\i -> Pattern { value = i, elements = [] }) [1..5]
--- >>> pattern = Pattern { value = 100, elements = elems }
--- >>> flatten pattern
--- [100, 1, 2, 3, 4, 5]
---
--- **Deep nesting** (3+ levels):
---
--- >>> level4 = Pattern { value = 1, elements = [] }
--- >>> level3 = Pattern { value = 2, elements = [level4] }
--- >>> level2 = Pattern { value = 3, elements = [level3] }
--- >>> level1 = Pattern { value = 4, elements = [level2] }
--- >>> pattern = Pattern { value = 5, elements = [level1] }
--- >>> flatten pattern
--- [5, 4, 3, 2, 1]
---
-flatten :: Pattern a -> [a]
-flatten = toList
-
--- | Query the number of direct elements in a pattern's sequence.
---
--- Returns the count of direct child elements in the pattern's sequence.
--- This function provides the most basic structural information about a pattern,
--- indicating how many elements are directly contained in the pattern's sequence.
---
--- The @length@ function counts only direct children, not nested descendants.
--- For example, a pattern with one element that itself contains elements will
--- have @length@ of 1, not the total count of all nested elements.
---
--- === Relationship to elements
---
--- The @length@ function is equivalent to @length (elements p)@:
---
--- @
--- length p = length (elements p)
--- @
---
--- This provides a convenient way to query element count without explicitly
--- accessing the @elements@ field.
---
--- === Examples
---
--- Atomic pattern (no elements):
---
--- >>> atom = Pattern { value = "atom", elements = [] }
--- >>> length atom
--- 0
---
--- Singular pattern (one element):
---
--- >>> elem = Pattern { value = "elem", elements = [] }
--- >>> pattern = Pattern { value = "pattern", elements = [elem] }
--- >>> length pattern
--- 1
---
--- Pattern with multiple elements:
---
--- >>> elem1 = Pattern { value = "e1", elements = [] }
--- >>> elem2 = Pattern { value = "e2", elements = [] }
--- >>> elem3 = Pattern { value = "e3", elements = [] }
--- >>> pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
--- >>> length pattern
--- 3
---
--- Nested pattern (counts only direct children):
---
--- >>> inner = Pattern { value = "inner", elements = [] }
--- >>> middle = Pattern { value = "middle", elements = [inner] }
--- >>> outer = Pattern { value = "outer", elements = [middle] }
--- >>> pattern = Pattern { value = "root", elements = [outer] }
--- >>> length pattern
--- 1
--- >>> length outer
--- 1
--- >>> length middle
--- 1
--- >>> length inner
--- 0
---
--- === Edge Cases
---
--- **Atomic patterns** (no elements):
---
--- >>> length (Pattern { value = "atom", elements = [] })
--- 0
---
--- **Patterns with empty elements list**:
---
--- >>> length (Pattern { value = "empty", elements = [] })
--- 0
---
--- **Patterns with many elements**:
---
--- >>> elems = map (\i -> Pattern { value = i, elements = [] }) [1..10]
--- >>> pattern = Pattern { value = 100, elements = elems }
--- >>> length pattern
--- 10
---
--- === Performance
---
--- The @length@ function completes in O(1) time for patterns with elements
--- stored as lists, as it simply returns the length of the elements list.
--- Performance is constant regardless of pattern structure or nesting depth.
---
--- === Type Safety
---
--- The @length@ function works with patterns of any value type @v@:
---
--- >>> length (Pattern { value = "test", elements = [] } :: Pattern String)
--- 0
--- >>> length (Pattern { value = 42, elements = [] } :: Pattern Int)
--- 0
---
-length :: Pattern v -> Int
-length (Pattern _ els) = P.length els
-
--- | Query the total number of nodes in a pattern structure.
---
--- Returns the total count of all nodes in the pattern structure, including
--- the pattern itself and all nested patterns at all levels. This provides a
--- complete picture of pattern complexity by counting every node in the
--- recursive structure.
---
--- The @size@ function counts all nodes recursively:
---
--- * The pattern itself counts as 1 node
--- * Each element pattern is counted recursively
--- * All nested patterns at all levels are included
---
--- This is different from @length@, which counts only direct children.
--- The @size@ function provides the total node count across the entire
--- pattern structure.
---
--- === Relationship to length
---
--- The @size@ function is always greater than or equal to @length@:
---
--- @
--- size p >= length p
--- @
---
--- This is because @size@ counts the root node plus all descendants, while
--- @length@ counts only direct children.
---
--- === Recursive Definition
---
--- The @size@ function is defined recursively:
---
--- @
--- size p = 1 + sum (map size (elements p))
--- @
---
--- This means:
--- * The pattern itself contributes 1 node
--- * Each element's size is computed recursively
--- * The sum of all element sizes is added to 1
---
--- === Examples
---
--- Atomic pattern (single node):
---
--- >>> atom = Pattern { value = "atom", elements = [] }
--- >>> size atom
--- 1
---
--- Pattern with direct elements (no nesting):
---
--- >>> elem1 = Pattern { value = "e1", elements = [] }
--- >>> elem2 = Pattern { value = "e2", elements = [] }
--- >>> elem3 = Pattern { value = "e3", elements = [] }
--- >>> pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
--- >>> size pattern
--- 4
---
--- Deeply nested pattern:
---
--- >>> level4 = Pattern { value = "level4", elements = [] }
--- >>> level3 = Pattern { value = "level3", elements = [level4] }
--- >>> level2 = Pattern { value = "level2", elements = [level3] }
--- >>> level1 = Pattern { value = "level1", elements = [level2] }
--- >>> pattern = Pattern { value = "root", elements = [level1] }
--- >>> size pattern
--- 5
---
--- Pattern with varying branch depths:
---
--- >>> branch1Leaf = Pattern { value = "b1leaf", elements = [] }
--- >>> branch1 = Pattern { value = "b1", elements = [branch1Leaf] }
--- >>> branch2Mid = Pattern { value = "b2mid", elements = [] }
--- >>> branch2Leaf = Pattern { value = "b2leaf", elements = [] }
--- >>> branch2 = Pattern { value = "b2", elements = [branch2Mid, branch2Leaf] }
--- >>> branch3 = Pattern { value = "b3", elements = [] }
--- >>> pattern = Pattern { value = "root", elements = [branch1, branch2, branch3] }
--- >>> size pattern
--- 7
---
--- === Edge Cases
---
--- **Atomic patterns** (no elements):
---
--- >>> size (Pattern { value = "atom", elements = [] })
--- 1
---
--- **Patterns with empty elements list**:
---
--- >>> size (Pattern { value = "empty", elements = [] })
--- 1
---
--- **Patterns with many direct elements**:
---
--- >>> elems = map (\i -> Pattern { value = i, elements = [] }) [1..10]
--- >>> pattern = Pattern { value = 100, elements = elems }
--- >>> size pattern
--- 11
---
--- **Deep nesting** (many levels):
---
--- >>> level5 = Pattern { value = 1, elements = [] }
--- >>> level4 = Pattern { value = 2, elements = [level5] }
--- >>> level3 = Pattern { value = 3, elements = [level4] }
--- >>> level2 = Pattern { value = 4, elements = [level3] }
--- >>> level1 = Pattern { value = 5, elements = [level2] }
--- >>> pattern = Pattern { value = 6, elements = [level1] }
--- >>> size pattern
--- 6
---
--- === Performance
---
--- The @size@ function traverses the entire pattern structure recursively,
--- visiting every node exactly once. Time complexity is O(n) where n is the
--- total number of nodes in the pattern structure. For patterns with up to
--- 1000 nodes, the function should complete in under 10 milliseconds.
---
--- === Type Safety
---
--- The @size@ function works with patterns of any value type @v@:
---
--- >>> size (Pattern { value = "test", elements = [] } :: Pattern String)
--- 1
--- >>> size (Pattern { value = 42, elements = [] } :: Pattern Int)
--- 1
---
 size :: Pattern v -> Int
-size (Pattern _ els) = 1 + sum (map size els)
+size (Pattern _ es) = 1 + sum (map size es)
 
--- | Query the maximum nesting depth of a pattern structure.
+-- | Returns the maximum nesting depth of a pattern structure.
 --
--- Returns the maximum depth of any path from the root to a leaf node in the
--- pattern structure. This provides insight into pattern complexity and helps
--- validate depth constraints.
---
--- The @depth@ function measures the maximum nesting level:
---
--- * Atomic patterns (no elements) have depth 0 (root only, no nesting)
--- * Patterns with elements have depth 1 + the maximum depth of any element
--- * The depth is the maximum across all branches in the pattern structure
---
--- This is different from @size@, which counts total nodes, and @length@,
--- which counts only direct children. The @depth@ function provides the
--- maximum path length from root to any leaf.
---
--- === Depth Counting Convention
---
--- Depth follows standard tree depth conventions:
---
--- * Depth 0: Atomic pattern (root only, no nesting levels below root)
--- * Depth 1: One level of nesting (root -> element)
--- * Depth n: n levels of nesting (root -> ... -> leaf, n steps)
---
--- === Recursive Definition
---
--- The @depth@ function is defined recursively:
---
--- @
--- depth (Pattern _ []) = 0
--- depth (Pattern _ els) = 1 + maximum (map depth els)
--- @
---
--- This means:
--- * Atomic patterns (no elements) have depth 0
--- * Patterns with elements have depth 1 plus the maximum depth of any element
--- * The maximum is taken across all branches to find the deepest path
+-- An atomic pattern has depth 1.
+-- A pattern with elements has depth 1 + max depth of elements.
+-- This operation is O(n) where n is the total number of nodes.
 --
 -- === Examples
 --
--- Atomic pattern (no nesting):
---
--- >>> atom = Pattern { value = "atom", elements = [] }
--- >>> depth atom
--- 0
---
--- One level of nesting:
---
--- >>> elem = Pattern { value = "elem", elements = [] }
--- >>> pattern = Pattern { value = "pattern", elements = [elem] }
--- >>> depth pattern
+-- >>> depth (pattern "atom")
 -- 1
 --
--- Multiple branches with different depths:
+-- >>> depth (patternWith "root" [pattern "child"])
+-- 2
 --
--- >>> branch1Leaf = Pattern { value = "b1leaf", elements = [] }
--- >>> branch1 = Pattern { value = "b1", elements = [branch1Leaf] }
--- >>> branch2Mid = Pattern { value = "b2mid", elements = [] }
--- >>> branch2Leaf = Pattern { value = "b2leaf", elements = [] }
--- >>> branch2Inner = Pattern { value = "b2inner", elements = [branch2Leaf] }
--- >>> branch2 = Pattern { value = "b2", elements = [branch2Mid, branch2Inner] }
--- >>> branch3 = Pattern { value = "b3", elements = [] }
--- >>> pattern = Pattern { value = "root", elements = [branch1, branch2, branch3] }
--- >>> depth pattern
+-- >>> depth (patternWith "root" [patternWith "middle" [pattern "inner"]])
 -- 3
---
--- Deeply nested pattern:
---
--- >>> level4 = Pattern { value = "level4", elements = [] }
--- >>> level3 = Pattern { value = "level3", elements = [level4] }
--- >>> level2 = Pattern { value = "level2", elements = [level3] }
--- >>> level1 = Pattern { value = "level1", elements = [level2] }
--- >>> pattern = Pattern { value = "root", elements = [level1] }
--- >>> depth pattern
--- 4
---
--- === Edge Cases
---
--- **Atomic patterns** (no elements):
---
--- >>> depth (Pattern { value = "atom", elements = [] })
--- 0
---
--- **Patterns with empty elements list**:
---
--- >>> depth (Pattern { value = "empty", elements = [] })
--- 0
---
--- **Patterns with many direct elements** (all atomic):
---
--- >>> elems = map (\i -> Pattern { value = i, elements = [] }) [1..10]
--- >>> pattern = Pattern { value = 100, elements = elems }
--- >>> depth pattern
--- 1
---
--- **Deep nesting** (linear chain):
---
--- >>> level5 = Pattern { value = 1, elements = [] }
--- >>> level4 = Pattern { value = 2, elements = [level5] }
--- >>> level3 = Pattern { value = 3, elements = [level4] }
--- >>> level2 = Pattern { value = 4, elements = [level3] }
--- >>> level1 = Pattern { value = 5, elements = [level2] }
--- >>> pattern = Pattern { value = 6, elements = [level1] }
--- >>> depth pattern
--- 5
---
--- === Relationship to size
---
--- The @depth@ function is always less than or equal to @size - 1@:
---
--- @
--- depth p <= size p - 1
--- @
---
--- This is because the worst-case depth occurs in a linear chain where
--- depth = size - 1. In other structures, depth is typically less.
---
--- === Performance
---
--- The @depth@ function traverses the entire pattern structure recursively,
--- visiting every node to find the maximum depth. Time complexity is O(n)
--- where n is the total number of nodes. For patterns with up to 100 levels
--- of nesting, the function should complete in under 5 milliseconds.
---
--- === Type Safety
---
--- The @depth@ function works with patterns of any value type @v@:
---
--- >>> depth (Pattern { value = "test", elements = [] } :: Pattern String)
--- 0
--- >>> depth (Pattern { value = 42, elements = [] } :: Pattern Int)
--- 0
---
 depth :: Pattern v -> Int
-depth (Pattern _ els) = case els of
-  [] -> 0
-  _  -> 1 + maximum (map depth els)
+depth (Pattern _ []) = 1
+depth (Pattern _ es) = 1 + maximum (map depth es)
 
--- | Extract all values from a pattern structure as a flat list.
+-- | Extracts all values from a pattern structure as a flat list.
 --
--- Returns all values from the pattern structure, including the pattern's own
--- value and all element values at all nesting levels, as a single flat list.
--- This enables value aggregation, analysis, and transformation operations.
---
--- The @values@ function extracts all values in a specific order:
---
--- * The pattern's own value appears first in the result
--- * Element values are included recursively in order
--- * Values from all nesting levels are included
--- * The result is always a flat list (no nested lists)
---
--- This function is equivalent to @toList@ from the Foldable instance and
--- @flatten@ function. It provides an explicit, intentional way to extract
--- all values from a pattern structure.
---
--- === Relationship to toList and flatten
---
--- The @values@ function is equivalent to both @toList@ and @flatten@:
---
--- @
--- values p = toList p
--- values p = flatten p
--- @
---
--- All three functions extract all values as a flat list. Use @values@ when
--- you want to make value extraction explicit, or use @toList@ for standard
--- Foldable behavior, or @flatten@ for explicit flattening operations.
---
--- === Relationship to size
---
--- The number of values returned equals the total number of nodes:
---
--- @
--- length (values p) == size p
--- @
---
--- This is because each node in the pattern structure contributes exactly
--- one value to the result.
---
--- === Relationship to value
---
--- The first value in the result is always the pattern's own value:
---
--- @
--- head (values p) == value p
--- @
---
--- This ensures that the pattern's decoration value is always accessible
--- as the first element of the values list.
+-- The order of values corresponds to a pre-order traversal (root, then elements).
+-- This is equivalent to 'toList' from 'Foldable', but specific to 'Pattern'.
+-- This operation is O(n) where n is the total number of nodes.
 --
 -- === Examples
 --
--- Atomic pattern:
---
--- >>> atom = Pattern { value = "atom", elements = [] }
--- >>> values atom
+-- >>> values (pattern "atom")
 -- ["atom"]
 --
--- Pattern with multiple elements:
---
--- >>> elem1 = Pattern { value = "e1", elements = [] }
--- >>> elem2 = Pattern { value = "e2", elements = [] }
--- >>> elem3 = Pattern { value = "e3", elements = [] }
--- >>> pattern = Pattern { value = "root", elements = [elem1, elem2, elem3] }
--- >>> values pattern
--- ["root", "e1", "e2", "e3"]
---
--- Nested pattern structure:
---
--- >>> inner = Pattern { value = "inner", elements = [] }
--- >>> middle = Pattern { value = "middle", elements = [inner] }
--- >>> outer = Pattern { value = "outer", elements = [middle] }
--- >>> pattern = Pattern { value = "root", elements = [outer] }
--- >>> values pattern
--- ["root", "outer", "middle", "inner"]
---
--- Pattern with varying nesting depths:
---
--- >>> branch1Leaf = Pattern { value = "b1leaf", elements = [] }
--- >>> branch1 = Pattern { value = "b1", elements = [branch1Leaf] }
--- >>> branch2Mid = Pattern { value = "b2mid", elements = [] }
--- >>> branch2Leaf = Pattern { value = "b2leaf", elements = [] }
--- >>> branch2 = Pattern { value = "b2", elements = [branch2Mid, branch2Leaf] }
--- >>> branch3 = Pattern { value = "b3", elements = [] }
--- >>> pattern = Pattern { value = "root", elements = [branch1, branch2, branch3] }
--- >>> values pattern
--- ["root", "b1", "b1leaf", "b2", "b2mid", "b2leaf", "b3"]
---
--- Using values for aggregation:
---
--- >>> pattern = Pattern { value = 10, elements = [Pattern { value = 5, elements = [] }, Pattern { value = 3, elements = [] }] }
--- >>> sum (values pattern)
--- 18
---
--- === Edge Cases
---
--- **Atomic patterns** (no elements):
---
--- >>> values (Pattern { value = "atom", elements = [] })
--- ["atom"]
---
--- **Patterns with empty elements list**:
---
--- >>> values (Pattern { value = "empty", elements = [] })
--- ["empty"]
---
--- **Patterns with many direct elements**:
---
--- >>> elems = map (\i -> Pattern { value = i, elements = [] }) [1..5]
--- >>> pattern = Pattern { value = 100, elements = elems }
--- >>> values pattern
--- [100, 1, 2, 3, 4, 5]
---
--- **Deep nesting** (many levels):
---
--- >>> level4 = Pattern { value = 1, elements = [] }
--- >>> level3 = Pattern { value = 2, elements = [level4] }
--- >>> level2 = Pattern { value = 3, elements = [level3] }
--- >>> level1 = Pattern { value = 4, elements = [level2] }
--- >>> pattern = Pattern { value = 5, elements = [level1] }
--- >>> values pattern
--- [5, 4, 3, 2, 1]
---
--- === Performance
---
--- The @values@ function traverses the entire pattern structure recursively,
--- visiting every node exactly once. Time complexity is O(n) where n is the
--- total number of nodes. For patterns with up to 1000 nodes, the function
--- should complete in under 10 milliseconds.
---
--- === Type Safety
---
--- The @values@ function works with patterns of any value type @v@:
---
--- >>> values (Pattern { value = "test", elements = [] } :: Pattern String)
--- ["test"]
--- >>> values (Pattern { value = 42, elements = [] } :: Pattern Int)
--- [42]
---
+-- >>> values (patternWith "root" [pattern "a", pattern "b"])
+-- ["root","a","b"]
 values :: Pattern v -> [v]
 values = toList
 
--- | Check if any value in a pattern satisfies a predicate.
+-- * Predicate Functions
+
+-- | Checks if any value in the pattern satisfies the predicate.
 --
--- Returns `True` if at least one value in the pattern (at any nesting level)
--- satisfies the predicate, `False` otherwise. The function considers all values
--- extracted from the pattern structure, including the pattern's own value and
--- all element values recursively.
---
--- The @anyValue@ function operates on flattened values extracted via
--- @Foldable.toList@, treating values independently of structural context.
--- This enables value-based queries like "does this pattern contain any negative
--- numbers?" without needing to know the exact structure or values.
---
--- === Relationship to Foldable
---
--- The @anyValue@ function leverages the @Foldable@ instance:
---
--- @
--- anyValue p = any p . toList
--- @
---
--- This ensures all values at all nesting levels are considered, consistent
--- with @Foldable@ semantics where values are extracted and processed
--- independently.
---
--- === Short-Circuit Behavior
---
--- The @anyValue@ function short-circuits on the first match, returning `True`
--- immediately when a matching value is found. This provides efficient behavior
--- for patterns where matching values appear early in the traversal.
+-- Traverses the pattern structure and applies the predicate to each value.
+-- Returns True if at least one value satisfies the predicate.
+-- This operation is O(n).
 --
 -- === Examples
 --
--- Atomic pattern:
---
--- >>> anyValue (> 0) (pattern 5)
+-- >>> anyValue (> 5) (patternWith 3 [pattern 6, pattern 2])
 -- True
--- >>> anyValue (> 10) (pattern 5)
+--
+-- >>> anyValue (> 10) (patternWith 3 [pattern 6, pattern 2])
 -- False
---
--- Pattern with elements:
---
--- >>> pat = patternWith 0 [pattern 1, pattern 2]
--- >>> anyValue (> 0) pat
--- True
--- >>> anyValue (< 0) pat
--- False
---
--- Nested pattern:
---
--- >>> pat = patternWith 0 [patternWith 1 [pattern 2]]
--- >>> anyValue (> 1) pat
--- True
--- >>> anyValue (> 10) pat
--- False
---
--- === Performance
---
--- The @anyValue@ function completes in O(n) time where n is the total number
--- of nodes, but may short-circuit earlier if a match is found. For patterns
--- with up to 1000 nodes, the function should complete in under 10 milliseconds.
---
--- === Type Safety
---
--- The @anyValue@ function works with patterns of any value type @v@:
---
--- >>> anyValue (== "test") (pattern "test" :: Pattern String)
--- True
--- >>> anyValue (> 0) (pattern 42 :: Pattern Int)
--- True
---
 anyValue :: (v -> Bool) -> Pattern v -> Bool
-anyValue p = any p . toList
+anyValue p = foldr (\v acc -> p v || acc) False
 
--- | Check if all values in a pattern satisfy a predicate.
+-- | Checks if all values in the pattern satisfy the predicate.
 --
--- Returns `True` only if every value in the pattern (at any nesting level)
--- satisfies the predicate, `False` otherwise. The function considers all values
--- extracted from the pattern structure, including the pattern's own value and
--- all element values recursively.
---
--- The @allValues@ function operates on flattened values extracted via
--- @Foldable.toList@, treating values independently of structural context.
--- This enables value-based queries like "are all values in this pattern valid?"
--- without needing to know the exact structure or values.
---
--- === Relationship to Foldable
---
--- The @allValues@ function leverages the @Foldable@ instance:
---
--- @
--- allValues p = all p . toList
--- @
---
--- This ensures all values at all nesting levels are considered, consistent
--- with @Foldable@ semantics where values are extracted and processed
--- independently.
---
--- === Vacuous Truth
---
--- For empty patterns (atomic patterns with no elements), the @allValues@
--- function evaluates the predicate on the pattern's value. This means:
---
--- * If the predicate matches the value: returns `True`
--- * If the predicate doesn't match the value: returns `False`
---
--- Note: This is different from standard vacuous truth semantics for empty
--- collections, as atomic patterns always have a value to evaluate.
+-- Traverses the pattern structure and applies the predicate to each value.
+-- Returns True if all values satisfy the predicate.
+-- This operation is O(n).
 --
 -- === Examples
 --
--- Atomic pattern:
---
--- >>> allValues (> 0) (pattern 5)
+-- >>> allValues (> 0) (patternWith 3 [pattern 6, pattern 2])
 -- True
--- >>> allValues (> 10) (pattern 5)
+--
+-- >>> allValues (> 5) (patternWith 3 [pattern 6, pattern 2])
 -- False
---
--- Pattern where all values match:
---
--- >>> pat = patternWith 1 [pattern 2, pattern 3]
--- >>> allValues (> 0) pat
--- True
--- >>> allValues (> 1) pat
--- False
---
--- Pattern where some values don't match:
---
--- >>> pat = patternWith 1 [pattern 2, pattern 0]
--- >>> allValues (> 0) pat
--- False
---
--- Nested pattern:
---
--- >>> pat = patternWith 1 [patternWith 2 [pattern 3]]
--- >>> allValues (> 0) pat
--- True
--- >>> allValues (> 2) pat
--- False
---
--- === Performance
---
--- The @allValues@ function completes in O(n) time where n is the total number
--- of nodes, as it must check all values to verify the predicate holds for
--- every value. For patterns with up to 1000 nodes, the function should
--- complete in under 10 milliseconds.
---
--- === Type Safety
---
--- The @allValues@ function works with patterns of any value type @v@:
---
--- >>> allValues (== "test") (pattern "test" :: Pattern String)
--- True
--- >>> allValues (> 0) (pattern 42 :: Pattern Int)
--- True
---
 allValues :: (v -> Bool) -> Pattern v -> Bool
-allValues p = all p . toList
+allValues p = foldr (\v acc -> p v && acc) True
 
--- | Filter all subpatterns (including root) that match a pattern predicate.
+-- | Filters subpatterns (including root) that satisfy a pattern predicate.
 --
--- Returns a list of all subpatterns in the pattern structure (including the
--- root pattern itself) that satisfy the predicate. The function recursively
--- traverses the entire pattern structure, examining each subpattern at all
--- nesting levels.
---
--- The @filterPatterns@ function operates on pattern structures, not just
--- flattened values. This enables structural queries like "find all patterns
--- with exactly 3 elements" or "find all patterns where elements form a
--- palindrome sequence" regardless of the internal content of individual
--- elements.
---
--- === Traversal Order
---
--- The function traverses patterns in a depth-first, pre-order fashion:
---
--- 1. The root pattern is checked first
--- 2. Then each element pattern is checked recursively
--- 3. Results are collected in traversal order
---
--- This ensures that the root pattern appears first in the result list,
--- followed by element patterns in their order of appearance.
---
--- === Relationship to findAllPatterns
---
--- The @filterPatterns@ and @findAllPatterns@ functions are equivalent:
---
--- @
--- filterPatterns p = findAllPatterns p
--- @
---
--- Both functions return all matching subpatterns. Use @filterPatterns@ for
--- consistency with standard filtering operations, or @findAllPatterns@ for
--- explicit "find all" semantics.
+-- Traverses the pattern structure and applies the predicate to each subpattern.
+-- Returns a list of all matching patterns.
+-- This operation is O(n).
 --
 -- === Examples
 --
--- Filter atomic patterns (patterns with no elements):
+-- >>> p = patternWith 3 [pattern 6, pattern 2]
+-- >>> map value $ filterPatterns (\x -> value x > 5) p
+-- [6]
 --
--- >>> pat = patternWith "root" [pattern "a", pattern "b", patternWith "c" [pattern "d"]]
--- >>> filterPatterns (\p -> length (elements p) == 0) pat
--- [pattern "a", pattern "b", pattern "d"]
---
--- Filter patterns matching a value:
---
--- >>> pat = patternWith "root" [pattern "a", pattern "b"]
--- >>> filterPatterns (\p -> value p == "root") pat
--- [Pattern {value = "root", elements = [Pattern {value = "a", elements = []},Pattern {value = "b", elements = []}]}]
---
--- Filter patterns with no matches:
---
--- >>> pat = patternWith "root" [pattern "a", pattern "b"]
--- >>> filterPatterns (\p -> value p == "x") pat
--- []
---
--- Filter patterns matching element sequence structure:
---
--- >>> pat = patternWith "root" [pattern "a", pattern "b", pattern "b", pattern "a"]
--- >>> length (filterPatterns (\p -> length (elements p) == 4 && 
--- ...                              value (elements p !! 0) == value (elements p !! 3) &&
--- ...                              value (elements p !! 1) == value (elements p !! 2)) pat)
--- 1
---
--- === Performance
---
--- The @filterPatterns@ function completes in O(n) time where n is the total
--- number of subpatterns (nodes) in the pattern structure. For patterns with up
--- to 1000 nodes, the function should complete in under 10 milliseconds.
---
--- === Type Safety
---
--- The @filterPatterns@ function works with patterns of any value type @v@:
---
--- >>> filterPatterns (\p -> value p == "test") (pattern "test" :: Pattern String)
--- [pattern "test"]
--- >>> filterPatterns (\p -> value p > 0) (pattern 42 :: Pattern Int)
--- [pattern 42]
---
+-- >>> map value $ filterPatterns (\x -> length x > 0) p
+-- [3]
 filterPatterns :: (Pattern v -> Bool) -> Pattern v -> [Pattern v]
-filterPatterns pred pat = 
-  let matches = if pred pat then [pat] else []
-      elementMatches = concatMap (filterPatterns pred) (elements pat)
-  in matches ++ elementMatches
+filterPatterns p pat@(Pattern _ es) =
+  (if p pat then [pat] else []) ++ concatMap (filterPatterns p) es
 
--- | Find the first subpattern (including root) that matches a pattern predicate.
+-- | Finds the first subpattern (including root) that satisfies a pattern predicate.
 --
--- Returns `Just` the first subpattern in the pattern structure (including the
--- root pattern itself) that satisfies the predicate, or `Nothing` if no
--- subpattern matches. The function recursively traverses the pattern structure
--- in depth-first, pre-order fashion, returning the first match found.
---
--- The @findPattern@ function operates on pattern structures, not just
--- flattened values. This enables structural queries like "find the first
--- pattern with exactly 3 elements" or "find the first pattern where elements
--- form a palindrome sequence" regardless of the internal content of individual
--- elements.
---
--- === Traversal Order
---
--- The function traverses patterns in a depth-first, pre-order fashion:
---
--- 1. The root pattern is checked first
--- 2. Then each element pattern is checked recursively
--- 3. The first match is returned immediately (short-circuit behavior)
---
--- This ensures that the root pattern is checked before any element patterns,
--- and matches are found in traversal order.
---
--- === Relationship to filterPatterns
---
--- The @findPattern@ function returns the first match from @filterPatterns@:
---
--- @
--- findPattern p pat = listToMaybe (filterPatterns p pat)
--- @
---
--- Use @findPattern@ when you only need the first match, or @filterPatterns@
--- when you need all matches.
+-- Traverses the pattern structure in pre-order and returns the first match.
+-- Returns Nothing if no pattern matches.
+-- This operation is O(n).
 --
 -- === Examples
 --
--- Find first atomic pattern:
+-- >>> p = patternWith 3 [pattern 6, pattern 2]
+-- >>> fmap value $ findPattern (\x -> value x > 5) p
+-- Just 6
 --
--- >>> pat = patternWith "root" [pattern "a", pattern "b"]
--- >>> findPattern (\p -> length (elements p) == 0) pat
--- Just (pattern "a")
---
--- Find root pattern:
---
--- >>> pat = patternWith "root" [pattern "a", pattern "b"]
--- >>> findPattern (\p -> value p == "root") pat
--- Just (Pattern {value = "root", elements = [Pattern {value = "a", elements = []},Pattern {value = "b", elements = []}]})
---
--- Find pattern with no matches:
---
--- >>> pat = patternWith "root" [pattern "a", pattern "b"]
--- >>> findPattern (\p -> value p == "x") pat
+-- >>> findPattern (\x -> value x > 10) p
 -- Nothing
---
--- === Performance
---
--- The @findPattern@ function completes in O(n) time where n is the total
--- number of subpatterns (nodes) in the pattern structure, but may short-circuit
--- earlier if a match is found. For patterns with up to 1000 nodes, the function
--- should complete in under 10 milliseconds.
---
--- === Type Safety
---
--- The @findPattern@ function works with patterns of any value type @v@:
---
--- >>> findPattern (\p -> value p == "test") (pattern "test" :: Pattern String)
--- Just (pattern "test")
--- >>> findPattern (\p -> value p > 0) (pattern 42 :: Pattern Int)
--- Just (pattern 42)
---
 findPattern :: (Pattern v -> Bool) -> Pattern v -> Maybe (Pattern v)
-findPattern pred pat
-  | pred pat = Just pat
-  | otherwise = foldr (\elemPat acc -> case acc of
-      Just _ -> acc  -- Already found a match, keep it
-      Nothing -> findPattern pred elemPat) Nothing (elements pat)
+findPattern p pat@(Pattern _ es)
+  | p pat = Just pat
+  | otherwise = foldr orElse Nothing (map (findPattern p) es)
+  where
+    orElse (Just x) _ = Just x
+    orElse Nothing y = y
 
--- | Find all subpatterns (including root) that match a pattern predicate.
+-- | Finds all subpatterns (including root) that satisfy a pattern predicate.
 --
--- Returns a list of all subpatterns in the pattern structure (including the
--- root pattern itself) that satisfy the predicate. The function recursively
--- traverses the entire pattern structure, examining each subpattern at all
--- nesting levels.
---
--- The @findAllPatterns@ function is equivalent to @filterPatterns@:
---
--- @
--- findAllPatterns p = filterPatterns p
--- @
---
--- Both functions return all matching subpatterns. Use @filterPatterns@ for
--- consistency with standard filtering operations, or @findAllPatterns@ for
--- explicit "find all" semantics.
+-- Equivalent to 'filterPatterns'. Returns a list of all matching patterns.
+-- This operation is O(n).
 --
 -- === Examples
 --
--- Find all atomic patterns:
---
--- >>> pat = patternWith "root" [pattern "a", pattern "b"]
--- >>> findAllPatterns (\p -> length (elements p) == 0) pat
--- [pattern "a", pattern "b"]
---
--- === Performance
---
--- The @findAllPatterns@ function completes in O(n) time where n is the total
--- number of subpatterns (nodes) in the pattern structure. For patterns with up
--- to 1000 nodes, the function should complete in under 10 milliseconds.
---
--- === Type Safety
---
--- The @findAllPatterns@ function works with patterns of any value type @v@:
---
--- >>> findAllPatterns (\p -> value p == "test") (pattern "test" :: Pattern String)
--- [pattern "test"]
--- >>> findAllPatterns (\p -> value p > 0) (pattern 42 :: Pattern Int)
--- [pattern 42]
---
+-- >>> p = patternWith 3 [pattern 6, pattern 2]
+-- >>> map value $ findAllPatterns (\x -> value x > 1) p
+-- [3,6,2]
 findAllPatterns :: (Pattern v -> Bool) -> Pattern v -> [Pattern v]
 findAllPatterns = filterPatterns
 
--- | Check if two patterns match structurally.
+-- | Checks if two patterns match structurally.
 --
--- Returns `True` if the two patterns have the same structure (same values at
--- corresponding positions and same element structure), `False` otherwise.
--- The function performs recursive structural comparison, distinguishing patterns
--- based on their structure, not just flattened values.
---
--- The @matches@ function is equivalent to structural equality (`==`):
---
--- @
--- matches p1 p2 = p1 == p2
--- @
---
--- However, @matches@ provides explicit, intentional structural matching semantics,
--- making it clear that the comparison is based on pattern structure rather than
--- value-based equality.
---
--- === Structural Comparison
---
--- Two patterns match if and only if:
---
--- 1. Their values are equal (using `Eq` for the value type)
--- 2. Their element lists have the same length
--- 3. Corresponding elements match recursively
---
--- This ensures that patterns with the same flattened values but different
--- structures are distinguished. For example, a pattern with two direct
--- elements does not match a pattern with one element containing another element,
--- even if the flattened values are the same.
---
--- === Relationship to Eq
---
--- The @matches@ function is equivalent to the `Eq` instance:
---
--- @
--- matches p1 p2 = p1 == p2
--- @
---
--- Use @matches@ when you want explicit structural matching semantics, or use
--- `==` for standard equality checking.
+-- Uses the 'Eq' instance to compare patterns for structural equality.
+-- Both values and elements must match recursively.
+-- This operation is O(n).
 --
 -- === Examples
---
--- Identical patterns match:
---
--- >>> pat1 = patternWith "root" [pattern "a", pattern "b"]
--- >>> pat2 = patternWith "root" [pattern "a", pattern "b"]
--- >>> matches pat1 pat2
--- True
---
--- Patterns with different values don't match:
---
--- >>> pat1 = patternWith "root1" [pattern "a", pattern "b"]
--- >>> pat2 = patternWith "root2" [pattern "a", pattern "b"]
--- >>> matches pat1 pat2
--- False
---
--- Patterns with different element counts don't match:
---
--- >>> pat1 = patternWith "root" [pattern "a", pattern "b"]
--- >>> pat2 = patternWith "root" [pattern "a"]
--- >>> matches pat1 pat2
--- False
---
--- Patterns with same flattened values but different structures don't match:
---
--- >>> pat1 = patternWith "root" [pattern "a", pattern "b"]
--- >>> pat2 = patternWith "a" [patternWith "b" [pattern "root"]]
--- >>> matches pat1 pat2
--- False
---
--- Atomic patterns:
 --
 -- >>> matches (pattern "a") (pattern "a")
 -- True
+--
 -- >>> matches (pattern "a") (pattern "b")
 -- False
---
--- === Performance
---
--- The @matches@ function completes in O(n) time where n is the total number
--- of nodes in the smaller pattern. For patterns with up to 1000 nodes, the
--- function should complete in under 10 milliseconds.
---
--- === Type Safety
---
--- The @matches@ function requires that the value type @v@ has an `Eq` instance:
---
--- @
--- matches :: (Eq v) => Pattern v -> Pattern v -> Bool
--- @
---
--- This ensures that pattern values can be compared for equality, which is
--- necessary for structural matching.
---
-matches :: (Eq v) => Pattern v -> Pattern v -> Bool
+matches :: Eq v => Pattern v -> Pattern v -> Bool
 matches = (==)
 
--- | Check if a pattern contains a subpattern.
+-- | Checks if a pattern contains a specific subpattern.
 --
--- Returns `True` if the pattern contains the subpattern anywhere in its structure
--- (including the pattern itself), `False` otherwise. The function recursively
--- searches through all subpatterns in the pattern structure, checking for
--- structural equality with the target subpattern.
---
--- The @contains@ function checks for structural containment:
---
--- * A pattern always contains itself (reflexivity)
--- * A pattern contains all its direct elements
--- * A pattern contains all nested subpatterns recursively
---
--- This enables pattern analysis operations like "does this pattern contain a
--- specific subpattern?" or "is this pattern structure present in another pattern?"
---
--- === Relationship to filterPatterns
---
--- The @contains@ function can be implemented using @filterPatterns@:
---
--- @
--- contains p subpat = not (null (filterPatterns (== subpat) p))
--- @
---
--- However, @contains@ provides a more efficient implementation that short-circuits
--- on the first match, and provides explicit containment semantics.
---
--- === Relationship to matches
---
--- The @contains@ function uses @matches@ internally to check for structural
--- equality between the pattern and subpatterns. It checks if the pattern itself
--- matches the subpattern, or recursively checks if any element contains the subpattern:
---
--- @
--- contains p subpat = matches p subpat || any (\elemPat -> contains elemPat subpat) (elements p)
--- @
---
--- This ensures that containment is based on structural matching, not just
--- value-based equality.
+-- Traverses the pattern structure to see if any subpattern matches the target.
+-- Uses 'matches' (structural equality) for comparison.
+-- This operation is O(n).
 --
 -- === Examples
 --
--- Pattern containing a subpattern:
---
--- >>> subpat = pattern "a"
--- >>> pat = patternWith "root" [subpat, pattern "b"]
--- >>> contains pat subpat
+-- >>> p = patternWith "root" [pattern "child"]
+-- >>> contains p (pattern "child")
 -- True
 --
--- Pattern not containing a subpattern:
---
--- >>> subpat = pattern "x"
--- >>> pat = patternWith "root" [pattern "a", pattern "b"]
--- >>> contains pat subpat
+-- >>> contains p (pattern "missing")
 -- False
---
--- Pattern containing itself (self-containment):
---
--- >>> pat = patternWith "root" [pattern "a", pattern "b"]
--- >>> contains pat pat
--- True
---
--- Atomic patterns:
---
--- >>> pat1 = pattern "a"
--- >>> pat2 = pattern "b"
--- >>> contains pat1 pat1
--- True
--- >>> contains pat1 pat2
--- False
---
--- === Performance
---
--- The @contains@ function completes in O(n) time where n is the total number
--- of subpatterns in the pattern structure, but may short-circuit earlier if
--- the subpattern is found. For patterns with up to 1000 nodes, the function
--- should complete in under 10 milliseconds.
---
--- === Type Safety
---
--- The @contains@ function requires that the value type @v@ has an `Eq` instance:
---
--- @
--- contains :: (Eq v) => Pattern v -> Pattern v -> Bool
--- @
---
--- This ensures that pattern values can be compared for equality, which is
--- necessary for structural matching during containment checking.
---
-contains :: (Eq v) => Pattern v -> Pattern v -> Bool
-contains p subpat = 
-  matches p subpat || any (\elemPat -> contains elemPat subpat) (elements p)
+contains :: Eq v => Pattern v -> Pattern v -> Bool
+contains haystack needle =
+  matches haystack needle || any (`contains` needle) (elements haystack)
 
--- | Comonad instance for Pattern.
---
--- The Comonad instance enables context-aware computations where functions have
--- access to the full structural context (parent, siblings, depth, path) around
--- each value, not just the value itself. This extends beyond Foldable (which
--- only provides values) to enable computations that consider structural context,
--- depth, position, and relationships between pattern elements.
---
--- == Categorical Interpretation
---
--- From a category theory perspective, `Pattern` is a comonad that provides a way
--- to perform context-aware computations. The Comonad instance provides:
---
--- * **Context Access**: Functions have access to the full pattern structure at each
---   position, not just the value
--- * **Structure Preservation**: The pattern structure (element count, nesting depth,
---   element order) is preserved during context-aware transformations
--- * **Recursive Context**: Context is created recursively at all positions in the
---   pattern structure
--- * **Dual to Monad**: Comonad is the dual of Monad - while Monad builds structure,
---   Comonad breaks it down to access context
---
--- == Relationship to Zippers
---
--- Comonads are closely related to zippers. A zipper is a data structure that
--- represents a data structure with a focus point and its context. The Comonad
--- instance for Pattern provides zipper-like capabilities:
---
--- * **Focus**: `extract` gets the value at the current focus (root)
--- * **Context**: `duplicate` creates contexts at every position (like having a zipper
---   at each position)
--- * **Navigation**: `extend` lets you compute based on full context (like zipper
---   navigation)
---
--- The Comonad instance enables zipper-like operations without requiring an explicit
--- `Zipper` type, providing context-aware computations that need the full structural
--- context at each position.
---
--- == Comonad Laws
---
--- The Comonad instance must satisfy three mathematical laws:
---
--- 1. **Extract-Extend Law**: `extract . extend f = f`
---    Extracting from an extended computation gives the original result.
---
--- 2. **Extend-Extract Law**: `extend extract = id`
---    Extending with extract is identity.
---
--- 3. **Extend Composition Law**: `extend f . extend g = extend (f . extend g)`
---    Extend is associative.
---
--- These laws are verified through property-based testing in the test suite.
---
-instance Comonad Pattern where
-  -- | Extract the decoration value from a pattern.
-  --
-  -- Returns the pattern's decoration value (root value), which is the value
-  -- at the focus point in the comonadic context. This is the fundamental
-  -- operation of the Comonad instance, providing access to the value at
-  -- the current focus.
-  --
-  -- === Examples
-  --
-  -- >>> extract (pattern 5)
-  -- 5
-  --
-  -- >>> extract (patternWith "test" [pattern "a", pattern "b"])
-  -- "test"
-  --
-  -- >>> extract (patternWith "root" [patternWith "a" [pattern "x"]])
-  -- "root"
-  extract :: Pattern v -> v
-  extract (Pattern v _) = v
-  
-  -- | Create a pattern where each position contains the full pattern structure focused at that position.
-  --
-  -- This operation creates a pattern of contexts, where each position contains
-  -- the full pattern structure focused at that position. This enables context-aware
-  -- computations by providing the full structural context at each position.
-  --
-  -- === Context Creation
-  --
-  -- The duplicate operation creates contexts recursively:
-  --
-  -- * Root position contains the full original pattern
-  -- * Each element position contains the pattern structure focused at that element
-  -- * Contexts are created recursively for all nested positions
-  --
-  -- === Examples
-  --
-  -- Atomic pattern:
-  --
-  -- >>> duplicate (pattern 5)
-  -- Pattern {value = Pattern {value = 5, elements = []}, elements = []}
-  --
-  -- Pattern with elements:
-  --
-  -- >>> let p = patternWith "root" [pattern "a", pattern "b"]
-  -- >>> duplicate p
-  -- Pattern {
-  --   value = Pattern {value = "root", elements = [pattern "a", pattern "b"]},
-  --   elements = [
-  --     Pattern {value = Pattern {value = "a", elements = []}, elements = []},
-  --     Pattern {value = Pattern {value = "b", elements = []}, elements = []}
-  --   ]
-  -- }
-  duplicate :: Pattern v -> Pattern (Pattern v)
-  duplicate p@(Pattern _ els) = 
-    Pattern p (map duplicate els)
-  
-  -- | Apply a context-aware function to each position in a pattern.
-  --
-  -- This operation applies a function that receives the full pattern structure
-  -- at each position, not just the value. The function is applied recursively
-  -- to all positions in the pattern structure, creating a new pattern where
-  -- each position contains the result of applying the function to the pattern
-  -- structure at that position.
-  --
-  -- === Context-Aware Computation
-  --
-  -- The extend operation enables context-aware computations where functions have
-  -- access to the full structural context (parent, siblings, depth, indices) around
-  -- each value, not just the value itself. This extends beyond Foldable (which
-  -- only provides values) to enable computations based on structural context.
-  --
-  -- === Examples
-  --
-  -- Compute depth at each position:
-  --
-  -- >>> let depthFunc p = depth p
-  -- >>> let p = patternWith "root" [pattern "a", pattern "b"]
-  -- >>> extend depthFunc p
-  -- Pattern {value = 0, elements = [Pattern {value = 1, elements = []}, Pattern {value = 1, elements = []}]}
-  --
-  -- Compute size at each position:
-  --
-  -- >>> let sizeFunc p = size p
-  -- >>> let p = patternWith "root" [pattern "a", pattern "b"]
-  -- >>> extend sizeFunc p
-  -- Pattern {value = 3, elements = [Pattern {value = 1, elements = []}, Pattern {value = 1, elements = []}]}
-  extend :: (Pattern v -> w) -> Pattern v -> Pattern w
-  extend f = fmap f . duplicate
+-- * Foldable/Traversable Extras
 
--- | Compute depth (nesting level) at each position in the pattern structure.
+-- | Extracts all values from a pattern structure as a flat list.
 --
--- This helper function uses the Comonad instance to compute the depth of the
--- pattern structure at each position. The depth represents the maximum nesting
--- level from the current position to the deepest nested pattern.
+-- Equivalent to 'toList' and 'values'. Provided for explicit API clarity.
 --
 -- === Examples
 --
--- Atomic pattern:
+-- >>> flatten (pattern "atom")
+-- ["atom"]
+flatten :: Pattern v -> [v]
+flatten = toList
+
+-- | Extracts the pattern structure as a tuple (value, elements).
 --
--- >>> depthAt (pattern 5)
--- Pattern {value = 0, elements = []}
+-- Preserves the structure while exposing the internal components.
+-- Useful for pattern matching or transformation without direct field access.
 --
--- Pattern with elements:
+-- === Examples
 --
--- >>> let p = patternWith "root" [pattern "a", pattern "b"]
+-- >>> toTuple (pattern "atom")
+-- ("atom",[])
+--
+-- >>> toTuple (patternWith "root" [pattern "child"])
+-- ("root",[Pattern "child" []])
+toTuple :: Pattern v -> (v, [Pattern v])
+toTuple (Pattern v es) = (v, es)
+
+-- * Context/Comonad Functions
+
+-- | Computes the nesting depth at each position in the pattern.
+--
+-- Returns a new pattern with the same structure where each value is replaced
+-- by its depth (distance from root + 1).
+--
+-- === Examples
+--
+-- >>> p = patternWith "root" [pattern "child"]
 -- >>> depthAt p
--- Pattern {value = 1, elements = [Pattern {value = 0, elements = []}, Pattern {value = 0, elements = []}]}
---
--- Nested pattern:
---
--- >>> let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
--- >>> depthAt p
--- Pattern {value = 2, elements = [Pattern {value = 1, elements = [Pattern {value = 0, elements = []}]}, Pattern {value = 0, elements = []}]}
---
--- === Relationship to Comonad
---
--- This function demonstrates the power of the Comonad instance by providing
--- convenient access to context-aware computations. It is equivalent to:
---
--- @
--- depthAt = extend depth
--- @
---
--- The function uses `extend` to apply the `depth` function at each position,
--- giving each position access to its full structural context.
+-- Pattern 1 [Pattern 2 []]
 depthAt :: Pattern v -> Pattern Int
-depthAt = extend depth
-
--- | Compute size (total nodes) of subtree at each position.
---
--- This helper function uses the Comonad instance to compute the size of the
--- pattern structure (total number of nodes) at each position. The size includes
--- the current node and all nodes in its subtree.
---
--- === Examples
---
--- Atomic pattern:
---
--- >>> sizeAt (pattern 5)
--- Pattern {value = 1, elements = []}
---
--- Pattern with elements:
---
--- >>> let p = patternWith "root" [pattern "a", pattern "b"]
--- >>> sizeAt p
--- Pattern {value = 3, elements = [Pattern {value = 1, elements = []}, Pattern {value = 1, elements = []}]}
---
--- Nested pattern:
---
--- >>> let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
--- >>> sizeAt p
--- Pattern {value = 4, elements = [Pattern {value = 2, elements = [Pattern {value = 1, elements = []}]}, Pattern {value = 1, elements = []}]}
---
--- === Relationship to Comonad
---
--- This function demonstrates the power of the Comonad instance by providing
--- convenient access to context-aware computations. It is equivalent to:
---
--- @
--- sizeAt = extend size
--- @
---
--- The function uses `extend` to apply the `size` function at each position,
--- giving each position access to its full structural context.
-sizeAt :: Pattern v -> Pattern Int
-sizeAt = extend size
-
--- | Compute indices from root to current position.
---
--- This helper function finds the path (list of indices) from the root pattern
--- to the current pattern position. The root position has an empty list of indices,
--- and each element position has indices indicating its path from the root.
---
--- === Indices Representation
---
--- Indices are represented as a list of integers, where each integer represents
--- the index of an element at that level. For example:
---
--- * Root position: `[]` (empty list)
--- * First element: `[0]` (first element at root level)
--- * Second element: `[1]` (second element at root level)
--- * First element of first element: `[0, 0]` (first element of first element)
---
--- === Examples
---
--- Atomic pattern (root position):
---
--- >>> indicesFromRoot (pattern 5) (pattern 5)
--- []
---
--- Pattern with elements:
---
--- >>> let root = patternWith "root" [pattern "a", pattern "b"]
--- >>> indicesFromRoot root (pattern "a")
--- [0]
--- >>> indicesFromRoot root (pattern "b")
--- [1]
---
--- Nested pattern:
---
--- >>> let root = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
--- >>> indicesFromRoot root (pattern "x")
--- [0, 0]
---
--- === Implementation Note
---
--- This function searches for the target pattern within the root pattern structure
--- by doing a structural comparison. It returns the first matching path found.
--- If the target pattern appears multiple times, it returns the path to the first
--- occurrence.
---
--- === Performance
---
--- The function completes in O(n) time where n is the total number of nodes in
--- the root pattern, as it must search through all positions to find the target.
-indicesFromRoot :: (Eq v) => Pattern v -> Pattern v -> [Int]
-indicesFromRoot root target
-  | root == target = []
-  | otherwise = findPath root target []
-
--- Helper function to find path from root to target
-findPath :: (Eq v) => Pattern v -> Pattern v -> [Int] -> [Int]
-findPath current target acc
-  | current == target = reverse acc
-  | otherwise = searchElements (elements current) target acc 0
-
--- Helper function to search through elements
-searchElements :: (Eq v) => [Pattern v] -> Pattern v -> [Int] -> Int -> [Int]
-searchElements [] _ _ _ = []  -- Not found
-searchElements (elem:rest) target acc idx
-  | found /= [] = found
-  | otherwise = searchElements rest target acc (idx + 1)
+depthAt = go 1
   where
-    found = findPath elem target (idx : acc)
+    go d (Pattern _ es) = Pattern d (map (go (d + 1)) es)
 
--- | Compute indices from root to each position in the pattern structure.
+-- | Computes the size of the subtree at each position in the pattern.
 --
--- This helper function uses the Comonad instance to compute the indices (list of
--- indices) from the root to each position. The root position has an empty list
--- of indices, and each element position has indices indicating its path from
--- the root.
+-- Returns a new pattern with the same structure where each value is replaced
+-- by the size (number of nodes) of the subtree rooted at that position.
 --
 -- === Examples
 --
--- Atomic pattern:
+-- >>> p = patternWith "root" [pattern "a", pattern "b"]
+-- >>> sizeAt p
+-- Pattern 3 [Pattern 1 [],Pattern 1 []]
+sizeAt :: Pattern v -> Pattern Int
+sizeAt (Pattern _ es) =
+  let subResults = map sizeAt es
+      mySize = 1 + sum (map value subResults)
+  in Pattern mySize subResults
+
+-- | Computes the path indices from root to each position in the pattern.
 --
--- >>> indicesAt (pattern 5)
--- Pattern {value = [], elements = []}
+-- Returns a new pattern with the same structure where each value is replaced
+-- by a list of indices representing the path from root to that position.
 --
--- Pattern with elements:
+-- === Examples
 --
--- >>> let p = patternWith "root" [pattern "a", pattern "b"]
+-- >>> p = patternWith "root" [pattern "a", pattern "b"]
 -- >>> indicesAt p
--- Pattern {value = [], elements = [Pattern {value = [0], elements = []}, Pattern {value = [1], elements = []}]}
---
--- Nested pattern:
---
--- >>> let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
--- >>> indicesAt p
--- Pattern {value = [], elements = [Pattern {value = [0], elements = [Pattern {value = [0, 0], elements = []}]}, Pattern {value = [1], elements = []}]}
---
--- === Relationship to Comonad
---
--- This function demonstrates the power of the Comonad instance by providing
--- convenient access to context-aware computations. It is equivalent to:
---
--- @
--- indicesAt p = extend (\pos -> indicesFromRoot p pos) p
--- @
---
--- The function uses `extend` to apply `indicesFromRoot` at each position,
--- giving each position access to its path from the root.
---
--- === Type Constraint
---
--- This function requires that the value type @v@ has an `Eq` instance, as
--- `indicesFromRoot` uses structural equality to find the target pattern.
-indicesAt :: (Eq v) => Pattern v -> Pattern [Int]
-indicesAt p = extend (\pos -> indicesFromRoot p pos) p
+-- Pattern [] [Pattern [0] [],Pattern [1] []]
+indicesAt :: Eq v => Pattern v -> Pattern [Int]
+indicesAt = go []
+  where
+    go path (Pattern _ es) =
+      Pattern path (zipWith (\i e -> go (path ++ [i]) e) [0..] es)
