@@ -140,7 +140,24 @@ registerRelationship (Relationship _ (Just (SubjectData (Just ident) _ _))) = do
   (syms, errs) <- get
   case Map.lookup ident syms of
     Just info | symStatus info == StatusDefined -> 
-      put (syms, DuplicateDefinition ident : errs)
+      case symType info of
+        TypeRelationship -> 
+          -- Already defined as a relationship in a previous path, this is a duplicate
+          put (syms, DuplicateDefinition ident : errs)
+        TypePattern -> 
+          -- Defined via pattern notation, check if arity is consistent
+          case symSignature info of
+            Just (PatternSignature _ existingArity)
+              | existingArity == 2 -> return () -- Consistent reference, not redefinition
+              | otherwise -> put (syms, InconsistentDefinition ident ("Expected arity 2 but got " ++ show existingArity) : errs)
+            Nothing -> return () -- No signature to check, treat as reference
+        _ -> 
+          -- Other types (TypeNode, TypeUnknown) - treat as reference if arity matches
+          case symSignature info of
+            Just (PatternSignature _ existingArity)
+              | existingArity == 2 -> return ()
+              | otherwise -> put (syms, InconsistentDefinition ident ("Expected arity 2 but got " ++ show existingArity) : errs)
+            Nothing -> return ()
     _ -> do
       -- A relationship in a path (a)-[r]->(b) is implicitly arity 2 (source, target)
       let sig = PatternSignature Set.empty 2
