@@ -84,7 +84,7 @@ validatePatterns :: [AnnotatedPattern] -> State ValidationState ()
 validatePatterns pats = do
   -- Pass 1: Register all definitions
   mapM_ registerDefinition pats
-  -- Pass 2: Check references
+  -- Pass 2: Check references and consistency
   mapM_ checkReferences pats
 
 -- | Register definitions
@@ -100,14 +100,17 @@ registerElement (PEReference _) = return () -- References don't define
 registerSubjectPattern :: SubjectPattern -> State ValidationState ()
 registerSubjectPattern (SubjectPattern maybeSubj elements) = do
   -- Register the subject itself if identified
+  let arity = length elements
   case maybeSubj of
-    Just (SubjectData (Just ident) _ _) -> do
+    Just (SubjectData (Just ident) labels _) -> do
       (syms, errs) <- get
       case Map.lookup ident syms of
         Just info | symStatus info == StatusDefined -> 
           put (syms, DuplicateDefinition ident : errs)
         _ -> do
-          let info = SymbolInfo TypePattern StatusDefined Nothing
+          -- We define it here with its signature
+          let sig = PatternSignature labels arity
+          let info = SymbolInfo TypePattern StatusDefined (Just sig)
           put (Map.insert ident info syms, errs)
     _ -> return ()
   
@@ -128,39 +131,26 @@ registerNode :: Node -> State ValidationState ()
 registerNode (Node (Just (SubjectData (Just ident) _ _))) = do
   (syms, errs) <- get
   case Map.lookup ident syms of
-    Just info | symStatus info == StatusDefined -> 
-      -- Nodes in paths are usually references or first-time definitions.
-      -- If it was explicitly defined as a pattern [a], using it as (a) is fine (reference).
-      -- But if we try to define it again?
-      -- Path notation treats nodes as references if they exist, or definitions if they don't.
-      -- The only conflict is if we try to REDEFINE it with different properties, but we aren't checking property consistency yet.
-      -- For US2, we mainly care about registering it if it's new.
-      return () 
+    Just info | symStatus info == StatusDefined -> return () 
     _ -> do
       let info = SymbolInfo TypeNode StatusDefined Nothing
       put (Map.insert ident info syms, errs)
-registerNode _ = return () -- Anonymous or reference-only nodes
+registerNode _ = return () 
 
 registerRelationship :: Relationship -> State ValidationState ()
 registerRelationship (Relationship _ (Just (SubjectData (Just ident) _ _))) = do
   (syms, errs) <- get
   case Map.lookup ident syms of
     Just info | symStatus info == StatusDefined -> 
-      -- Relationships in paths are definitions. 
-      -- If (a)-[r]->(b) appears twice, is it a redefinition?
-      -- If 'r' is identified, yes, it's a redefinition of 'r'.
-      -- Unless it's the exact same relationship instance? 
-      -- In Gram, (a)-[r]->(b) defines 'r'. Using 'r' again implies a new edge unless it's a reference [r].
-      -- But [r] syntax isn't used inline in paths like that usually.
-      -- Wait, `(a)-[r]->(b)` defines `r`. `(c)-[r]->(d)` would redefine `r` with new endpoints.
-      -- So yes, duplicate definition.
       put (syms, DuplicateDefinition ident : errs)
     _ -> do
-      let info = SymbolInfo TypeRelationship StatusDefined Nothing
+      -- A relationship in a path (a)-[r]->(b) is implicitly arity 2 (source, target)
+      let sig = PatternSignature Set.empty 2
+      let info = SymbolInfo TypeRelationship StatusDefined (Just sig)
       put (Map.insert ident info syms, errs)
 registerRelationship _ = return ()
 
--- | Check references
+-- | Check references and consistency
 checkReferences :: AnnotatedPattern -> State ValidationState ()
 checkReferences (AnnotatedPattern _ elements) = 
   mapM_ checkElement elements
@@ -168,14 +158,12 @@ checkReferences (AnnotatedPattern _ elements) =
 checkElement :: PatternElement -> State ValidationState ()
 checkElement (PESubjectPattern sp) = checkSubjectPattern sp
 checkElement (PEPath path) = checkPath path
-checkElement (PEReference ident) = checkIdentifierRef ident
+checkElement (PEReference ident) = checkIdentifierRef ident Nothing
 
 checkSubjectPattern :: SubjectPattern -> State ValidationState ()
 checkSubjectPattern (SubjectPattern maybeSubj elements) = do
-  -- Check for direct recursion if identified
   case maybeSubj of
     Just (SubjectData (Just ident) _ _) -> do
-      -- Check elements for direct reference to ident
       let directRefs = [id | PEReference id <- elements]
       when (ident `elem` directRefs) $ do
         (syms, errs) <- get
@@ -195,16 +183,24 @@ checkSegment (PathSegment rel nextNode) = do
   checkNode nextNode
 
 checkNode :: Node -> State ValidationState ()
-checkNode (Node (Just (SubjectData (Just ident) _ _))) = checkIdentifierRef ident
+checkNode (Node (Just (SubjectData (Just ident) _ _))) = checkIdentifierRef ident Nothing
 checkNode _ = return ()
 
 checkRelationship :: Relationship -> State ValidationState ()
-checkRelationship (Relationship _ (Just (SubjectData (Just ident) _ _))) = checkIdentifierRef ident
+checkRelationship (Relationship _ (Just (SubjectData (Just ident) _ _))) = 
+  -- Relationships in paths imply arity 2.
+  checkIdentifierRef ident (Just 2)
 checkRelationship _ = return ()
 
-checkIdentifierRef :: Identifier -> State ValidationState ()
-checkIdentifierRef ident = do
+checkIdentifierRef :: Identifier -> Maybe Int -> State ValidationState ()
+checkIdentifierRef ident expectedArity = do
   (syms, errs) <- get
   case Map.lookup ident syms of
-    Just _ -> return () -- Defined or previously referenced
+    Just info -> do
+      -- Check consistency if we have an expected arity
+      case (expectedArity, symSignature info) of
+        (Just expected, Just (PatternSignature _ actual)) 
+          | expected /= actual -> 
+            put (syms, InconsistentDefinition ident ("Expected arity " ++ show expected ++ " but got " ++ show actual) : errs)
+        _ -> return ()
     Nothing -> put (syms, UndefinedReference ident : errs)

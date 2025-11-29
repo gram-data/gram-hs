@@ -28,6 +28,10 @@ isSelfReference :: ValidationError -> Bool
 isSelfReference (SelfReference _) = True
 isSelfReference _ = False
 
+isInconsistentDefinition :: ValidationError -> Bool
+isInconsistentDefinition (InconsistentDefinition _ _) = True
+isInconsistentDefinition _ = False
+
 spec :: Spec
 spec = do
   describe "Basic Pattern Validation" $ do
@@ -93,3 +97,16 @@ spec = do
 
     it "accepts anonymous relationships" $ do
       validateSource "(a)-[:knows]->(b), (a)-[:knows]->(b)" `shouldSatisfy` isRight
+
+  describe "Mixed Notation Consistency" $ do
+    it "accepts consistent definition and usage" $ do
+      validateSource "[r | a, b], (a)-[r]->(b)" `shouldSatisfy` isRight
+
+    it "rejects inconsistent arity (structure mismatch)" $ do
+      -- [r | a, b, c] has 3 elements. (a)-[r]->(b) implies 2 elements.
+      -- This requires Arity check.
+      let result = validateSource "[r | a, b, c], (a)-[r]->(b)"
+      result `shouldSatisfy` isLeft 
+      case result of
+        Left [err] -> err `shouldSatisfy` isInconsistentDefinition
+        _ -> expectationFailure "Expected InconsistentDefinition error"
