@@ -145,14 +145,14 @@ registerRelationship (Relationship _ (Just (SubjectData (Just ident) _ _))) = do
           -- Already defined as a relationship in a previous path, this is a duplicate
           put (syms, DuplicateDefinition ident : errs)
         TypePattern -> 
-          -- Defined via pattern notation, check if arity is consistent
+          -- Defined via pattern notation, allow if arity is consistent with path usage
           case symSignature info of
             Just (PatternSignature _ existingArity)
-              | existingArity == 2 -> return () -- Consistent reference, not redefinition
+              | existingArity == 2 -> return () -- Arity matches, path usage is consistent
               | otherwise -> put (syms, InconsistentDefinition ident ("Expected arity 2 but got " ++ show existingArity) : errs)
-            Nothing -> return () -- No signature to check, treat as reference
+            Nothing -> return () -- No signature to check, allow usage
         _ -> 
-          -- Other types (TypeNode, TypeUnknown) - treat as reference if arity matches
+          -- Other types (TypeNode, TypeUnknown) - allow if arity matches
           case symSignature info of
             Just (PatternSignature _ existingArity)
               | existingArity == 2 -> return ()
