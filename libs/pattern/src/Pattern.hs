@@ -13,7 +13,6 @@
 --   predicate functions, and typeclass instances (Functor, Applicative, Comonad, etc.)
 -- * @Pattern.Views@ - Graph view interpretations for different graph semantics
 -- * @Pattern.Graph@ - Graph operations and transformations
--- * @Pattern.Morphisms@ - Pattern morphisms and transformations
 --
 -- == Usage
 --
@@ -36,7 +35,6 @@
 --   query functions, predicate functions, helper functions, and all typeclass instances)
 -- * All public exports from @Pattern.Views@ (graph view interpretations)
 -- * All public exports from @Pattern.Graph@ (graph operations)
--- * All public exports from @Pattern.Morphisms@ (pattern morphisms)
 --
 -- Internal implementation details and helper functions are not exported through
 -- this module, ensuring a clean public API.
@@ -47,11 +45,8 @@ module Pattern
   , module Pattern.Views
     -- * Graph Operations
   , module Pattern.Graph
-    -- * Morphisms and Transformations
-  , module Pattern.Morphisms
   ) where
 
 import Pattern.Core
 import Pattern.Views
 import Pattern.Graph
-import Pattern.Morphisms
