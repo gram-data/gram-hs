@@ -18,7 +18,7 @@
 --
 -- * @scopePattern@: The Pattern that defines the boundary for all graph operations.
 --   Only direct elements of this pattern are considered for graph structure.
--- * @isNode@: A predicate determining which direct elements are nodes.
+-- * @testNode@: A predicate determining which direct elements are nodes.
 --   All other graph concepts (relationships, walks) derive from this single predicate.
 --
 -- == Design Principles
@@ -26,7 +26,7 @@
 -- 1. **Scope-bounded operations**: All graph operations only consider direct elements
 --    of @scopePattern@, never descending into nested structures.
 --
--- 2. **Single predicate foundation**: Only @isNode@ is required. All other graph
+-- 2. **Single predicate foundation**: Only @testNode@ is required. All other graph
 --    predicates (relationships, walks, etc.) are derived from this.
 --
 -- 3. **Context captured at construction**: If a predicate needs context, that context
@@ -56,7 +56,7 @@ module Pattern.Graph
     GraphLens(..)
     -- * Node Operations
   , nodes
-  , isNodeLens
+  , isNode
     -- * Relationship Operations
   , isRelationship
   , relationships
@@ -87,7 +87,7 @@ import qualified Data.Map as Map
 -- The lens consists of:
 -- * @scopePattern@: The Pattern that defines the boundary for all graph operations.
 --   Only direct elements of this pattern are considered for graph structure.
--- * @isNode@: A predicate determining which direct elements are nodes.
+-- * @testNode@: A predicate determining which direct elements are nodes.
 --   All other graph concepts (relationships, walks) derive from this predicate.
 --
 -- == Categorical Interpretation
@@ -99,7 +99,7 @@ import qualified Data.Map as Map
 -- == Design Principles
 --
 -- 1. Scope-bounded: All operations only consider direct elements of scopePattern
--- 2. Single predicate foundation: Only isNode is required, all else derives
+-- 2. Single predicate foundation: Only testNode is required, all else derives
 -- 3. Context at construction: Predicate context captured when lens is created
 -- 4. Interpretation, not intrinsic: Graph structure is an interpretation, not
 --    a property of Pattern itself
@@ -112,13 +112,13 @@ import qualified Data.Map as Map
 data GraphLens v = GraphLens
   { scopePattern :: Pattern v
     -- ^ The Pattern that defines the graph scope
-  , isNode       :: Pattern v -> Bool
+  , testNode     :: Pattern v -> Bool
     -- ^ Predicate determining which elements are nodes
   }
 
 -- | Extract all nodes from the graph lens.
 --
--- Nodes are direct elements of scopePattern that satisfy the isNode predicate.
+-- Nodes are direct elements of scopePattern that satisfy the testNode predicate.
 --
 -- == Time Complexity
 -- O(n) where n is the number of direct elements in scopePattern
@@ -129,26 +129,23 @@ data GraphLens v = GraphLens
 -- >>> nodes lens
 -- [[a], [b], [c]]
 nodes :: GraphLens v -> [Pattern v]
-nodes (GraphLens (Pattern _ elements) isNodePred) = 
-  filter isNodePred elements
+nodes (GraphLens (Pattern _ elements) testNodePred) = 
+  filter testNodePred elements
 
 -- | Determine if a Pattern is a node according to the lens.
 --
--- This is the context-aware version that uses the lens's isNode predicate.
+-- This is the context-aware version that uses the lens's testNode predicate.
 -- The lens parameter provides the predicate context.
---
--- Note: This function is named @isNodeLens@ to avoid conflict with the
--- @isNode@ field accessor in the GraphLens record.
 --
 -- == Example
 --
 -- >>> let lens = GraphLens pattern isAtomic
--- >>> isNodeLens lens (pattern "a")
+-- >>> isNode lens (pattern "a")
 -- True
--- >>> isNodeLens lens (patternWith "rel" [pattern "a", pattern "b"])
+-- >>> isNode lens (patternWith "rel" [pattern "a", pattern "b"])
 -- False
-isNodeLens :: GraphLens v -> Pattern v -> Bool
-isNodeLens (GraphLens _ isNodePred) p = isNodePred p
+isNode :: GraphLens v -> Pattern v -> Bool
+isNode (GraphLens _ testNodePred) p = testNodePred p
 
 -- * Relationship Operations
 
@@ -157,7 +154,7 @@ isNodeLens (GraphLens _ isNodePred) p = isNodePred p
 -- A relationship is a non-node pattern with exactly two node elements.
 --
 -- == Properties
--- * Must not be a node (does not satisfy isNode predicate)
+-- * Must not be a node (does not satisfy testNode predicate)
 -- * Must have exactly two elements
 -- * Both elements must be nodes (according to the lens)
 --
@@ -168,10 +165,10 @@ isNodeLens (GraphLens _ isNodePred) p = isNodePred p
 -- >>> isRelationship lens rel
 -- True
 isRelationship :: GraphLens v -> Pattern v -> Bool
-isRelationship lens@(GraphLens _ isNodePred) p@(Pattern _ els) =
-  not (isNodePred p) &&
+isRelationship lens@(GraphLens _ testNodePred) p@(Pattern _ els) =
+  not (testNodePred p) &&
   length els == 2 &&
-  all (isNodeLens lens) els
+  all (isNode lens) els
 
 -- | Extract all relationships from the graph lens.
 --
@@ -263,7 +260,7 @@ consecutivelyConnected lens rels =
 -- source of next).
 --
 -- == Properties
--- * Must not be a node (does not satisfy isNode predicate)
+-- * Must not be a node (does not satisfy testNode predicate)
 -- * All elements must be relationships (according to the lens)
 -- * Consecutive relationships must be connected
 --
@@ -274,8 +271,8 @@ consecutivelyConnected lens rels =
 -- >>> isWalk lens walk
 -- True
 isWalk :: Eq v => GraphLens v -> Pattern v -> Bool
-isWalk lens@(GraphLens _ isNodePred) p@(Pattern _ elements) =
-  not (isNodePred p) &&
+isWalk lens@(GraphLens _ testNodePred) p@(Pattern _ elements) =
+  not (testNodePred p) &&
   all (isRelationship lens) elements &&
   consecutivelyConnected lens elements
 
@@ -293,7 +290,7 @@ isWalk lens@(GraphLens _ isNodePred) p@(Pattern _ elements) =
 -- >>> walks lens
 -- [[path | [rel1], [rel2], [rel3]]]
 walks :: Eq v => GraphLens v -> [Pattern v]
-walks lens@(GraphLens (Pattern _ elements) isNodePred) =
+walks lens@(GraphLens (Pattern _ elements) _) =
   filter (isWalk lens) elements
 
 -- | Extract nodes from a walk in traversal order.

@@ -11,19 +11,19 @@ A **Graph Lens** provides an interpretive view of a Pattern as a graph structure
 ```haskell
 data GraphLens v = GraphLens
   { scopePattern :: Pattern v
-  , isNode       :: Pattern v -> Bool
+  , testNode     :: Pattern v -> Bool
   }
 ```
 
 **Components**:
 - **scopePattern**: Defines the boundary of all graph operations. Only the direct elements of this pattern are considered for graph structure.
-- **isNode**: Predicate determining which direct elements are nodes. All other graph concepts derive from this single predicate.
+- **testNode**: Predicate determining which direct elements are nodes. All other graph concepts derive from this single predicate.
 
 ### Design Principles
 
 1. **Scope-bounded operations**: All graph operations only consider direct elements of `scopePattern`, never descending into nested structures.
 
-2. **Single predicate foundation**: Only `isNode` is required. All other graph predicates (relationships, walks, etc.) are derived from this.
+2. **Single predicate foundation**: Only `testNode` is required. All other graph predicates (relationships, walks, etc.) are derived from this.
 
 3. **Context captured at construction**: If a predicate needs context, that context must be captured when the predicate is created, not during evaluation.
 
@@ -33,12 +33,12 @@ data GraphLens v = GraphLens
 
 ### Nodes
 
-**Definition**: Direct elements of `scopePattern` that satisfy the `isNode` predicate.
+**Definition**: Direct elements of `scopePattern` that satisfy the `testNode` predicate.
 
 ```haskell
 nodes :: GraphLens v -> [Pattern v]
-nodes (GraphLens (Pattern _ elements) isNode) = 
-  filter isNode elements
+nodes (GraphLens (Pattern _ elements) testNode) = 
+  filter testNode elements
 ```
 
 ### Relationships
@@ -47,17 +47,17 @@ nodes (GraphLens (Pattern _ elements) isNode) =
 
 ```haskell
 isRelationship :: GraphLens v -> Pattern v -> Bool
-isRelationship lens@(GraphLens _ isNode) p@(Pattern _ els) =
-  not (isNode p) &&
+isRelationship lens@(GraphLens _ testNode) p@(Pattern _ els) =
+  not (testNode p) &&
   length els == 2 &&
-  all isNode els
+  all (isNode lens) els
 
 relationships :: GraphLens v -> [Pattern v]
-relationships lens@(GraphLens (Pattern _ elements) isNode) = 
+relationships lens@(GraphLens (Pattern _ elements) _) = 
   [ p | p@(Pattern _ els) <- elements
-      , not (isNode p)
+      , not (testNode p)
       , length els == 2
-      , all isNode els
+      , all (isNode lens) els
   ]
 ```
 
@@ -86,8 +86,8 @@ reverseRel (Pattern v [a, b]) = Pattern v [b, a]
 
 ```haskell
 isWalk :: GraphLens v -> Pattern v -> Bool
-isWalk lens@(GraphLens _ isNode) p@(Pattern _ elements) =
-  not (isNode p) &&
+isWalk lens@(GraphLens _ testNode) p@(Pattern _ elements) =
+  not (testNode p) &&
   all (isRelationship lens) elements &&
   consecutivelyConnected lens elements
 
@@ -98,9 +98,9 @@ consecutivelyConnected lens rels =
     connects r1 r2 = target lens r1 == source lens r2
 
 walks :: GraphLens v -> [Pattern v]
-walks lens@(GraphLens (Pattern _ elements) isNode) =
+walks lens@(GraphLens (Pattern _ elements) testNode) =
   [ p | p <- elements
-      , not (isNode p)
+      , not (testNode p)
       , all (isRelationship lens) (elementsOf p)
       , consecutivelyConnected lens (elementsOf p)
   ]
@@ -469,7 +469,7 @@ fullLens = GraphLens bipartiteGraph $ \(Pattern v _) ->
 
 ### Why Single Predicate?
 
-Starting with only `isNode` keeps the design minimal and forces clarity about what constitutes the fundamental graph element. All other concepts derive naturally:
+Starting with only `testNode` keeps the design minimal and forces clarity about what constitutes the fundamental graph element. All other concepts derive naturally:
 
 - **Relationships**: Non-nodes connecting two nodes
 - **Walks**: Non-nodes containing connected relationships
@@ -533,7 +533,7 @@ Lenses over time-varying patterns:
 ```haskell
 data TemporalLens v = TemporalLens
   { snapshots :: [(Time, GraphLens v)]
-  , isNode :: Pattern v -> Bool
+  , testNode :: Pattern v -> Bool
   }
 
 atTime :: TemporalLens v -> Time -> GraphLens v
@@ -544,7 +544,7 @@ between :: TemporalLens v -> Time -> Time -> [GraphLens v]
 
 **Graph Lens** provides a flexible, composable way to interpret Pattern structures as graphs:
 
-- **Single predicate foundation**: Only `isNode` is required
+- **Single predicate foundation**: Only `testNode` is required
 - **Scope-bounded operations**: Clear boundaries, no implicit traversal
 - **Context at construction**: Pure predicates with explicit dependencies
 - **Multiple interpretations**: Same Pattern, different lenses, different graphs

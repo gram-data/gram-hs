@@ -4,7 +4,7 @@ module Spec.Pattern.GraphSpec where
 import Data.List (isPrefixOf)
 import Test.Hspec
 import Pattern.Core (Pattern(..), pattern, patternWith)
-import Pattern.Graph (GraphLens(..), nodes, isNodeLens)
+import Pattern.Graph (GraphLens(..), nodes, isNode)
 
 spec :: Spec
 spec = do
@@ -21,8 +21,8 @@ spec = do
         let isAtomic (Pattern _ els) = null els
         let lens = GraphLens graphPattern isAtomic
         scopePattern lens `shouldBe` graphPattern
-        isNodeLens lens (pattern "a") `shouldBe` True
-        isNodeLens lens (pattern "b") `shouldBe` True
+        isNode lens (pattern "a") `shouldBe` True
+        isNode lens (pattern "b") `shouldBe` True
       
       it "T010: GraphLens with empty scopePattern" $ do
         let emptyPattern = patternWith "empty" []

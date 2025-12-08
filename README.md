@@ -260,12 +260,12 @@ ghcid --test=':main' --command='cabal repl'
 
 **Build and test in one command**:
 ```bash
-cabal build && cabal test
+cabal build all && cabal test all
 ```
 
 **Generate Haddock documentation**:
 ```bash
-cabal haddock
+cabal haddock all
 ```
 
 **Open documentation**:
@@ -277,7 +277,7 @@ open $(find dist-newstyle -name "index.html" -path "*/doc/html/pattern/*" | head
 
 **Generate with additional options** (recommended for GitHub Pages):
 ```bash
-cabal haddock lib:pattern --haddock-html --haddock-quickjump --haddock-hyperlink-source
+cabal haddock all --haddock-html --haddock-quickjump --haddock-hyperlink-source
 ```
 
 ## Publishing Documentation to GitHub Pages
