@@ -31,7 +31,7 @@ library
 
     build-depends:
         base >=4.17.0.0 && <5,
-        containers ^>=0.6,
+        containers ^>=0.7,
         hashable ^>=1.4,
         unordered-containers ^>=0.2
 
@@ -48,7 +48,7 @@ test-suite subject-test
     build-depends:
         base >=4.17.0.0 && <5,
         subject,
-        containers ^>=0.6,
+        containers ^>=0.7,
         hashable ^>=1.4,
         unordered-containers ^>=0.2,
         QuickCheck ^>=2.14,

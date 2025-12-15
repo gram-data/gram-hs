@@ -33,7 +33,7 @@ library
         base >=4.17.0.0 && <5,
         pattern,
         subject,
-        containers ^>=0.6,
+        containers ^>=0.7,
         text >=2.0,
         megaparsec ^>=9.6,
         mtl ^>=2.3
@@ -57,7 +57,7 @@ test-suite gram-test
         gram,
         pattern,
         subject,
-        containers ^>=0.6,
+        containers ^>=0.7,
         text >=2.0,
         megaparsec ^>=9.6,
         hspec ^>=2.11,
