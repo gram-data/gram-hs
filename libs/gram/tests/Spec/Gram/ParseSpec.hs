@@ -555,6 +555,70 @@ spec = do
               let props = properties (value p)
               Map.lookup "code" props `shouldBe` Just (VTaggedString "js" "// This is a comment\nlet x = 1; // inline")
             Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "preserves double quotes inside plain codefence without escaping" $ do
+          -- Double quotes should be captured verbatim - no escaping needed
+          case fromGram "({ text: ```\nHe said \"hello\" there.\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "text" props `shouldBe` Just (VString "He said \"hello\" there.")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "preserves single quotes inside plain codefence without escaping" $ do
+          -- Single quotes should be captured verbatim - no escaping needed
+          case fromGram "({ text: ```\nIt's a test with 'quoted' words.\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "text" props `shouldBe` Just (VString "It's a test with 'quoted' words.")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "preserves mixed quotes inside plain codefence without escaping" $ do
+          -- All quote types should be captured verbatim together
+          case fromGram "({ text: ```\n\"double\" and 'single' and `backtick`\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "text" props `shouldBe` Just (VString "\"double\" and 'single' and `backtick`")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "preserves double quotes inside tagged codefence without escaping" $ do
+          -- JSON content with quotes should be captured verbatim
+          case fromGram "({ data: ```json\n{\"key\": \"value\", \"name\": \"Alice\"}\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "data" props `shouldBe` Just (VTaggedString "json" "{\"key\": \"value\", \"name\": \"Alice\"}")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "preserves single quotes inside tagged codefence without escaping" $ do
+          -- Code with single quotes should be captured verbatim
+          case fromGram "({ code: ```python\nprint('hello')\nname = 'world'\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "code" props `shouldBe` Just (VTaggedString "python" "print('hello')\nname = 'world'")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "preserves mixed quotes inside tagged codefence without escaping" $ do
+          -- Mix of quote styles in tagged content
+          case fromGram "({ script: ```js\nconst msg = \"It's a 'test'\";\nconsole.log(`Value: ${msg}`);\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "script" props `shouldBe` Just (VTaggedString "js" "const msg = \"It's a 'test'\";\nconsole.log(`Value: ${msg}`);")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "preserves inline code backticks (markdown style) without escaping" $ do
+          -- Single backticks for inline code should work without any escaping
+          case fromGram "({ doc: ```md\nUse the `sayHello` tool to greet users.\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "doc" props `shouldBe` Just (VTaggedString "md" "Use the `sayHello` tool to greet users.")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "preserves multiple inline code spans without escaping" $ do
+          -- Multiple inline code spans in markdown content
+          case fromGram "({ doc: ```md\nCombine `foo`, `bar`, and `baz` together.\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "doc" props `shouldBe` Just (VTaggedString "md" "Combine `foo`, `bar`, and `baz` together.")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
         
         it "parses codefence with code block syntax in content" $ do
           -- Simulating markdown code block inside codefence
@@ -594,4 +658,68 @@ spec = do
           let gramMulti = "({ x: ```\ndata\n``` })\n// This comment should be stripped\n(:Next)"
           case fromGram gramMulti of
             Right _ -> return ()  -- Parsing succeeds if comment was stripped
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+      -- Indented closing fence support
+      describe "indented closing fence support" $ do
+        
+        it "accepts indented closing fence with spaces" $ do
+          -- Closing fence can have leading spaces for better readability
+          case fromGram "({ text: ```\nHello World\n  ``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "text" props `shouldBe` Just (VString "Hello World")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "accepts indented closing fence with tabs" $ do
+          -- Closing fence can have leading tabs
+          case fromGram "({ text: ```\nContent\n\t``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "text" props `shouldBe` Just (VString "Content")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "accepts indented closing fence in tagged codefence" $ do
+          -- Tagged codefence with indented closing fence
+          case fromGram "({ doc: ```md\n# Title\n    ``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "doc" props `shouldBe` Just (VTaggedString "md" "# Title")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "improves readability in nested structures" $ do
+          -- Real-world example: node with indented codefence property
+          let input = unlines
+                [ "(:Agent {"
+                , "  name: \"Assistant\","
+                , "  instructions: ```md"
+                , "When the user greets you, use the `sayHello` tool."
+                , "Always be polite and helpful."
+                , "  ```"
+                , "})"
+                ]
+          case fromGram input of
+            Right p -> do
+              let props = properties (value p)
+              case Map.lookup "instructions" props of
+                Just (VTaggedString "md" content) -> do
+                  content `shouldContain` "sayHello"
+                  content `shouldContain` "polite"
+                _ -> expectationFailure "Expected VTaggedString for instructions"
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "handles empty content with indented closing fence" $ do
+          -- Empty codefence with indented closing
+          case fromGram "({ empty: ```\n   ``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "empty" props `shouldBe` Just (VString "")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+        it "preserves content when line starts with spaces but not closing fence" $ do
+          -- Indented content that doesn't start with ``` should be preserved
+          case fromGram "({ code: ```\n  indented line\n  another line\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "code" props `shouldBe` Just (VString "  indented line\n  another line")
             Left err -> expectationFailure $ "Parse failed: " ++ show err

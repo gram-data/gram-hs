@@ -272,8 +272,8 @@ parseBacktickedIdentifier = do
 -- | Parse the content of a fenced string (codefence).
 --
 -- Captures all characters between the opening fence (after newline)
--- and the closing fence. The closing fence must be three backticks
--- at the start of a line (preceded by newline).
+-- and the closing fence. The closing fence is three backticks that
+-- appear after a newline, with optional leading whitespace.
 --
 -- Content may contain:
 --
@@ -282,7 +282,8 @@ parseBacktickedIdentifier = do
 -- * Double backticks
 -- * Any other characters
 --
--- Content may NOT contain three consecutive backticks at line start.
+-- Content may NOT contain three consecutive backticks at line start
+-- (even with leading whitespace).
 --
 -- === Examples
 --
@@ -294,25 +295,41 @@ parseBacktickedIdentifier = do
 -- \`\`\`
 -- @
 --
--- Produces: @"Hello World\\n"@
+-- Produces: @"Hello World"@
+--
+-- Indented closing fences are supported for better readability in
+-- nested structures:
+--
+-- @
+-- ({ content: \`\`\`
+-- Some text
+--   \`\`\` })
+-- @
 --
 -- === Implementation
 --
 -- Uses character-by-character parsing to detect the closing fence pattern
--- (newline followed by three backticks). This allows backticks within
--- the content as long as they don't form the closing pattern.
+-- (newline, optional whitespace, then three backticks). This allows
+-- backticks within the content as long as they don't form the closing pattern.
 parseFencedContent :: Parser String
 parseFencedContent = do
   -- Check if closing fence appears immediately (empty content case)
-  closingAtStart <- optional (try (string "```"))
+  -- Also handles indented empty content: ```\n  ```
+  closingAtStart <- optional (try closingFencePattern)
   case closingAtStart of
     Just _ -> return ""  -- Empty content
     Nothing -> go []
   where
+    -- Pattern for closing fence: optional whitespace followed by ```
+    closingFencePattern :: Parser ()
+    closingFencePattern = do
+      void $ many (char ' ' <|> char '\t')  -- Skip optional leading whitespace
+      void $ string "```"
+    
     go :: [Char] -> Parser String
     go acc = do
-      -- Try to match the closing fence: newline followed by ```
-      closingFence <- optional (try (char '\n' >> string "```"))
+      -- Try to match the closing fence: newline, optional whitespace, then ```
+      closingFence <- optional (try (char '\n' >> closingFencePattern))
       case closingFence of
         Just _ -> return (reverse acc)  -- Found closing, return accumulated content
         Nothing -> do
