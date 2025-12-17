@@ -418,3 +418,45 @@ spec = do
           case fromGram "({ bad: ```\nno closing fence here" of
             Right _ -> expectationFailure "Should have failed on unclosed codefence"
             Left (ParseError _) -> return ()  -- Any parse error is acceptable
+
+      -- US2: Tagged Codefence String Parsing
+      describe "tagged codefence string parsing (US2)" $ do
+        
+        it "parses tagged codefence basic" $ do
+          -- Tagged codefence: ```md\n# Title\n```
+          case fromGram "({ content: ```md\n# Title\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "content" props `shouldBe` Just (VTaggedString "md" "# Title")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+        
+        it "parses tagged codefence empty content" $ do
+          case fromGram "({ empty: ```json\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "empty" props `shouldBe` Just (VTaggedString "json" "")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+        
+        it "parses tagged codefence various tags" $ do
+          -- Test with html tag
+          case fromGram "({ html: ```html\n<div>test</div>\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "html" props `shouldBe` Just (VTaggedString "html" "<div>test</div>")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+        
+        it "parses tagged codefence with multiline content" $ do
+          case fromGram "({ code: ```cypher\nMATCH (n)\nWHERE n.name = 'test'\nRETURN n\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "code" props `shouldBe` Just (VTaggedString "cypher" "MATCH (n)\nWHERE n.name = 'test'\nRETURN n")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+        
+        it "distinguishes between plain and tagged codefence" $ do
+          -- Plain codefence should be VString, tagged should be VTaggedString
+          case fromGram "({ plain: ```\ntext\n```, tagged: ```md\ntext\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "plain" props `shouldBe` Just (VString "text")
+              Map.lookup "tagged" props `shouldBe` Just (VTaggedString "md" "text")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err

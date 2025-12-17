@@ -230,6 +230,49 @@ parseFencedString = do
   content <- parseFencedContent
   return $ V.VString content
 
+-- | Parse a tagged fenced string (codefence with tag).
+--
+-- Recognizes the syntax:
+--
+-- @
+-- \`\`\`tag
+-- content here
+-- can span multiple lines
+-- \`\`\`
+-- @
+--
+-- The tag must be a valid symbol immediately following the opening fence.
+-- Returns a VTaggedString with the tag and content.
+--
+-- === Examples
+--
+-- >>> parse parseTaggedFencedString "" "```md\\n# Title\\n```"
+-- Right (VTaggedString "md" "# Title")
+--
+-- >>> parse parseTaggedFencedString "" "```json\\n{}\\n```"
+-- Right (VTaggedString "json" "{}")
+--
+-- === Errors
+--
+-- Fails if:
+--
+-- * No valid symbol follows opening fence
+-- * Tag is not followed by newline
+-- * Closing fence is missing
+parseTaggedFencedString :: Parser Value
+parseTaggedFencedString = do
+  -- Match opening fence: ```
+  void $ string "```"
+  -- Parse the tag (must be a valid symbol)
+  tag <- parseSymbol
+  -- Require newline after tag
+  void $ char '\n'
+  -- Parse content until closing fence
+  content <- parseFencedContent
+  return $ V.VTaggedString (symbolToString tag) content
+  where
+    symbolToString (Symbol s) = s
+
 parseTaggedString :: Parser Value
 parseTaggedString = do
   tag <- parseSymbol
@@ -318,8 +361,9 @@ parseScalarValue =
   try (V.VDecimal <$> parseDecimal) <|>
   try (V.VInteger <$> parseInteger) <|>
   try (V.VBoolean <$> parseBoolean) <|>
-  try parseFencedString <|>      -- NEW: Plain codefence (US1)
-  try parseTaggedString <|>
+  try parseFencedString <|>        -- Plain codefence (US1)
+  try parseTaggedFencedString <|>  -- Tagged codefence (US2)
+  try parseTaggedString <|>        -- Inline tagged string
   try (V.VString <$> parseString) <|>
   (V.VSymbol . quoteSymbol <$> parseSymbol)
   where
@@ -332,8 +376,9 @@ parseValue =
   try (V.VDecimal <$> parseDecimal) <|>
   try (V.VInteger <$> parseInteger) <|>
   try (V.VBoolean <$> parseBoolean) <|>
-  try parseFencedString <|>      -- NEW: Plain codefence (US1)
-  try parseTaggedString <|>
+  try parseFencedString <|>        -- Plain codefence (US1)
+  try parseTaggedFencedString <|>  -- Tagged codefence (US2)
+  try parseTaggedString <|>        -- Inline tagged string
   try (V.VString <$> parseString) <|>
   try parseArray <|>
   try parseMap <|>
