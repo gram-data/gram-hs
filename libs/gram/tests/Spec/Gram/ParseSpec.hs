@@ -460,3 +460,54 @@ spec = do
               Map.lookup "plain" props `shouldBe` Just (VString "text")
               Map.lookup "tagged" props `shouldBe` Just (VTaggedString "md" "text")
             Left err -> expectationFailure $ "Parse failed: " ++ show err
+
+      -- US3: Integration with Property Records
+      describe "codefence integration with property records (US3)" $ do
+        
+        it "parses node with codefence property" $ do
+          -- Node with single codefence property
+          case fromGram "(n:Document { content: ```\nDocument content here\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "content" props `shouldBe` Just (VString "Document content here")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+        
+        it "parses node with multiple codefence properties" $ do
+          case fromGram "(:Page { title: ```\nPage Title\n```, body: ```\nPage body content\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "title" props `shouldBe` Just (VString "Page Title")
+              Map.lookup "body" props `shouldBe` Just (VString "Page body content")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+        
+        it "parses node with mixed value types including codefence" $ do
+          -- Mix of integer, string, boolean, and codefence
+          case fromGram "(:Post { views: 42, draft: true, title: \"Short\", content: ```\nLong content here\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "views" props `shouldBe` Just (VInteger 42)
+              Map.lookup "draft" props `shouldBe` Just (VBoolean True)
+              Map.lookup "title" props `shouldBe` Just (VString "Short")
+              Map.lookup "content" props `shouldBe` Just (VString "Long content here")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+        
+        it "parses node with tagged codefence in property record" $ do
+          case fromGram "(:Template { markup: ```html\n<div>Hello</div>\n``` })" of
+            Right p -> do
+              let props = properties (value p)
+              Map.lookup "markup" props `shouldBe` Just (VTaggedString "html" "<div>Hello</div>")
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
+        
+        it "parses examples/markdown.gram content successfully" $ do
+          -- Actual content from examples/markdown.gram
+          let gramContent = "(:Example {prompt: ```md\n# Markdown Headline\nThis is a brief example of a tagged codefence that makes it easier\nto support multiline text in a particular format (in this case Markdown).\n```\n})"
+          case fromGram gramContent of
+            Right p -> do
+              let props = properties (value p)
+              case Map.lookup "prompt" props of
+                Just (VTaggedString tag content) -> do
+                  tag `shouldBe` "md"
+                  content `shouldContain` "# Markdown Headline"
+                  content `shouldContain` "tagged codefence"
+                _ -> expectationFailure "Expected VTaggedString for prompt property"
+            Left err -> expectationFailure $ "Parse failed: " ++ show err
