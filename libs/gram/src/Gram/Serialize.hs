@@ -40,6 +40,7 @@
 -- "(n:Person {name:\"Alice\"})"
 module Gram.Serialize
   ( toGram
+  , codefenceThreshold
   ) where
 
 import Pattern.Core (Pattern(..))
@@ -50,6 +51,24 @@ import qualified Data.Map as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Char (isAlpha, isAlphaNum)
+
+-- | Character threshold for codefence serialization.
+--
+-- Strings with length greater than this value will be serialized
+-- using codefence format (triple-backticks). Length is measured as 
+-- total character count including newline characters.
+--
+-- Strings of this length or fewer use standard quote-delimited format.
+--
+-- === Examples
+--
+-- >>> codefenceThreshold
+-- 120
+--
+-- >>> length "short string" <= codefenceThreshold
+-- True
+codefenceThreshold :: Int
+codefenceThreshold = 120
 
 -- | Escape special characters in strings for gram notation.
 --
@@ -75,6 +94,30 @@ escapeString = concatMap escapeChar
     escapeChar '\r' = "\\r"
     escapeChar '\t' = "\\t"
     escapeChar c = [c]
+
+-- | Serialize a string using codefence format for long strings.
+--
+-- Uses triple-backtick codefence format for strings exceeding the
+-- threshold length. Content is preserved without escaping.
+--
+-- === Examples
+--
+-- >>> serializeCodefenceString "Long content..."
+-- "```\nLong content...\n```"
+serializeCodefenceString :: String -> String
+serializeCodefenceString s = "```\n" ++ s ++ "\n```"
+
+-- | Serialize a tagged string using codefence format for long content.
+--
+-- Uses triple-backtick codefence format with tag for tagged strings
+-- whose content exceeds the threshold length.
+--
+-- === Examples
+--
+-- >>> serializeTaggedCodefenceString "md" "Long markdown..."
+-- "```md\nLong markdown...\n```"
+serializeTaggedCodefenceString :: String -> String -> String
+serializeTaggedCodefenceString tag content = "```" ++ tag ++ "\n" ++ content ++ "\n```"
 
 -- | Format a Symbol for gram notation.
 --
@@ -126,9 +169,13 @@ serializeValue (VInteger i) = show i
 serializeValue (VDecimal d) = show d
 serializeValue (VBoolean True) = "true"
 serializeValue (VBoolean False) = "false"
-serializeValue (VString s) = "\"" ++ escapeString s ++ "\""
+serializeValue (VString s)
+  | length s > codefenceThreshold = serializeCodefenceString s
+  | otherwise = "\"" ++ escapeString s ++ "\""
 serializeValue (VSymbol sym) = sym
-serializeValue (VTaggedString tag content) = tag ++ "`" ++ content ++ "`"
+serializeValue (VTaggedString tag content)
+  | length content > codefenceThreshold = serializeTaggedCodefenceString tag content
+  | otherwise = tag ++ "`" ++ content ++ "`"
 serializeValue (VArray vs) = "[" ++ intercalate "," (map serializeValue vs) ++ "]"
 serializeValue (VMap m) = "{" ++ intercalate "," (map serializeProperty (Map.toList m)) ++ "}"
   where

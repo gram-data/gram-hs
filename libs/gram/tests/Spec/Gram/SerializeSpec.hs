@@ -389,6 +389,57 @@ spec = do
             let parsed = fromGram serialized
             parsed `shouldBe` Right p
 
+      -- US4: Automatic Codefence Serialization
+      describe "codefence string serialization (US4)" $ do
+        
+        it "serializes short VString (<=120 chars) using quotes" $ do
+          let shortStr = "This is a short string"  -- 22 chars
+          let s = Subject (Symbol "n") Set.empty (fromList [("text", VString shortStr)])
+          let p = Pattern { value = s, elements = [] }
+          let result = toGram p
+          -- Should use double quotes, not codefence
+          result `shouldContain` "\"This is a short string\""
+          result `shouldNotContain` "```"
+        
+        it "serializes long VString (>120 chars) using codefence" $ do
+          -- Create a string of 121 characters
+          let longStr = replicate 121 'x'
+          let s = Subject (Symbol "n") Set.empty (fromList [("content", VString longStr)])
+          let p = Pattern { value = s, elements = [] }
+          let result = toGram p
+          -- Should use codefence format
+          result `shouldContain` "```"
+          result `shouldContain` longStr
+        
+        it "serializes VString exactly 120 chars using quotes" $ do
+          -- Exactly 120 characters - should use quotes (threshold is >120)
+          let exactStr = replicate 120 'y'
+          let s = Subject (Symbol "n") Set.empty (fromList [("text", VString exactStr)])
+          let p = Pattern { value = s, elements = [] }
+          let result = toGram p
+          -- Should use double quotes, not codefence
+          result `shouldNotContain` "```\n"
+          result `shouldContain` "\""
+        
+        it "serializes short VTaggedString using inline format" $ do
+          let shortContent = "Short content"  -- 13 chars
+          let s = Subject (Symbol "n") Set.empty (fromList [("code", VTaggedString "md" shortContent)])
+          let p = Pattern { value = s, elements = [] }
+          let result = toGram p
+          -- Should use inline tagged format: md`Short content`
+          result `shouldContain` "md`Short content`"
+          result `shouldNotContain` "```"
+        
+        it "serializes long VTaggedString using codefence format" $ do
+          -- Create a string of 121 characters
+          let longContent = replicate 121 'z'
+          let s = Subject (Symbol "n") Set.empty (fromList [("doc", VTaggedString "markdown" longContent)])
+          let p = Pattern { value = s, elements = [] }
+          let result = toGram p
+          -- Should use tagged codefence format: ```markdown\ncontent\n```
+          result `shouldContain` "```markdown"
+          result `shouldContain` longContent
+
 -- Generators for Property Tests
 genPattern :: Gen (Pattern Subject)
 genPattern = do
