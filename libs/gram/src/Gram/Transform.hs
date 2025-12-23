@@ -257,12 +257,12 @@ assignIdentities pattern = evalState (assignIdentities' pattern) (findMaxIdInPat
 
 assignIdentities' :: P.Pattern S.Subject -> Transform (P.Pattern S.Subject)
 assignIdentities' (P.Pattern subj elems) = do
-  newSubj <- if identity subj == S.Symbol ""
-    then do
+  newSubj <- case subj of
+    S.Subject (S.Symbol "") lbls props -> do
       i <- get
       put (i + 1)
-      return $ subj { identity = S.Symbol ("#" ++ show i) }
-    else return subj
+      return $ S.Subject (S.Symbol ("#" ++ show i)) lbls props
+    _ -> return subj
   newElems <- mapM assignIdentities' elems
   return $ P.Pattern newSubj newElems
 

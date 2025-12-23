@@ -454,7 +454,8 @@ spec = do
             Left err -> expectationFailure $ "Parse failed: " ++ show err
 
         it "round-trip preserves anonymous in nested structures" $ do
-          case fromGram "[ () | () ]" of
+          -- Use valid syntax: subject patterns with anonymous paths
+          case fromGram "[ | ()-[]->(), ()-[]->() ]" of
             Right parsed -> do
               let serialized = toGram parsed
               -- Re-parse and verify
@@ -466,10 +467,11 @@ spec = do
                   let elems = elements reparsed
                   length elems `shouldBe` 2
                   let [e1, e2] = elems
-                  let Symbol id1 = identity (value e1)
-                  let Symbol id2 = identity (value e2)
-                  id1 `shouldBe` ""
-                  id2 `shouldBe` ""
+                  -- Each element is a relationship pattern
+                  let Symbol relId1 = identity (value e1)
+                  let Symbol relId2 = identity (value e2)
+                  relId1 `shouldBe` ""
+                  relId2 `shouldBe` ""
                 Left err -> expectationFailure $ "Re-parse failed: " ++ show err
             Left err -> expectationFailure $ "Parse failed: " ++ show err
 

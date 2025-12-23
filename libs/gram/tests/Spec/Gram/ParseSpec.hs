@@ -4,6 +4,7 @@ module Spec.Gram.ParseSpec where
 
 import Test.Hspec
 import Gram.Parse (fromGram, fromGramWithIds, ParseError(..))
+import Gram.Serialize (toGram)
 import qualified Gram.Transform as Transform
 import Pattern.Core (Pattern(..))
 import Subject.Core (Subject(..), Symbol(..))
@@ -32,7 +33,7 @@ spec = do
             Left err -> expectationFailure $ "Parse failed: " ++ show err
         
         it "parses node with empty record" $ do
-          case fromGram "({})" of
+          case fromGramWithIds "({})" of
             Right p -> do
               let Symbol id = identity (value p)
               take 1 id `shouldBe` "#"
@@ -42,7 +43,7 @@ spec = do
             Left err -> expectationFailure $ "Parse failed: " ++ show err
         
         it "parses node with record" $ do
-          case fromGram "({ k : \"v\" })" of
+          case fromGramWithIds "({ k : \"v\" })" of
             Right p -> do
               let props = fromList [("k", VString "v")]
               let Symbol id = identity (value p)
@@ -67,7 +68,7 @@ spec = do
       
       describe "subject parsing (from corpus: subjects.txt)" $ do
         it "parses empty subject" $ do
-          case fromGram "[ ]" of
+          case fromGramWithIds "[ ]" of
             Right p -> do
               let Symbol id = identity (value p)
               take 1 id `shouldBe` "#"
@@ -401,9 +402,9 @@ spec = do
               id1 `shouldBe` ""
               id2 `shouldBe` ""
               
-              -- They should be distinct patterns (structural equality, not identity-based)
-              -- Verify they are separate pattern instances
-              n1 `shouldNotBe` n2  -- Different pattern instances
+              -- Both patterns are structurally equal (same anonymous structure)
+              -- They are separate pattern instances but have identical structure
+              value n1 `shouldBe` value n2
             Left err -> expectationFailure $ "Parse failed: " ++ show err
             
         it "preserves anonymous path elements as empty Symbol" $ do
@@ -429,21 +430,36 @@ spec = do
 
         it "preserves anonymous in nested patterns" $ do
           -- Nested pattern with anonymous subjects
-          case fromGram "[ () | () ]" of
+          -- Use valid syntax: subject patterns with anonymous nodes as paths
+          case fromGram "[ | ()-[]->(), ()-[]->() ]" of
             Right p -> do
               -- Outer pattern should have empty Symbol
               let Symbol outerId = identity (value p)
               outerId `shouldBe` ""
               
-              -- Inner patterns should also have empty Symbol
+              -- Inner patterns (paths) should also have empty Symbol for their components
               let elems = elements p
               length elems `shouldBe` 2
               let [e1, e2] = elems
-              let Symbol id1 = identity (value e1)
-              let Symbol id2 = identity (value e2)
+              -- Each element is a relationship pattern [rel | left, right]
+              let Symbol relId1 = identity (value e1)
+              let Symbol relId2 = identity (value e2)
               
-              id1 `shouldBe` ""
-              id2 `shouldBe` ""
+              relId1 `shouldBe` ""
+              relId2 `shouldBe` ""
+              
+              -- Check that the nodes in the paths also have empty identity
+              let [left1, right1] = elements e1
+              let [left2, right2] = elements e2
+              let Symbol leftId1 = identity (value left1)
+              let Symbol rightId1 = identity (value right1)
+              let Symbol leftId2 = identity (value left2)
+              let Symbol rightId2 = identity (value right2)
+              
+              leftId1 `shouldBe` ""
+              rightId1 `shouldBe` ""
+              leftId2 `shouldBe` ""
+              rightId2 `shouldBe` ""
             Left err -> expectationFailure $ "Parse failed: " ++ show err
 
         it "preserves anonymous alongside named subjects" $ do

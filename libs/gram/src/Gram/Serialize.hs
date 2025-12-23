@@ -469,6 +469,6 @@ toGram p@(Pattern subj elems)
       serializeIdentity ident ++
       serializeLabels lbls ++
       serializePropertyRecord props ++
-      (if not (null nested) && (not (Map.null props) || ident /= Symbol "" || not (Set.null lbls)) then " | " else "") ++
+      (if not (null nested) then " | " else "") ++
       serializePatternElements nested ++
       "]"

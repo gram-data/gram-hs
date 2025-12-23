@@ -35,12 +35,12 @@ description: "Tasks for decoupling identity assignment from transformation in gr
   - Remove state initialization from `transformGram` (no longer needs counter)
   - Update `transformGram` signature comment to note it preserves anonymity
 
-- [ ] T002 Add `transformGramWithIds` function in `libs/gram/src/Gram/Transform.hs`
+- [x] T002 Add `transformGramWithIds` function in `libs/gram/src/Gram/Transform.hs`
   - Implement as `transformGramWithIds = assignIdentities . transformGram`
   - Add Haddock documentation explaining it assigns IDs to anonymous subjects
   - Export from module
 
-- [ ] T003 Add `assignIdentities` function in `libs/gram/src/Gram/Transform.hs`
+- [x] T003 Add `assignIdentities` function in `libs/gram/src/Gram/Transform.hs`
   - Type: `assignIdentities :: P.Pattern S.Subject -> P.Pattern S.Subject`
   - Recursively traverse pattern, assigning `#N` IDs to subjects with `Symbol ""`
   - Use `State Int` monad internally with `evalState`
@@ -48,17 +48,17 @@ description: "Tasks for decoupling identity assignment from transformation in gr
   - Preserve all non-empty identities unchanged
   - Add Haddock documentation
 
-- [ ] T004 Add helper `findMaxIdInPattern` in `libs/gram/src/Gram/Transform.hs`
+- [x] T004 Add helper `findMaxIdInPattern` in `libs/gram/src/Gram/Transform.hs`
   - Extract maximum numeric suffix from `#N`-style IDs in a Pattern
   - Similar logic to existing `findMaxId` but operates on Pattern instead of CST
   - Used by `assignIdentities` to determine starting counter value
 
-- [ ] T005 Update `transformPattern` annotation wrapper ID generation in `libs/gram/src/Gram/Transform.hs`
+- [x] T005 Update `transformPattern` annotation wrapper ID generation in `libs/gram/src/Gram/Transform.hs`
   - Change `sym <- generateId` to `return (S.Symbol "")` for annotation wrappers
   - Annotation wrappers should also preserve anonymity by default
   - Note: This affects line 95 in current implementation
 
-- [ ] T006 Update module exports in `libs/gram/src/Gram/Transform.hs`
+- [x] T006 Update module exports in `libs/gram/src/Gram/Transform.hs`
   - Export `transformGram` (default, preserves anonymity)
   - Export `transformGramWithIds` (explicit ID assignment)
   - Export `assignIdentities` (post-transform ID assignment)
@@ -72,12 +72,12 @@ description: "Tasks for decoupling identity assignment from transformation in gr
 
 **Purpose**: Update `fromGram` to use anonymous-preserving transform by default
 
-- [ ] T007 Update `fromGram` in `libs/gram/src/Gram/Parse.hs`
+- [x] T007 Update `fromGram` in `libs/gram/src/Gram/Parse.hs`
   - Ensure it uses `Transform.transformGram` (which now preserves anonymity)
   - Update function documentation to note it preserves anonymous subjects as `Symbol ""`
   - No signature changes needed
 
-- [ ] T008 [P] Add `fromGramWithIds` function in `libs/gram/src/Gram/Parse.hs`
+- [x] T008 [P] Add `fromGramWithIds` function in `libs/gram/src/Gram/Parse.hs`
   - Type: `fromGramWithIds :: String -> Either ParseError (Pattern Subject)`
   - Uses `Transform.transformGramWithIds` internally
   - Add Haddock documentation explaining when to use this vs `fromGram`
@@ -93,51 +93,51 @@ description: "Tasks for decoupling identity assignment from transformation in gr
 
 ### Update Anonymous Subject Tests
 
-- [ ] T009 Update test "assigns unique IDs to anonymous nodes" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T009 Update test "assigns unique IDs to anonymous nodes" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Change from `fromGram "() ()"` to `fromGramWithIds "() ()"`
   - Keep all assertions about ID format and distinctness
   - Add comment explaining this test uses explicit ID assignment
 
-- [ ] T010 Update test "assigns unique IDs to anonymous path elements" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T010 Update test "assigns unique IDs to anonymous path elements" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Change from `fromGram "()-[]->()"` to `fromGramWithIds "()-[]->()"`
   - Keep all assertions about ID format and distinctness
 
-- [ ] T011 Update test "avoids collision with existing generated-style IDs" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T011 Update test "avoids collision with existing generated-style IDs" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Change from `fromGram "(`#1`) ()"` to `fromGramWithIds "(`#1`) ()"`
   - Keep all assertions about collision avoidance
 
-- [ ] T012 Update test "re-round-trips generated IDs safely" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T012 Update test "re-round-trips generated IDs safely" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Change from `fromGram "(`#1`) ()"` to `fromGramWithIds "(`#1`) ()"`
   - Keep all assertions
 
 ### Add New Anonymous Preservation Tests
 
-- [ ] T013 Add test "preserves anonymous nodes as empty Symbol" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T013 Add test "preserves anonymous nodes as empty Symbol" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Test: `fromGram "() ()"`
   - Assert both nodes have `Symbol ""` as identity
   - Verify they are distinct patterns (structural equality, not identity-based)
 
-- [ ] T014 Add test "preserves anonymous path elements as empty Symbol" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T014 Add test "preserves anonymous path elements as empty Symbol" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Test: `fromGram "()-[]->()"`
   - Assert relationship, left node, and right node all have `Symbol ""`
   - Verify structure is preserved correctly
 
-- [ ] T015 Add test "preserves anonymous in nested patterns" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T015 Add test "preserves anonymous in nested patterns" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Test: `fromGram "[ () | () ]"`
   - Assert outer pattern and both inner patterns have `Symbol ""`
   - Verify nesting structure is correct
 
-- [ ] T016 Add test "preserves anonymous alongside named subjects" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T016 Add test "preserves anonymous alongside named subjects" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Test: `fromGram "(a) () (b)"`
   - Assert named subjects keep their IDs, anonymous has `Symbol ""`
   - Verify all three are distinct
 
-- [ ] T017 Add test "assignIdentities assigns IDs to anonymous only" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T017 Add test "assignIdentities assigns IDs to anonymous only" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Create pattern with mix of named and anonymous subjects
   - Apply `assignIdentities` from `Gram.Transform`
   - Assert anonymous get `#N` IDs, named remain unchanged
 
-- [ ] T018 Add test "assignIdentities avoids collisions with existing IDs" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T018 Add test "assignIdentities avoids collisions with existing IDs" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Create pattern with `#1` and anonymous subjects
   - Apply `assignIdentities`
   - Assert anonymous get `#2`, `#3`, etc. (starting after max existing)
@@ -152,33 +152,33 @@ description: "Tasks for decoupling identity assignment from transformation in gr
 
 ### Round-Trip Tests for Anonymous Subjects
 
-- [ ] T019 Add test "round-trip preserves anonymous nodes" in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
+- [x] T019 Add test "round-trip preserves anonymous nodes" in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
   - Parse: `fromGram "()"`
   - Serialize: `toGram parsed`
   - Assert: `serialized == "()"`
   - Re-parse and verify structural equality
 
-- [ ] T020 Add test "round-trip preserves anonymous relationships" in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
+- [x] T020 Add test "round-trip preserves anonymous relationships" in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
   - Parse: `fromGram "()-[]->()"`
   - Serialize: `toGram parsed`
   - Re-parse and verify structural equality (not identity-based)
 
-- [ ] T021 Add test "round-trip preserves mixed named and anonymous" in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
+- [x] T021 Add test "round-trip preserves mixed named and anonymous" in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
   - Parse: `fromGram "(a) () (b)"`
   - Serialize and re-parse
   - Verify named subjects keep IDs, anonymous remain anonymous
 
-- [ ] T022 Add test "round-trip preserves anonymous in nested structures" in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
+- [x] T022 Add test "round-trip preserves anonymous in nested structures" in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
   - Parse: `fromGram "[ () | () ]"`
   - Serialize and re-parse
   - Verify nested anonymous subjects preserved
 
-- [ ] T023 Update existing round-trip property test in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
+- [x] T023 Update existing round-trip property test in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
   - Review `prop "serializes and parses back to an equivalent pattern"`
   - Ensure it works with anonymous subjects (structural equality, not identity)
   - May need to adjust generator to include anonymous subjects
 
-- [ ] T024 Add test "round-trip with assignIdentities preserves structure" in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
+- [x] T024 Add test "round-trip with assignIdentities preserves structure" in `libs/gram/tests/Spec/Gram/SerializeSpec.hs`
   - Parse: `fromGram "() ()"`
   - Apply: `assignIdentities parsed`
   - Serialize: `toGram assigned`
@@ -193,12 +193,12 @@ description: "Tasks for decoupling identity assignment from transformation in gr
 
 **Purpose**: Ensure corpus tests continue to work with anonymous preservation
 
-- [ ] T025 Review `libs/gram/tests/Spec/Gram/CorpusSpec.hs` round-trip tests
+- [x] T025 Review `libs/gram/tests/Spec/Gram/CorpusSpec.hs` round-trip tests
   - Verify corpus tests use structural equality, not identity-based equality
   - Update if needed to handle anonymous subjects correctly
   - Ensure no tests break due to anonymous preservation
 
-- [ ] T026 Add test "corpus round-trip with anonymous subjects" in `libs/gram/tests/Spec/Gram/CorpusSpec.hs`
+- [x] T026 Add test "corpus round-trip with anonymous subjects" in `libs/gram/tests/Spec/Gram/CorpusSpec.hs`
   - Find corpus examples with anonymous subjects
   - Verify they round-trip correctly with new behavior
   - Document any expected differences
@@ -213,14 +213,14 @@ description: "Tasks for decoupling identity assignment from transformation in gr
 
 ### Validation Module Check
 
-- [ ] T027 Verify `Gram.Validate` module behavior
+- [x] T027 Verify `Gram.Validate` module behavior
   - Review validation logic - should operate on CST (before transform)
   - Confirm validation is unaffected by identity assignment changes
   - Run validation tests to ensure no regressions
 
 ### Integration Tests
 
-- [ ] T028 Add integration test "end-to-end anonymous preservation workflow" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T028 Add integration test "end-to-end anonymous preservation workflow" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Parse anonymous pattern
   - Serialize to gram
   - Re-parse
@@ -228,19 +228,19 @@ description: "Tasks for decoupling identity assignment from transformation in gr
   - Apply `assignIdentities` if needed
   - Verify IDs assigned correctly
 
-- [ ] T029 Add integration test "mixed workflow with explicit ID assignment" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
+- [x] T029 Add integration test "mixed workflow with explicit ID assignment" in `libs/gram/tests/Spec/Gram/ParseSpec.hs`
   - Use `fromGramWithIds` for patterns needing IDs
   - Use `fromGram` for round-trip preservation
   - Verify both workflows work independently
 
 ### Regression Testing
 
-- [ ] T030 Run full test suite: `cabal test all`
+- [x] T030 Run full test suite: `cabal test all`
   - Verify all existing tests pass (except those intentionally updated)
   - Document any unexpected failures
   - Fix any regressions
 
-- [ ] T031 Verify no test output changes unexpectedly
+- [x] T031 Verify no test output changes unexpectedly
   - Compare test output before/after changes
   - Ensure only expected test updates occurred
   - Document any intentional test behavior changes
@@ -255,30 +255,30 @@ description: "Tasks for decoupling identity assignment from transformation in gr
 
 ### Code Documentation
 
-- [ ] T032 Update Haddock documentation in `libs/gram/src/Gram/Transform.hs`
+- [x] T032 Update Haddock documentation in `libs/gram/src/Gram/Transform.hs`
   - Document `transformGram` preserves anonymity
   - Document `transformGramWithIds` assigns IDs
   - Document `assignIdentities` post-transform usage
   - Add examples showing when to use each function
 
-- [ ] T033 Update Haddock documentation in `libs/gram/src/Gram/Parse.hs`
+- [x] T033 Update Haddock documentation in `libs/gram/src/Gram/Parse.hs`
   - Document `fromGram` preserves anonymity
   - Document `fromGramWithIds` assigns IDs
   - Add examples showing round-trip behavior
 
-- [ ] T034 Update module-level documentation
+- [x] T034 Update module-level documentation
   - Explain design decision: anonymity preservation by default
   - Explain when to use ID assignment
   - Link to related functions
 
 ### Code Quality
 
-- [ ] T035 Review code for consistency
+- [x] T035 Review code for consistency
   - Ensure all anonymous subjects use `Symbol ""` consistently
   - Verify no leftover `generateId` calls for anonymous subjects
   - Check for any hardcoded assumptions about ID format
 
-- [ ] T036 Run Haddock generation: `cabal haddock lib:gram`
+- [x] T036 Run Haddock generation: `cabal haddock lib:gram`
   - Verify documentation builds correctly
   - Check for any documentation warnings
 
@@ -290,20 +290,20 @@ description: "Tasks for decoupling identity assignment from transformation in gr
 
 **Purpose**: Comprehensive final checks
 
-- [ ] T037 Run full test suite with verbose output: `cabal test all --test-show-details=always`
+- [x] T037 Run full test suite with verbose output: `cabal test all --test-show-details=always`
   - Verify all tests pass
   - Review any warnings
 
-- [ ] T038 Manual verification of key scenarios
+- [x] T038 Manual verification of key scenarios
   - Test round-trip: `() -> parse -> serialize -> parse -> ()`
   - Test ID assignment: `() -> parse -> assignIds -> serialize -> (#1)`
   - Test mixed: `(a) () -> parse -> serialize -> (a) ()`
 
-- [ ] T039 Verify build succeeds: `cabal build lib:gram`
+- [x] T039 Verify build succeeds: `cabal build lib:gram`
   - Check for any compilation warnings
   - Verify all modules compile correctly
 
-- [ ] T040 Create summary of changes
+- [x] T040 Create summary of changes
   - Document what changed
   - Document what stayed the same
   - Document migration path (if any external code needs updates)

@@ -15,8 +15,8 @@ description:
 
 license:            BSD-3-Clause
 license-file:       LICENSE
-author:             Pattern HS
-maintainer:         pattern@example.com
+author:             Andreas Kollegger
+maintainer:         akollegger@gmail.com
 category:           Data
 extra-source-files: CHANGELOG.md
 
