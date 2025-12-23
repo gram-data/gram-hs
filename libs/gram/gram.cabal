@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               gram
-version:            0.1.0.0
+version:            0.1.1.0
 
 synopsis:           Serialization and deserialization for gram notation
 description:        
@@ -15,8 +15,8 @@ description:
 
 license:            BSD-3-Clause
 license-file:       LICENSE
-author:             Pattern HS
-maintainer:         pattern@example.com
+author:             Andreas Kollegger
+maintainer:         akollegger@gmail.com
 category:           Data
 extra-source-files: CHANGELOG.md
 
