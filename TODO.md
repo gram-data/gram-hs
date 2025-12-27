@@ -26,6 +26,7 @@ Foundational implementation of the generic `Pattern v` recursive data structure.
 - **Feature 9: Predicate Matching**: `anyValue`, `allValues` (values); `filterPatterns`, `findPattern` (structure); `matches`, `contains`.
 - **Feature 10: Comonad**: `extract` (focus), `duplicate` (context at every position), `extend`. Added `depthAt`, `sizeAt`, `indicesAt`.
 - **Feature 19: Integration & Polish**: Explicit export lists, 100% Haddock documentation, property-based law verification, and final cleanup.
+- **Feature 23: Graph Lens**: Interpretive graph views via predicate-based lens. Provides nodes, relationships, walks, navigation, and graph analysis operations. Enables multiple graph interpretations of the same Pattern through a minimal, elegant design.
 
 ### Gram Library (`libs/gram`)
 Serialization and parsing for `Pattern Subject`.
@@ -46,39 +47,32 @@ Completed robust identity handling and round-trip capabilities.
 
 ## 🗺️ Roadmap
 
-### 2. Graph Views (Feature 21)
-**Priority**: High
-**Goal**: Interpret `Pattern` structures as different graph elements (nodes, relationships, walks) through categorical functors.
+**Status**: Foundation is complete. Remaining features are deferred until concrete use cases emerge. See `ROADMAP-ANALYSIS.md` for detailed analysis.
 
-#### 11.1 GraphView Typeclass Design
-- [ ] **STOP and REVIEW**: Is GraphView needed yet?
-- [ ] Design `GraphView` typeclass interface (minimal)
-- [ ] Consider: can we defer this entirely?
-
-#### 11.2 DirectedView (If Proceeding)
-- [ ] Implement minimal `DirectedView` if needed
-- [ ] Keep implementation simple
-
-*(Note: This feature was previously "Feature 11" in TODO-later.md and is now the active priority)*
+**Current Focus**: Validation and refinement of existing foundation rather than adding new features.
 
 ---
 
 ### 3. Pattern Morphisms
-**Priority**: Low / Deferred
+**Priority**: Deferred / Unlikely Needed
 **Goal**: Basic morphisms if needed for core.
 
+**Status**: `Functor` already provides structure-preserving transformations (`fmap`). `forget` would be trivial (`fmap (const ())`). No clear use case identified.
+
 #### 12.1 Morphism Design
-- [ ] **STOP and REVIEW**: Are morphisms needed yet?
-- [ ] Define `PatternMorphism` type synonym
-- [ ] Implement `homomorphism` if clearly needed
-- [ ] Implement `forget` if clearly needed
+- [ ] **STOP and REVIEW**: Are morphisms needed yet? (Currently: No clear need - Functor covers this)
+- [ ] Define `PatternMorphism` type synonym (only if abstraction proves valuable)
+- [ ] Implement `homomorphism` if clearly needed (currently: `fmap` provides this)
+- [ ] Implement `forget` if clearly needed (currently: `fmap (const ())` provides this)
 
 ---
 
 ### 4. Zipper for Interactive Navigation and Editing
-**Priority**: Low / Deferred
+**Priority**: Deferred / Evaluate Need
 **Goal**: Efficient interactive navigation and editing (Up/Down/Left/Right).
 **Reference**: See `design/DESIGN.md` (section "Zipper for Focus").
+
+**Status**: Comonad instance (Feature 10) already provides context-aware operations (`extract`, `duplicate`, `extend`, `depthAt`, `sizeAt`, `indicesAt`). Zipper provides explicit parent/child navigation which may not be needed for foundational work. Only implement if a concrete editing/navigation use case emerges.
 
 #### 13.1 Core Zipper Data Structure
 - [ ] Review design document `design/DESIGN.md` (Zipper section)
@@ -150,9 +144,11 @@ Completed robust identity handling and round-trip capabilities.
 ---
 
 ### 5. Pattern Matching DSL (PatternExpr Library)
-**Priority**: Low / Deferred
+**Priority**: Deferred / Evaluate Need
 **Goal**: Enable regex-like pattern matching expressions for Pattern structures.
 **Reference**: See `design/pattern-matching-dsl-design.md`.
+
+**Status**: Predicate matching (Feature 9) already provides `matches`, `contains`, `findPattern`, `filterPatterns`. Full DSL is extensive (3 layers, 6 phases). Only implement if predicate matching proves insufficient for real use cases.
 
 #### 14.0 Design Validation and Exploration
 - [ ] **STOP and REVIEW**: Review design document `design/pattern-matching-dsl-design.md` thoroughly
