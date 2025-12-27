@@ -126,11 +126,17 @@ patternToJSON opts pat = unsafePerformIO $ do
                 }
             , successDiagnostics = Nothing
             }
-      let jsonBytes = encodePretty response
+      -- Convert to JSON Value first, then canonicalize if needed before computing hash
+      let responseJson = toJSON response
+      let jsonForHash = if Types.canonical opts'
+            then canonicalizeJSON responseJson
+            else responseJson
+      let jsonBytesForHash = encodePretty jsonForHash
       let hash' = if Types.deterministic opts'
             then fixedHash
-            else T.pack $ show $ SHA256.hash $ BSL.toStrict jsonBytes
+            else T.pack $ show $ SHA256.hash $ BSL.toStrict jsonBytesForHash
       let responseWithHash = response { successMeta = (successMeta response) { metaHash = hash' } }
+      -- Now canonicalize the final output (with hash included) if needed
       let finalJson = if Types.canonical opts' 
             then canonicalizeJSON $ toJSON responseWithHash
             else toJSON responseWithHash
