@@ -69,6 +69,8 @@ test-suite gram-hs-cli-test
     other-modules:
         GramHs.CLI.JSON
         GramHs.CLI.Types
+        GramHs.CLI.Commands.Generate
+        GramHs.CLI.Output
         Spec.CLI.OutputSpec
         Spec.CLI.JSONSpec
         Spec.CLI.GenerateSuiteSpec

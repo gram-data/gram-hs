@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 -- | Unit tests for test suite generation (User Story 2).
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 module Spec.CLI.GenerateSuiteSpec where
 
 import Test.Hspec

@@ -1,4 +1,6 @@
 -- | Unit tests for canonical JSON functionality (User Story 3).
+{-# OPTIONS_GHC -fno-warn-unused-matches #-}
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 module Spec.CLI.JSONSpec where
 
 import Test.Hspec

@@ -1,4 +1,5 @@
 -- | Unit tests for CLI output formatting (User Story 1).
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 module Spec.CLI.OutputSpec where
 
 import Test.Hspec

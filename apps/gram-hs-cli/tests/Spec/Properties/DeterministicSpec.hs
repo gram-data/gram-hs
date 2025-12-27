@@ -1,13 +1,11 @@
 -- | Property-based tests for deterministic output (User Story 1).
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 module Spec.Properties.DeterministicSpec where
 
 import Test.Hspec
-import Test.QuickCheck
 import qualified Data.Text as T
 import qualified GramHs.CLI.JSON as JSON
 import qualified GramHs.CLI.Types as Types
-import qualified Pattern.Core as Pattern
-import qualified Subject.Core as Subject
 import qualified Gram.Parse as Gram
 
 spec :: Spec
