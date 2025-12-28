@@ -24,6 +24,8 @@ Auto-generated from all feature plans. Last updated: 2025-11-04
 - N/A (in-memory data structure, no persistence) (023-graph-lens)
 - Haskell (GHC 9.10.3) + Megaparsec (parser combinators), pattern library, subject library (024-codefence-strings)
 - N/A (in-memory transformation) (024-codefence-strings)
+- Markdown documentation (CommonMark/GitHub Flavored Markdown) + Git (version control), Markdown renderers (GitHub, local viewers) (022-documentation-reorganization)
+- Git repository (markdown files in `docs/` directory structure) (022-documentation-reorganization)
 
 - (001-pattern-data-structure)
 
@@ -43,9 +45,9 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 022-documentation-reorganization: Added Markdown documentation (CommonMark/GitHub Flavored Markdown) + Git (version control), Markdown renderers (GitHub, local viewers)
 - 024-codefence-strings: Added Haskell (GHC 9.10.3) + Megaparsec (parser combinators), pattern library, subject library
 - 023-graph-lens: Added Haskell / GHC 8.10.7+ (compatible with base >=4.17.0.0 && <5)
-- 020-subject-serialization: Added Haskell (GHC 9.8/9.10) + `megaparsec` (parsing), `containers` (Map/Set), `text` (likely for efficiency, though current code uses String)
 
 
 <!-- MANUAL ADDITIONS START -->
