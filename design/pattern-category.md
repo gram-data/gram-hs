@@ -1,3 +1,6 @@
+**Status**: 📝 Design Only  
+**Implementation**: Not currently planned. This document explores category-theoretic foundations.
+
 If so, are composed patterns with the same start and end leaf  equivalent, or congruent?
 
 **Compositions via CategoryLens:**
