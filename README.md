@@ -378,7 +378,9 @@ See `specs/002-basic-pattern-type/quickstart.md` for comprehensive examples incl
 
 ## Documentation
 
-- **Design Documentation**: `DESIGN.md` - Category-theoretic framework and design principles
+- **User Documentation**: `docs/` - User-facing guides and API documentation
+  - [Pattern Construction Functions](docs/users/api/pattern-construction.md) - Guide to `point`, `pattern`, and `pure` with porting guidance
+- **Design Documentation**: `design/DESIGN.md` - Category-theoretic framework and design principles
 - **Implementation Roadmap**: `TODO.md` - Planned features and implementation phases
 - **Feature Specifications**: `specs/` - Detailed specifications for each feature
 - **API Documentation**: Generate with `cabal haddock` or see `specs/*/contracts/type-signatures.md`
