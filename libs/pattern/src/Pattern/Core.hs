@@ -922,22 +922,22 @@ size (Pattern _ es) = 1 + sum (map size es)
 
 -- | Returns the maximum nesting depth of a pattern structure.
 --
--- An atomic pattern has depth 1.
+-- An atomic pattern has depth 0 (root only, no nesting).
 -- A pattern with elements has depth 1 + max depth of elements.
 -- This operation is O(n) where n is the total number of nodes.
 --
 -- === Examples
 --
 -- >>> depth (pattern "atom")
--- 1
+-- 0
 --
 -- >>> depth (patternWith "root" [pattern "child"])
--- 2
+-- 1
 --
 -- >>> depth (patternWith "root" [patternWith "middle" [pattern "inner"]])
--- 3
+-- 2
 depth :: Pattern v -> Int
-depth (Pattern _ []) = 1
+depth (Pattern _ []) = 0
 depth (Pattern _ es) = 1 + maximum (map depth es)
 
 -- | Extracts all values from a pattern structure as a flat list.
@@ -1110,17 +1110,15 @@ toTuple (Pattern v es) = (v, es)
 -- | Computes the nesting depth at each position in the pattern.
 --
 -- Returns a new pattern with the same structure where each value is replaced
--- by its depth (distance from root + 1).
+-- by its depth (maximum nesting depth of the subtree at that position).
 --
 -- === Examples
 --
 -- >>> p = patternWith "root" [pattern "child"]
 -- >>> depthAt p
--- Pattern 1 [Pattern 2 []]
+-- Pattern 1 [Pattern 0 []]
 depthAt :: Pattern v -> Pattern Int
-depthAt = go 1
-  where
-    go d (Pattern _ es) = Pattern d (map (go (d + 1)) es)
+depthAt = extend depth
 
 -- | Computes the size of the subtree at each position in the pattern.
 --
