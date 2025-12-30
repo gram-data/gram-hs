@@ -3,7 +3,7 @@ module Spec.Pattern.GraphSpec where
 
 import Data.List (isPrefixOf)
 import Test.Hspec
-import Pattern.Core (Pattern(..), pattern, patternWith)
+import Pattern.Core (Pattern(..), pattern, point)
 import Pattern.Graph (GraphLens(..), nodes, isNode)
 
 spec :: Spec
@@ -13,19 +13,19 @@ spec = do
     describe "GraphLens data structure (Phase 2: Foundational)" $ do
       
       it "T009: GraphLens construction with atomic predicate" $ do
-        let graphPattern = patternWith "graph"
-              [ pattern "a"
-              , pattern "b"
-              , pattern "c"
+        let graphPattern = pattern "graph"
+              [ point "a"
+              , point "b"
+              , point "c"
               ]
         let isAtomic (Pattern _ els) = null els
         let lens = GraphLens graphPattern isAtomic
         scopePattern lens `shouldBe` graphPattern
-        isNode lens (pattern "a") `shouldBe` True
-        isNode lens (pattern "b") `shouldBe` True
+        isNode lens (point "a") `shouldBe` True
+        isNode lens (point "b") `shouldBe` True
       
       it "T010: GraphLens with empty scopePattern" $ do
-        let emptyPattern = patternWith "empty" []
+        let emptyPattern = pattern "empty" []
         let isAtomic (Pattern _ els) = null els
         let lens = GraphLens emptyPattern isAtomic
         nodes lens `shouldBe` []
@@ -33,41 +33,41 @@ spec = do
     describe "nodes function (Phase 2: Foundational)" $ do
       
       it "T013: nodes with atomic predicate" $ do
-        let graphPattern = patternWith "graph"
-              [ pattern "a"
-              , pattern "b"
-              , patternWith "rel" [pattern "a", pattern "b"]
+        let graphPattern = pattern "graph"
+              [ point "a"
+              , point "b"
+              , pattern "rel" [point "a", point "b"]
               ]
         let isAtomic (Pattern _ els) = null els
         let lens = GraphLens graphPattern isAtomic
         let result = nodes lens
         length result `shouldBe` 2
-        (pattern "a" `elem` result) `shouldBe` True
-        (pattern "b" `elem` result) `shouldBe` True
+        (point "a" `elem` result) `shouldBe` True
+        (point "b" `elem` result) `shouldBe` True
       
       it "T014: nodes with value-based predicate" $ do
-        let graphPattern = patternWith "graph"
-              [ pattern "node1"
-              , pattern "node2"
-              , pattern "notnode"
+        let graphPattern = pattern "graph"
+              [ point "node1"
+              , point "node2"
+              , point "notnode"
               ]
         let isNodeValue (Pattern v _) = "node" `isPrefixOf` v
         let lens = GraphLens graphPattern isNodeValue
         let result = nodes lens
         length result `shouldBe` 2
-        (pattern "node1" `elem` result) `shouldBe` True
-        (pattern "node2" `elem` result) `shouldBe` True
+        (point "node1" `elem` result) `shouldBe` True
+        (point "node2" `elem` result) `shouldBe` True
       
       it "T016: nodes with empty Pattern scope" $ do
-        let emptyPattern = patternWith "empty" []
+        let emptyPattern = pattern "empty" []
         let isAtomic (Pattern _ els) = null els
         let lens = GraphLens emptyPattern isAtomic
         nodes lens `shouldBe` []
       
       it "T017: nodes with Pattern with no nodes (all fail predicate)" $ do
-        let graphPattern = patternWith "graph"
-              [ patternWith "rel1" [pattern "a", pattern "b"]
-              , patternWith "rel2" [pattern "b", pattern "c"]
+        let graphPattern = pattern "graph"
+              [ pattern "rel1" [point "a", point "b"]
+              , pattern "rel2" [point "b", point "c"]
               ]
         let isAtomic (Pattern _ els) = null els
         let lens = GraphLens graphPattern isAtomic

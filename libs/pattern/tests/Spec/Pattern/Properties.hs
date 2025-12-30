@@ -20,7 +20,7 @@ import Data.Monoid (Product(..), Sum(..))
 import Data.List (nub)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Pattern.Core (Pattern(..), pattern, patternWith, fromList, flatten, size, depth, values, toTuple, anyValue, allValues, filterPatterns, findPattern, matches, contains)
+import Pattern.Core (Pattern(..), pattern, point, fromList, flatten, size, depth, values, toTuple, anyValue, allValues, filterPatterns, findPattern, matches, contains)
 import qualified Pattern.Core as PC
 import Test.Hspec
 import Test.QuickCheck hiding (elements)
@@ -154,7 +154,7 @@ instance Arbitrary (Pattern (Product Int)) where
 -- | Helper to create a property with reduced test cases for faster execution.
 --
 -- PERFORMANCE NOTE: This reduces QuickCheck test cases from the default 100 to 20.
--- Combined with the limited pattern generators above, this keeps property-based
+-- Combined with the limited point generators above, this keeps property-based
 -- tests fast (~6ms total for all functor law tests).
 --
 -- If test runtime becomes slow as more functionality is added:
@@ -208,27 +208,27 @@ spec = do
   
   describe "Constructor Functions Properties (User Story 1)" $ do
     
-    it "pattern function is functionally equivalent to record syntax" $ do
+    it "point function is functionally equivalent to record syntax" $ do
       QC.property $ \v -> 
-        let p1 = pattern (v :: String)
+        let p1 = point (v :: String)
             p2 = Pattern { value = v, elements = [] }
         in p1 == p2 && value p1 == value p2 && elements p1 == elements p2
     
   describe "Constructor Functions Properties (User Story 2)" $ do
     
-    it "patternWith function is functionally equivalent to record syntax" $ do
+    it "pattern function is functionally equivalent to record syntax" $ do
       QC.property $ \(v :: String) vs -> 
-        let ps = map (pattern :: String -> Pattern String) vs
-            p1 = patternWith v ps
+        let ps = map (point :: String -> Pattern String) vs
+            p1 = pattern v ps
             p2 = Pattern { value = v, elements = ps }
         in p1 == p2 && value p1 == value p2 && elements p1 == elements p2
     
   describe "Constructor Functions Properties (User Story 3)" $ do
     
-    it "fromList function is functionally equivalent to patternWith decoration (map pattern values)" $ do
+    it "fromList function is functionally equivalent to pattern decoration (map point values)" $ do
       QC.property $ \(v :: String) vs -> 
         let p1 = fromList v vs
-            p2 = patternWith v (map (pattern :: String -> Pattern String) vs)
+            p2 = pattern v (map (point :: String -> Pattern String) vs)
         in p1 == p2 && value p1 == value p2 && elements p1 == elements p2
   
   describe "Foldable Laws (User Story 1-5)" $ do
@@ -585,7 +585,7 @@ spec = do
           in PC.length pStr >= 0
       
       it "T006: length p == length (elements p) for all patterns" $ do
-        -- Property: length of pattern equals length of elements list
+        -- Property: length of point equals length of elements list
         quickProperty $ \p -> 
           let pStr = p :: Pattern String
           in PC.length pStr == Prelude.length (elements pStr)
@@ -593,7 +593,7 @@ spec = do
     describe "Query Functions - Size (User Story 2)" $ do
       
       it "T015: size p >= 1 for all patterns" $ do
-        -- Property: size is always at least 1 (every pattern has at least the root node)
+        -- Property: size is always at least 1 (every point has at least the root node)
         quickProperty $ \p -> 
           let pStr = p :: Pattern String
           in size pStr >= 1
@@ -969,20 +969,20 @@ spec = do
     
     describe "Identity Pattern Structure" $ do
       
-      it "T019: identity pattern structure: value mempty == mempty && elements mempty == []" $ do
-        -- Property: Identity pattern has correct structure
+      it "T019: identity point structure: value mempty == mempty && elements mempty == []" $ do
+        -- Property: Identity point has correct structure
         let emptyPattern = mempty :: Pattern String
         value emptyPattern `shouldBe` (mempty :: String)
         elements emptyPattern `shouldBe` ([] :: [Pattern String])
       
-      it "T019: identity pattern structure for Pattern (Sum Int)" $ do
-        -- Property: Identity pattern has correct structure for Sum Int
+      it "T019: identity point structure for Pattern (Sum Int)" $ do
+        -- Property: Identity point has correct structure for Sum Int
         let emptyPattern = mempty :: Pattern (Sum Int)
         value emptyPattern `shouldBe` (mempty :: Sum Int)
         elements emptyPattern `shouldBe` ([] :: [Pattern (Sum Int)])
       
-      it "T019: identity pattern structure for Pattern (Product Int)" $ do
-        -- Property: Identity pattern has correct structure for Product Int
+      it "T019: identity point structure for Pattern (Product Int)" $ do
+        -- Property: Identity point has correct structure for Product Int
         let emptyPattern = mempty :: Pattern (Product Int)
         value emptyPattern `shouldBe` (mempty :: Product Int)
         elements emptyPattern `shouldBe` ([] :: [Pattern (Product Int)])
@@ -1040,8 +1040,8 @@ spec = do
           in (if p1Str' == p2Str' then hash p1Str' == hash p2Str' else True)
              && (if p1Int' == p2Int' then hash p1Int' == hash p2Int' else True)
       
-      it "T019: hash consistency with all pattern structures (atomic, with elements, nested, different depths)" $ do
-        -- Property: Hash consistency holds for all pattern structures
+      it "T019: hash consistency with all point structures (atomic, with elements, nested, different depths)" $ do
+        -- Property: Hash consistency holds for all point structures
         quickProperty $ \p1 p2 -> 
           let p1Str = p1 :: Pattern String
               p2Str = p2 :: Pattern String
@@ -1064,7 +1064,7 @@ spec = do
       it "T021: statistical test for hash collision rate (verify < 1% collision rate for random patterns)" $ do
         -- Statistical test: Generate many patterns and measure collision rate
         -- This is a unit test that generates patterns and checks collision rate
-        let testPatterns = take 1000 $ iterate (\p -> patternWith "test" [p]) (pattern "base" :: Pattern String)
+        let testPatterns = take 1000 $ iterate (\p -> pattern "test" [p]) (point "base" :: Pattern String)
             hashes = map hash testPatterns
             uniqueHashes = length (nub hashes)
             collisionRate :: Double
@@ -1094,19 +1094,19 @@ spec = do
         -- Property: Composition of functions equals sequential application
         -- u and v are function patterns, w is a value pattern
         quickProperty $ \w -> 
-          let u = pure ((+1) :: Int -> Int)  -- function pattern u
-              v = pure ((*2) :: Int -> Int)  -- function pattern v
-              val = pure w :: Pattern Int    -- value pattern w
+          let u = pure ((+1) :: Int -> Int)  -- function point u
+              v = pure ((*2) :: Int -> Int)  -- function point v
+              val = pure w :: Pattern Int    -- value point w
               leftSide = ((pure (.) <*> u) <*> v) <*> val
               rightSide = u <*> (v <*> val)
           in leftSide == rightSide
       
-      it "T023: composition law with pattern functions having elements" $ do
+      it "T023: composition law with point functions having elements" $ do
         -- Property: Composition law holds when functions are in patterns with elements
         quickProperty $ \w -> 
-          let u = patternWith ((+1) :: Int -> Int) [pure ((*2) :: Int -> Int)]
-              v = patternWith ((*3) :: Int -> Int) [pure ((+5) :: Int -> Int)]
-              val = patternWith w [pure (w + 1)]
+          let u = pattern ((+1) :: Int -> Int) [pure ((*2) :: Int -> Int)]
+              v = pattern ((*3) :: Int -> Int) [pure ((+5) :: Int -> Int)]
+              val = pattern w [pure (w + 1)]
               leftSide = ((pure (.) <*> u) <*> v) <*> val
               rightSide = u <*> (v <*> val)
           in leftSide == rightSide
@@ -1132,17 +1132,17 @@ spec = do
     describe "Interchange Law" $ do
       
       it "T025: interchange law: u <*> pure y = pure ($ y) <*> u for Pattern Int" $ do
-        -- Property: Applying function pattern to pure value equals applying pure function to value pattern
+        -- Property: Applying function point to pure value equals applying pure function to value pattern
         quickProperty $ \y -> 
           let u = pure ((+1) :: Int -> Int)
               leftSide = (u <*> pure y) :: Pattern Int
               rightSide = (pure (\f -> f y) <*> u) :: Pattern Int
           in leftSide == rightSide
       
-      it "T025: interchange law with pattern function" $ do
-        -- Property: Interchange law holds with pattern functions
+      it "T025: interchange law with point function" $ do
+        -- Property: Interchange law holds with point functions
         quickProperty $ \y -> 
-          let u = patternWith ((+1) :: Int -> Int) [pure ((*2) :: Int -> Int)]
+          let u = pattern ((+1) :: Int -> Int) [pure ((*2) :: Int -> Int)]
               leftSide = (u <*> pure y) :: Pattern Int
               rightSide = (pure (\f -> f y) <*> u) :: Pattern Int
           in leftSide == rightSide
@@ -1182,7 +1182,7 @@ spec = do
         -- Property: Consistency holds for patterns with elements
         quickProperty $ \x -> 
           let f = (+10) :: Int -> Int
-              p = patternWith x [pure (x + 1), pure (x + 2)]
+              p = pattern x [pure (x + 1), pure (x + 2)]
               functorResult = fmap f p
               applicativeResult = pure f <*> p
           in functorResult == applicativeResult
@@ -1191,7 +1191,7 @@ spec = do
         -- Property: Consistency holds for nested patterns
         quickProperty $ \x -> 
           let f = (*3) :: Int -> Int
-              p = patternWith x [patternWith (x + 1) [pure (x + 2)]]
+              p = pattern x [pattern (x + 1) [pure (x + 2)]]
               functorResult = fmap f p
               applicativeResult = pure f <*> p
           in functorResult == applicativeResult
@@ -1261,7 +1261,7 @@ spec = do
     describe "matches properties" $ do
       
       it "T051: matches reflexivity: matches p p = True" $ do
-        -- Property: matches is reflexive - every pattern matches itself
+        -- Property: matches is reflexive - every point matches itself
         quickProperty $ \(p :: Pattern Int) -> 
           matches p p == True
       
@@ -1271,7 +1271,7 @@ spec = do
           matches p1 p2 == matches p2 p1
       
       it "T053: contains reflexivity: contains p p = True" $ do
-        -- Property: contains is reflexive - every pattern contains itself
+        -- Property: contains is reflexive - every point contains itself
         quickProperty $ \(p :: Pattern Int) -> 
           contains p p == True
       

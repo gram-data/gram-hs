@@ -59,8 +59,8 @@ let f = pure (+1)
 -- result = Pattern {value = 6, elements = []}
 
 -- Apply multiple functions to multiple values
-let fs = patternWith id [pure (*2), pure (+10)]
-    xs = patternWith 5 [pure 3, pure 7]
+let fs = pattern id [pure (*2), pure (+10)]
+    xs = pattern 5 [pure 3, pure 7]
     result = fs <*> xs
 -- result = Pattern {value = 5, elements = [Pattern {value = 6, elements = []}, Pattern {value = 17, elements = []}]}
 ```
@@ -87,10 +87,10 @@ Applicative operations are consistent with Functor operations:
 
 ```haskell
 let f = (+1)
-    x = pattern 5
+    x = point 5
     result1 = fmap f x
     result2 = pure f <*> x
--- result1 == result2  -- True (both equal pattern 6)
+-- result1 == result2  -- True (both equal point 6)
 ```
 
 ### Nested Pattern Application
@@ -98,13 +98,13 @@ let f = (+1)
 Apply functions recursively to nested patterns:
 
 ```haskell
-let fs = patternWith id 
-      [ patternWith (*2) [pure (*3)]
-      , patternWith (+1) []
+let fs = pattern id 
+      [ pattern (*2) [pure (*3)]
+      , pattern (+1) []
       ]
-    xs = patternWith 1
-      [ patternWith 2 [pure 3]
-      , patternWith 4 []
+    xs = pattern 1
+      [ pattern 2 [pure 3]
+      , pattern 4 []
       ]
     result = fs <*> xs
 -- result = Pattern {value = 1, elements = [Pattern {value = 4, elements = [Pattern {value = 9, elements = []}]}, Pattern {value = 5, elements = []}]}
@@ -116,8 +116,8 @@ When function and value patterns have different element counts, zip-like truncat
 
 ```haskell
 -- Function pattern has 2 elements, value pattern has 3 elements
-let fs = patternWith id [pure (*2), pure (+10)]  -- 2 elements
-    xs = patternWith 5 [pure 3, pure 7, pure 11]       -- 3 elements
+let fs = pattern id [pure (*2), pure (+10)]  -- 2 elements
+    xs = pattern 5 [pure 3, pure 7, pure 11]       -- 3 elements
     result = fs <*> xs
 -- result = Pattern {value = 5, elements = [Pattern {value = 6, elements = []}, Pattern {value = 17, elements = []}]}
 -- Note: Third element (11) is ignored due to truncation
@@ -157,7 +157,7 @@ let u = pattern (+1)
 The identity law ensures that applying the identity function produces the same pattern:
 
 ```haskell
-let p = patternWith "test" [pattern "a", pattern "b"]
+let p = pattern "test" [pattern "a", pattern "b"]
     result = pure id <*> p
 -- result == p  -- True
 ```
