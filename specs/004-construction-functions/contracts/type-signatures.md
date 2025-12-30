@@ -13,7 +13,7 @@ This document defines the public API type signatures for the pattern constructor
 
 ### Constructor Functions
 
-#### pattern
+#### point
 
 ```haskell
 -- | Create an atomic pattern (pattern with no elements) from a value.
@@ -26,7 +26,7 @@ This document defines the public API type signatures for the pattern constructor
 --
 -- Create an atomic pattern with a string value:
 --
--- >>> atom = pattern "atom1"
+-- >>> atom = point "atom1"
 -- >>> value atom
 -- "atom1"
 -- >>> elements atom
@@ -34,14 +34,14 @@ This document defines the public API type signatures for the pattern constructor
 --
 -- Create an atomic pattern with an integer value:
 --
--- >>> num = pattern 42
+-- >>> num = point 42
 -- >>> value num
 -- 42
 --
 -- Create an atomic pattern with a custom type:
 --
 -- >>> data Person = Person { name :: String, age :: Maybe Int }
--- >>> person = pattern (Person "Alice" (Just 30))
+-- >>> person = point (Person "Alice" (Just 30))
 -- >>> value person
 -- Person {name = "Alice", age = Just 30}
 --
@@ -49,19 +49,19 @@ This document defines the public API type signatures for the pattern constructor
 --
 -- The following are equivalent:
 --
--- >>> pattern "test" == Pattern { value = "test", elements = [] }
+-- >>> point "test" == Pattern { value = "test", elements = [] }
 -- True
-pattern :: v -> Pattern v
+point :: v -> Pattern v
 ```
 
-#### patternWith
+#### pattern
 
 ```haskell
 -- | Create a pattern with elements from a value and a list of pattern elements.
 --
--- This function provides a convenient way to create patterns with elements
--- without using verbose record syntax. The resulting pattern is functionally
--- identical to one created with @Pattern { value = x, elements = ps }@.
+-- This is the primary constructor for creating patterns. Takes a decoration value
+-- and a list of pattern elements. The elements form the pattern itself; the value
+-- provides decoration about that pattern.
 --
 -- The function preserves the order of elements in the input list and handles
 -- all element counts: 0 (atomic pattern), 1 (singular pattern), 2 (pair),
@@ -71,46 +71,46 @@ pattern :: v -> Pattern v
 --
 -- Create a singular pattern (one element):
 --
--- >>> singular = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
+-- >>> singular = pattern "soccer" [point "a team sport involving kicking a ball"]
 -- >>> length (elements singular)
 -- 1
 --
 -- Create a pair pattern (two elements):
 --
--- >>> pair = patternWith "knows" [pattern "Alice", pattern "Bob"]
+-- >>> pair = pattern "knows" [point "Alice", point "Bob"]
 -- >>> length (elements pair)
 -- 2
 --
 -- Create an extended pattern (many elements):
 --
--- >>> extended = patternWith "graph" [pattern "elem1", pattern "elem2", pattern "elem3"]
+-- >>> extended = pattern "graph" [point "elem1", point "elem2", point "elem3"]
 -- >>> length (elements extended)
 -- 3
 --
 -- Empty list produces atomic pattern:
 --
--- >>> atomic = patternWith "empty" []
+-- >>> atomic = pattern "empty" []
 -- >>> elements atomic
 -- []
--- >>> atomic == pattern "empty"
+-- >>> atomic == point "empty"
 -- True
 --
 -- === Functional Equivalence
 --
 -- The following are equivalent:
 --
--- >>> patternWith "test" [pattern "elem"] == Pattern { value = "test", elements = [Pattern { value = "elem", elements = [] }] }
+-- >>> pattern "test" [point "elem"] == Pattern { value = "test", elements = [Pattern { value = "elem", elements = [] }] }
 -- True
 --
 -- === Element Order
 --
 -- Element order is preserved:
 --
--- >>> p1 = patternWith "seq" [pattern "a", pattern "b"]
--- >>> p2 = patternWith "seq" [pattern "b", pattern "a"]
+-- >>> p1 = pattern "seq" [point "a", point "b"]
+-- >>> p2 = pattern "seq" [point "b", point "a"]
 -- >>> p1 == p2
 -- False
-patternWith :: v -> [Pattern v] -> Pattern v
+pattern :: v -> [Pattern v] -> Pattern v
 ```
 
 #### fromList
@@ -149,14 +149,14 @@ patternWith :: v -> [Pattern v] -> Pattern v
 -- >>> atomic = fromList "empty" []
 -- >>> elements atomic
 -- []
--- >>> atomic == pattern "empty"
+-- >>> atomic == point "empty"
 -- True
 --
 -- === Functional Equivalence
 --
 -- The following are equivalent:
 --
--- >>> fromList "test" ["a", "b"] == patternWith "test" [pattern "a", pattern "b"]
+-- >>> fromList "test" ["a", "b"] == pattern "test" [point "a", point "b"]
 -- True
 --
 -- === Implementation
@@ -164,7 +164,7 @@ patternWith :: v -> [Pattern v] -> Pattern v
 -- This function is implemented as:
 --
 -- @
--- fromList decoration values = patternWith decoration (map pattern values)
+-- fromList decoration values = pattern decoration (map point values)
 -- @
 fromList :: v -> [v] -> Pattern v
 ```
@@ -175,8 +175,8 @@ fromList :: v -> [v] -> Pattern v
 
 The `Pattern.Core` module exports:
 
-- `pattern` (constructor function for atomic patterns)
-- `patternWith` (constructor function for patterns with elements)
+- `point` (constructor function for atomic patterns)
+- `pattern` (constructor function for patterns with elements)
 - `fromList` (constructor function for patterns from lists of values)
 
 These are in addition to existing exports:
@@ -201,54 +201,54 @@ The main `Pattern` module re-exports these functions for convenience.
 ### Creating Atomic Patterns
 
 ```haskell
-import Pattern.Core (pattern)
+import Pattern.Core (point)
 
 -- String pattern
 atom1 :: Pattern String
-atom1 = pattern "atom1"
+atom1 = point "atom1"
 
 -- Integer pattern
 atom2 :: Pattern Int
-atom2 = pattern 42
+atom2 = point 42
 
 -- Custom type pattern
 data Person = Person { name :: String, age :: Maybe Int }
 personPattern :: Pattern Person
-personPattern = pattern (Person "Alice" (Just 30))
+personPattern = point (Person "Alice" (Just 30))
 ```
 
 ### Creating Patterns with Elements
 
 ```haskell
-import Pattern.Core (pattern, patternWith)
+import Pattern.Core (pattern, point)
 
 -- Singular pattern (one element)
 singular :: Pattern String
-singular = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
+singular = pattern "soccer" [point "a team sport involving kicking a ball"]
 
 -- Role-based singular pattern with custom type
 data Person = Person { name :: String, age :: Maybe Int }
 goalie :: Pattern Person
-goalie = patternWith (Person "Goalie" Nothing) [pattern (Person "Hans" (Just 25))]
+goalie = pattern (Person "Goalie" Nothing) [point (Person "Hans" (Just 25))]
 
 -- Pair pattern (two elements)
 pair :: Pattern String
-pair = patternWith "knows" [pattern "Alice", pattern "Bob"]
+pair = pattern "knows" [point "Alice", point "Bob"]
 
 -- Extended pattern (many elements)
 extended :: Pattern String
-extended = patternWith "graph" 
-  [ pattern "elem1"
-  , pattern "elem2"
-  , pattern "elem3"
+extended = pattern "graph" 
+  [ point "elem1"
+  , point "elem2"
+  , point "elem3"
   ]
 
 -- Nested patterns
 nested :: Pattern String
-nested = patternWith "outer" 
-  [ patternWith "middle" 
-      [ patternWith "inner" 
-          [ pattern "innermost" ]
+nested = pattern "outer" 
+  [ pattern "middle" 
+      [ pattern "inner" 
+          [ point "innermost" ]
       ]
   ]
 ```
@@ -259,11 +259,11 @@ nested = patternWith "outer"
 -- Verify equivalence with record syntax
 testEquivalence :: Bool
 testEquivalence = 
-  pattern "test" == Pattern { value = "test", elements = [] }
+  point "test" == Pattern { value = "test", elements = [] }
 
 testEquivalenceWith :: Bool
 testEquivalenceWith = 
-  patternWith "soccer" [pattern "a team sport involving kicking a ball"] == 
+  pattern "soccer" [point "a team sport involving kicking a ball"] == 
     Pattern { value = "soccer", elements = [Pattern { value = "a team sport involving kicking a ball", elements = [] }] }
 ```
 
@@ -273,8 +273,8 @@ testEquivalenceWith =
 
 These constructor functions are convenience wrappers:
 
-- `pattern v` = `Pattern { value = v, elements = [] }`
-- `patternWith v ps` = `Pattern { value = v, elements = ps }`
+- `point v` = `Pattern { value = v, elements = [] }`
+- `pattern v ps` = `Pattern { value = v, elements = ps }`
 
 They provide no additional functionality beyond convenience; all behavior is identical to record syntax.
 

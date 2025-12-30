@@ -9,26 +9,27 @@
 The Pattern library provides three functionally equivalent ways to create atomic patterns (patterns with no elements) from a value:
 
 1. **`point`** - Category-theory aligned name (pointed functor)
-2. **`pattern`** - Domain-specific name (creates a Pattern)
-3. **`pure`** - Applicative typeclass method
+2. **`pure`** - Applicative typeclass method
 
 All three functions are identical in behavior: they take a value and return an atomic pattern containing that value with an empty elements list.
+
+**Note**: The `pattern` function is now used for creating patterns with elements (the primary constructor). For atomic patterns, use `point` or `pure`.
 
 ## Function Signatures
 
 ```haskell
 point   :: v -> Pattern v
-pattern :: v -> Pattern v
 pure    :: v -> Pattern v  -- From Applicative instance
+pattern :: v -> [Pattern v] -> Pattern v  -- For patterns with elements
 ```
 
 ## Functional Equivalence
 
-All three functions are functionally equivalent:
+`point` and `pure` are functionally equivalent:
 
 ```haskell
-point x   == pattern x   == pure x
--- All produce: Pattern { value = x, elements = [] }
+point x   == pure x
+-- Both produce: Pattern { value = x, elements = [] }
 ```
 
 ## When to Use Each Name
@@ -41,11 +42,10 @@ point x   == pattern x   == pure x
 - Educational or theoretical contexts
 - When the "pointed functor" concept is relevant
 
-**`pattern`** - Recommended for:
-- Domain-specific code (graph patterns, sequence patterns)
-- When the Pattern type is the primary focus
-- General-purpose library usage
-- When clarity about creating a Pattern is important
+**`pattern`** - Now used for creating patterns with elements (the primary constructor):
+- Creating patterns with one or more elements
+- The main way to construct complete pattern structures
+- Takes a decoration value and a list of pattern elements
 
 **`pure`** - Recommended for:
 - Applicative-style code (`pure f <*> pure x`)
@@ -62,15 +62,14 @@ import Control.Applicative (pure)
 -- Using point (category-theory aligned)
 atom1 = point "atom1"
 
--- Using pattern (domain-specific)
-atom2 = pattern "atom2"
-
 -- Using pure (Applicative instance)
-atom3 = pure "atom3"
+atom2 = pure "atom2"
 
--- All are equivalent:
+-- Using pattern for patterns with elements
+p = pattern "root" [point "a", point "b"]
+
+-- point and pure are equivalent:
 atom1 == atom2  -- True
-atom2 == atom3  -- True
 ```
 
 ## Porting Guidance
@@ -324,7 +323,7 @@ The `pattern` name is domain-specific to this library, emphasizing that we're cr
 
 ## Related Functions
 
-- **`patternWith`**: Creates patterns with elements (not an alias, different functionality)
+- **`pattern`**: Creates patterns with elements (primary constructor, takes value and list of elements)
 - **`fromList`**: Creates patterns from lists of values (convenience function)
 - **`pure`**: Also available via Applicative instance for use in applicative style
 

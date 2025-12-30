@@ -398,7 +398,7 @@ See `specs/002-basic-pattern-type/quickstart.md` for comprehensive examples incl
 ### 🔄 In Progress / Planned
 
 - **Typeclass Instances**: Show ✅, Eq ✅, Functor ✅, Foldable ✅, Traversable (Phase 2-6)
-- **Constructor Functions**: `pattern` and `patternWith` (Phase 3)
+- **Constructor Functions**: `point` (atomic) and `pattern` (with elements) (Phase 3)
 - **Classification Functions**: `isNode`, `isRelationship`, `isSubgraph`, `isPath` (Phase 8-11)
 - **Navigation Functions**: `source`, `target`, `nodes`, `relationships` (Phase 12)
 - **Graph Views**: `GraphView` typeclass and implementations (Phase 15)
