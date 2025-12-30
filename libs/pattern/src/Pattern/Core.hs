@@ -4,6 +4,7 @@ module Pattern.Core
     Pattern(..)
     -- * Construction Functions
   , pattern
+  , point
   , patternWith
   , fromList
     -- * Query Functions
@@ -859,6 +860,21 @@ instance Traversable Pattern where
 -- Pattern 42 []
 pattern :: v -> Pattern v
 pattern v = Pattern v []
+
+-- | Create an atomic pattern (a pattern with no elements) from a value.
+--
+-- This is an alias for 'pattern' that uses category-theory terminology
+-- (pointed functor). Functionally equivalent to 'pattern' and 'pure'.
+--
+-- === Examples
+--
+-- >>> point "atom"
+-- Pattern "atom" []
+--
+-- >>> point 42
+-- Pattern 42 []
+point :: v -> Pattern v
+point = pattern
 
 -- | Create a pattern with explicit elements.
 --
