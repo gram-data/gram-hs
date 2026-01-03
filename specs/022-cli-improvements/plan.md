@@ -7,13 +7,13 @@
 
 ## Summary
 
-This feature adds three high-priority CLI improvements to the gram-hs reference implementation tool to facilitate porting to other languages:
+This feature adds three high-priority CLI improvements to the gramref reference implementation tool to facilitate porting to other languages:
 
 1. **Metadata Exclusion**: Add `--value-only` and `--deterministic` flags to exclude or fix metadata (timestamps, hashes) for reliable equivalence checking
 2. **Test Suite Generation**: Implement `generate --type suite` command to produce deterministic test suites in the test suite format specification
 3. **Canonical JSON Output**: Add `--canonical` flag to ensure sorted keys and consistent formatting for byte-for-byte identical output
 
-These improvements enable automated testing and validation workflows when porting gram-hs to other languages by providing deterministic, comparable outputs.
+These improvements enable automated testing and validation workflows when porting gramref to other languages by providing deterministic, comparable outputs.
 
 ## Technical Context
 
@@ -93,7 +93,7 @@ specs/022-cli-improvements/
 ### Source Code (repository root)
 
 ```text
-apps/gram-hs-cli/
+apps/gramref-cli/
 ├── src/
 │   ├── Main.hs
 │   └── GramHs/
@@ -120,10 +120,10 @@ apps/gram-hs-cli/
 │           └── DeterministicSpec.hs  # Property tests for determinism
 │
 └── man/
-    └── gram-hs.1                      # Update manpage with new flags
+    └── gramref.1                      # Update manpage with new flags
 ```
 
-**Structure Decision**: Single executable CLI application. All changes are within the existing `apps/gram-hs-cli` directory. New functionality is added through:
+**Structure Decision**: Single executable CLI application. All changes are within the existing `apps/gramref-cli` directory. New functionality is added through:
 - Extended `OutputFormat` type to include output options (value-only, deterministic, canonical)
 - Modified JSON serialization to support these options
 - Enhanced Generate command to implement test suite generation

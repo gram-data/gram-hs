@@ -1,14 +1,14 @@
-# gram-hs CLI Implementation Plan
+# gramref CLI Implementation Plan
 
 ## Overview
 
-The `gram-hs` CLI serves as the reference implementation and conformance testing tool for the gram/pattern ecosystem. It provides canonical outputs for pattern operations, generates test suites, and enables validation of ports to other languages.
+The `gramref` CLI serves as the reference implementation and conformance testing tool for the gram/pattern ecosystem. It provides canonical outputs for pattern operations, generates test suites, and enables validation of ports to other languages.
 
 ## Core Commands
 
 ### 1. Parse Command
 ```bash
-gram-hs parse <input-file> [--format json|gram|debug]
+gramref parse <input-file> [--format json|gram|debug]
 ```
 
 **Purpose**: Parse gram notation and output canonical representation
@@ -26,7 +26,7 @@ gram-hs parse <input-file> [--format json|gram|debug]
 
 ### 2. Match Command
 ```bash
-gram-hs match <pattern-file> <data-file> [--format json|table|count]
+gramref match <pattern-file> <data-file> [--format json|table|count]
 ```
 
 **Purpose**: Execute pattern matching and output bindings
@@ -44,7 +44,7 @@ gram-hs match <pattern-file> <data-file> [--format json|table|count]
 
 ### 3. Transform Command
 ```bash
-gram-hs transform <operation> <input-file> [--param key=value]
+gramref transform <operation> <input-file> [--param key=value]
 ```
 
 **Purpose**: Apply pattern transformations
@@ -69,7 +69,7 @@ gram-hs transform <operation> <input-file> [--param key=value]
 
 ### 4. Generate Command
 ```bash
-gram-hs generate <generator-type> [--count N] [--seed S] [--complexity C]
+gramref generate <generator-type> [--count N] [--seed S] [--complexity C]
 ```
 
 **Purpose**: Generate test data and patterns
@@ -93,7 +93,7 @@ gram-hs generate <generator-type> [--count N] [--seed S] [--complexity C]
 
 ### 5. Validate Command
 ```bash
-gram-hs validate <test-suite> [--runner external-command]
+gramref validate <test-suite> [--runner external-command]
 ```
 
 **Purpose**: Run conformance test suites
@@ -117,7 +117,7 @@ gram-hs validate <test-suite> [--runner external-command]
 
 ### 6. Convert Command
 ```bash
-gram-hs convert <input-file> --from <format> --to <format>
+gramref convert <input-file> --from <format> --to <format>
 ```
 
 **Purpose**: Convert between different representations
@@ -204,13 +204,13 @@ test-suite/
 ### Manifest Format
 ```yaml
 version: "1.0"
-name: "gram-hs-conformance"
+name: "gramref-conformance"
 levels:
   - core: "Required for basic compliance"
   - extended: "Additional features"
   - experimental: "Optional/future features"
 requirements:
-  gram-hs-version: ">=0.1.0"
+  gramref-version: ">=0.1.0"
 tests:
   total: 500
   by-level:
@@ -223,7 +223,7 @@ tests:
 
 ### Global Config File
 ```yaml
-# ~/.gram-hs/config.yaml
+# ~/.gramref/config.yaml
 default_format: json
 json_options:
   indent: 2
@@ -245,8 +245,8 @@ performance:
 ### Pipe Support
 All commands support Unix pipes:
 ```bash
-cat input.gram | gram-hs parse | jq '.result'
-gram-hs generate pattern --count 10 | gram-hs validate -
+cat input.gram | gramref parse | jq '.result'
+gramref generate pattern --count 10 | gramref validate -
 ```
 
 ### Exit Codes
@@ -268,14 +268,14 @@ gram-hs generate pattern --count 10 | gram-hs validate -
 ### Git Hooks
 ```bash
 # pre-commit hook example
-gram-hs validate tests/*.gram --quiet || exit 1
+gramref validate tests/*.gram --quiet || exit 1
 ```
 
 ### CI/CD Support
 ```yaml
 # GitHub Actions example
 - name: Validate Examples
-  run: gram-hs validate examples/ --format junit > results.xml
+  run: gramref validate examples/ --format junit > results.xml
 ```
 
 ### Editor Integration
@@ -288,12 +288,12 @@ gram-hs validate tests/*.gram --quiet || exit 1
 ### Streaming Mode
 For large files:
 ```bash
-gram-hs parse --streaming large-file.gram
+gramref parse --streaming large-file.gram
 ```
 
 ### Batch Processing
 ```bash
-gram-hs batch process-list.txt --parallel 4
+gramref batch process-list.txt --parallel 4
 ```
 
 ### Memory Management
@@ -310,7 +310,7 @@ gram-hs batch process-list.txt --parallel 4
 
 ### Feature Flags
 ```bash
-gram-hs --features experimental parse input.gram
+gramref --features experimental parse input.gram
 ```
 
 ## Distribution

@@ -1,14 +1,14 @@
-# gram-hs CLI Tool Improvements for Testing gram-rs
+# gramref CLI Tool Improvements for Testing gram-rs
 
-**Purpose**: Document requested improvements to the `gram-hs` CLI tool to make it more suitable for automated testing and equivalence checking with `gram-rs`.
+**Purpose**: Document requested improvements to the `gramref` CLI tool to make it more suitable for automated testing and equivalence checking with `gram-rs`.
 
-**Target**: `gram-hs` reference implementation CLI tool  
-**Location**: `/Users/akollegger/.cabal/bin/gram-hs`  
-**Manpage**: `/Users/akollegger/.cabal/share/man/man1/gram-hs.1`
+**Target**: `gramref` reference implementation CLI tool  
+**Location**: `/Users/akollegger/.cabal/bin/gramref`  
+**Manpage**: `/Users/akollegger/.cabal/share/man/man1/gramref.1`
 
 ## Overview
 
-The `gram-hs` CLI tool is the reference implementation for the gram/pattern ecosystem. To effectively use it for testing `gram-rs`, several improvements would enhance automation, comparison, and test data generation capabilities.
+The `gramref` CLI tool is the reference implementation for the gram/pattern ecosystem. To effectively use it for testing `gram-rs`, several improvements would enhance automation, comparison, and test data generation capabilities.
 
 ## Priority Classifications
 
@@ -44,13 +44,13 @@ The `gram-hs` CLI tool is the reference implementation for the gram/pattern ecos
 **Example Usage**:
 ```bash
 # Output only the pattern value for comparison
-gram-hs parse input.gram --format json --value-only
+gramref parse input.gram --format json --value-only
 
 # Deterministic output suitable for comparison
-gram-hs parse input.gram --format json --deterministic
+gramref parse input.gram --format json --deterministic
 ```
 
-**Use Case**: Direct comparison of `Result.Value` between gram-hs and gram-rs outputs in equivalence checking utilities.
+**Use Case**: Direct comparison of `Result.Value` between gramref and gram-rs outputs in equivalence checking utilities.
 
 **Implementation Notes**:
 - When `--value-only` is used, output should be just the `Result.Value` JSON (or `Error` object if error occurred)
@@ -67,7 +67,7 @@ gram-hs parse input.gram --format json --deterministic
 
 **Current Behavior**:
 ```bash
-$ gram-hs generate --type suite --count 2 --seed 42
+$ gramref generate --type suite --count 2 --seed 42
 {
   "Error": {
     "Type": "ParseError",
@@ -109,10 +109,10 @@ $ gram-hs generate --type suite --count 2 --seed 42
 **Example Usage**:
 ```bash
 # Generate test suite with 10 test cases
-gram-hs generate --type suite --count 10 --seed 42 --format json > test_cases.json
+gramref generate --type suite --count 10 --seed 42 --format json > test_cases.json
 
 # Generate test suite with specific complexity
-gram-hs generate --type suite --count 5 --complexity standard --seed 42
+gramref generate --type suite --count 5 --complexity standard --seed 42
 ```
 
 **Use Case**: Automated test case extraction for gram-rs testing infrastructure (User Story 4: Test Data Extraction).
@@ -140,7 +140,7 @@ gram-hs generate --type suite --count 5 --complexity standard --seed 42
 **Example Usage**:
 ```bash
 # Canonical output for reliable comparison
-gram-hs parse input.gram --format json --canonical
+gramref parse input.gram --format json --canonical
 ```
 
 **Use Case**: Reliable comparison and snapshot testing where exact JSON matching is required.
@@ -165,10 +165,10 @@ gram-hs parse input.gram --format json --canonical
 **Example Usage**:
 ```bash
 # Process multiple files
-gram-hs parse --batch input1.gram input2.gram input3.gram --format json
+gramref parse --batch input1.gram input2.gram input3.gram --format json
 
 # Process from stdin (newline-delimited)
-cat test_files.txt | gram-hs parse --batch --format json
+cat test_files.txt | gramref parse --batch --format json
 ```
 
 **Use Case**:**
@@ -196,10 +196,10 @@ cat test_files.txt | gram-hs parse --batch --format json
 **Example Usage**:
 ```bash
 # Generate 100 patterns for property testing
-gram-hs generate --type property --count 100 --seed 42 --complexity standard
+gramref generate --type property --count 100 --seed 42 --complexity standard
 
 # Generate patterns with size constraints
-gram-hs generate --type property --count 50 --complexity basic --max-size 10
+gramref generate --type property --count 50 --complexity basic --max-size 10
 ```
 
 **Use Case**: Generate test data for proptest generators in gram-rs (User Story 1: Property-Based Testing).
@@ -223,15 +223,15 @@ gram-hs generate --type property --count 50 --complexity basic --max-size 10
 **Example Usage**:
 ```bash
 # Extract just the pattern value
-gram-hs parse input.gram --format json --select '.Result.Value'
+gramref parse input.gram --format json --select '.Result.Value'
 
 # Extract specific field
-gram-hs parse input.gram --format json --select '.Result.Value.symbol'
+gramref parse input.gram --format json --select '.Result.Value.symbol'
 ```
 
 **Alternative**: Use `--output-path` to specify which part to output:
 ```bash
-gram-hs parse input.gram --format json --output-path Result.Value
+gramref parse input.gram --format json --output-path Result.Value
 ```
 
 **Use Case**: Extract just the pattern value for comparison, ignoring metadata, without external JSON parsing tools.
@@ -249,17 +249,17 @@ gram-hs parse input.gram --format json --output-path Result.Value
 
 ### 7. Direct Comparison Command
 
-**Problem**: No built-in way to compare two outputs from gram-hs or between gram-hs and gram-rs.
+**Problem**: No built-in way to compare two outputs from gramref or between gramref and gram-rs.
 
 **Requested Solution**: Add `compare` command:
 
 **Example Usage**:
 ```bash
 # Compare two JSON outputs
-gram-hs compare output1.json output2.json --format diff
+gramref compare output1.json output2.json --format diff
 
 # Compare with structured output
-gram-hs compare output1.json output2.json --format json
+gramref compare output1.json output2.json --format json
 ```
 
 **Expected Output**:
@@ -276,7 +276,7 @@ gram-hs compare output1.json output2.json --format json
 }
 ```
 
-**Use Case**: Quick validation of gram-rs outputs against gram-hs without writing custom comparison code.
+**Use Case**: Quick validation of gram-rs outputs against gramref without writing custom comparison code.
 
 **Implementation Notes**:
 - Should support various output formats (diff, json, human-readable)
@@ -296,13 +296,13 @@ gram-hs compare output1.json output2.json --format json
 **Example Usage**:
 ```bash
 # Extract test cases from gram-hs test directory
-gram-hs extract-tests ../gram-hs/tests/ --output test_cases.json
+gramref extract-tests ../gram-hs/tests/ --output test_cases.json
 
 # Extract with filtering
-gram-hs extract-tests ../gram-hs/tests/ --pattern "*.hs" --output test_cases.json
+gramref extract-tests ../gram-hs/tests/ --pattern "*.hs" --output test_cases.json
 ```
 
-**Use Case**: Automated test case extraction from gram-hs reference implementation test files.
+**Use Case**: Automated test case extraction from gramref reference implementation test files.
 
 **Implementation Notes**:
 - Should parse gram-hs test files and extract test cases
@@ -327,13 +327,13 @@ gram-hs extract-tests ../gram-hs/tests/ --pattern "*.hs" --output test_cases.jso
 **Example Usage**:
 ```bash
 # Validate with gram-rs runner
-gram-hs validate test_suite.json --runner "cargo run --bin gram-rs" --format json
+gramref validate test_suite.json --runner "cargo run --bin gram-rs" --format json
 
 # CI/CD friendly output
-gram-hs validate test_suite.json --runner "..." --format ci
+gramref validate test_suite.json --runner "..." --format ci
 ```
 
-**Use Case**: CI/CD integration and automated validation of gram-rs against gram-hs.
+**Use Case**: CI/CD integration and automated validation of gram-rs against gramref.
 
 **Implementation Notes**:
 - Should provide structured output suitable for CI/CD systems
@@ -373,9 +373,9 @@ gram-hs validate test_suite.json --runner "..." --format ci
 
 ## Notes
 
-- All improvements should maintain backward compatibility with existing gram-hs CLI usage
+- All improvements should maintain backward compatibility with existing gramref CLI usage
 - Flags can be combined where it makes sense (e.g., `--canonical --value-only`)
-- Error handling should be consistent with current gram-hs behavior
+- Error handling should be consistent with current gramref behavior
 - Output formats should be well-documented in the manpage
 
 ---

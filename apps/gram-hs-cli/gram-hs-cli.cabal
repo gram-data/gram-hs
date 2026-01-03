@@ -1,10 +1,10 @@
 cabal-version:      2.4
-name:               gram-hs-cli
+name:               gramref-cli
 version:            0.1.0.0
 
 synopsis:           CLI tool for gram/pattern reference implementation
 description:        
-    The gram-hs CLI serves as the reference implementation and conformance
+    The gramref CLI serves as the reference implementation and conformance
     testing tool for the gram/pattern ecosystem. It provides canonical outputs
     for pattern operations, generates test suites, and enables validation of
     ports to other languages.
@@ -17,7 +17,7 @@ category:           CLI
 build-type:         Custom
 
 extra-source-files:
-    man/gram-hs.1
+    man/gramref.1
 
 custom-setup
     setup-depends:
@@ -26,7 +26,7 @@ custom-setup
         directory ^>=1.3,
         filepath ^>=1.4
 
-executable gram-hs
+executable gramref
     main-is:             Main.hs
     other-modules:
         GramHs.CLI
@@ -63,7 +63,7 @@ executable gram-hs
 
     ghc-options:      -Wall -Werror
 
-test-suite gram-hs-cli-test
+test-suite gramref-test
     type:                exitcode-stdio-1.0
     main-is:             Test.hs
     other-modules:

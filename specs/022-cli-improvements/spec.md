@@ -3,13 +3,13 @@
 **Feature Branch**: `022-cli-improvements`  
 **Created**: 2025-12-27  
 **Status**: Draft  
-**Input**: User description: "improve the gram-hs-cli tool to make it easier to port this project to other languages. See @design/gram-hs-cli-improvements.md for details"
+**Input**: User description: "improve the gramref CLI tool to make it easier to port this project to other languages. See @design/gram-hs-cli-improvements.md for details"
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Compare Outputs Without Metadata (Priority: P1)
 
-As a developer porting gram-hs to another language, I need to compare outputs between implementations without metadata fields that change on every execution, so that I can verify equivalence between implementations using simple text comparison.
+As a developer porting the gram-hs project to another language, I need to compare outputs between implementations without metadata fields that change on every execution, so that I can verify equivalence between implementations using simple text comparison.
 
 **Why this priority**: This is the most fundamental capability needed for equivalence checking. Without the ability to exclude metadata, developers must write custom comparison logic to ignore timestamp and hash fields, making automated testing and validation significantly more complex. This blocks all automated equivalence checking workflows.
 
@@ -17,7 +17,7 @@ As a developer porting gram-hs to another language, I need to compare outputs be
 
 **Acceptance Scenarios**:
 
-1. **Given** a gram-hs CLI command that produces JSON output with metadata, **When** I add the `--value-only` flag, **Then** the output contains only the result value (or error) without any metadata wrapper
+1. **Given** a gramref CLI command that produces JSON output with metadata, **When** I add the `--value-only` flag, **Then** the output contains only the result value (or error) without any metadata wrapper
 2. **Given** the same input run multiple times with `--value-only`, **When** I compare the outputs, **Then** they are identical (no changing timestamps or hashes)
 3. **Given** a command that produces an error, **When** I use `--value-only`, **Then** the output contains only the error object without metadata
 4. **Given** multiple commands with `--value-only`, **When** I compare their outputs, **Then** I can use simple text comparison tools to verify equivalence
@@ -26,7 +26,7 @@ As a developer porting gram-hs to another language, I need to compare outputs be
 
 ### User Story 2 - Generate Deterministic Test Suites (Priority: P1)
 
-As a developer porting gram-hs to another language, I need to generate test suites with deterministic outputs so that I can create comprehensive test cases for validating my implementation against the reference implementation.
+As a developer porting the gram-hs project to another language, I need to generate test suites with deterministic outputs so that I can create comprehensive test cases for validating my implementation against the reference implementation.
 
 **Why this priority**: Test suite generation is essential for creating comprehensive test coverage when porting. Without this capability, developers must manually create test cases, which is time-consuming and error-prone. The ability to generate deterministic test suites enables automated test data extraction and ensures consistent test cases across development cycles.
 
@@ -44,7 +44,7 @@ As a developer porting gram-hs to another language, I need to generate test suit
 
 ### User Story 3 - Produce Canonical JSON for Reliable Comparison (Priority: P1)
 
-As a developer porting gram-hs to another language, I need canonical JSON output with sorted keys and consistent formatting so that I can reliably compare outputs using exact text matching without dealing with non-deterministic key ordering.
+As a developer porting the gram-hs project to another language, I need canonical JSON output with sorted keys and consistent formatting so that I can reliably compare outputs using exact text matching without dealing with non-deterministic key ordering.
 
 **Why this priority**: JSON key ordering can vary between implementations and runs, making comparison unreliable. Canonical output ensures that equivalent data structures produce identical JSON strings, enabling reliable automated comparison. This is essential for snapshot testing and equivalence verification.
 
