@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-module GramHs.CLI.Commands.Convert
+module Gramref.CLI.Commands.Convert
   ( ConvertOptions(..)
   , convertOptions
   , runConvert
   ) where
 
 import Options.Applicative
-import GramHs.CLI.Types (OutputFormat(..), OutputOptions(..), outputOptionsParser, enforceDeterministicCanonical)
-import qualified GramHs.CLI.Output as Output
+import Gramref.CLI.Types (OutputFormat(..), OutputOptions(..), outputOptionsParser, enforceDeterministicCanonical)
+import qualified Gramref.CLI.Output as Output
 import qualified Gram.Parse as Gram
 import qualified Gram.Serialize as Gram
 import System.Exit (ExitCode(..))

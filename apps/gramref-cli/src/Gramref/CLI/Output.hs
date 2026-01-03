@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
-module GramHs.CLI.Output
+module Gramref.CLI.Output
   ( formatOutput
   , formatError
   ) where
 
-import GramHs.CLI.Types (OutputFormat(..), OutputOptions(..))
-import qualified GramHs.CLI.JSON as JSON
+import Gramref.CLI.Types (OutputFormat(..), OutputOptions(..))
+import qualified Gramref.CLI.JSON as JSON
 import qualified Gram.Serialize as Gram
 import qualified Pattern.Core as Pattern
 import qualified Subject.Core as Subject

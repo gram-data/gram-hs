@@ -4,8 +4,8 @@ module Spec.Properties.DeterministicSpec where
 
 import Test.Hspec
 import qualified Data.Text as T
-import qualified GramHs.CLI.JSON as JSON
-import qualified GramHs.CLI.Types as Types
+import qualified Gramref.CLI.JSON as JSON
+import qualified Gramref.CLI.Types as Types
 import qualified Gram.Parse as Gram
 
 spec :: Spec

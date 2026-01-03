@@ -1,17 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-module GramHs.CLI
+module Gramref.CLI
   ( runCLI
   , CLICommand(..)
   ) where
 
 import Options.Applicative
-import qualified GramHs.CLI.Commands.Parse as Parse
-import qualified GramHs.CLI.Commands.Match as Match
-import qualified GramHs.CLI.Commands.Transform as Transform
-import qualified GramHs.CLI.Commands.Generate as Generate
-import qualified GramHs.CLI.Commands.Validate as Validate
-import qualified GramHs.CLI.Commands.Convert as Convert
+import qualified Gramref.CLI.Commands.Parse as Parse
+import qualified Gramref.CLI.Commands.Match as Match
+import qualified Gramref.CLI.Commands.Transform as Transform
+import qualified Gramref.CLI.Commands.Generate as Generate
+import qualified Gramref.CLI.Commands.Validate as Validate
+import qualified Gramref.CLI.Commands.Convert as Convert
 import System.Exit (ExitCode(..))
 
 data CLICommand

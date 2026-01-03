@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
-module GramHs.CLI.JSON
+module Gramref.CLI.JSON
   ( patternToJSON
   , errorToJSON
   , canonicalizeJSON
@@ -25,7 +25,7 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Pattern.Core as Pattern
 import qualified Subject.Core as Subject
 import qualified Subject.Value as SubjectValue
-import qualified GramHs.CLI.Types as Types
+import qualified Gramref.CLI.Types as Types
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.List as List
