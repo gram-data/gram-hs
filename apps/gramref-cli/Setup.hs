@@ -29,15 +29,15 @@ installManPage _ _ pkg_descr lbi = do
   -- The source is in a subdirectory named after the package
   -- Try multiple locations for the man page source
   -- 1. Relative to current directory (for source installs)
-  let manFile1 = currentDir </> "man" </> "gram-hs.1"
+  let manFile1 = currentDir </> "man" </> "gramref.1"
   -- 2. In package directory (for tarball installs, cabal extracts to package-name-version/)
-  let manFile2 = currentDir </> "gram-hs-cli-0.1.0.0" </> "man" </> "gram-hs.1"
+  let manFile2 = currentDir </> "gramref-cli-0.1.0.0" </> "man" </> "gramref.1"
   -- 3. Try parent directory
-  let manFile3 = currentDir </> ".." </> "man" </> "gram-hs.1"
+  let manFile3 = currentDir </> ".." </> "man" </> "gramref.1"
   -- 4. Try to find it by searching up from current directory  
-  let manFile4 = currentDir </> ".." </> ".." </> "man" </> "gram-hs.1"
-  -- 5. Try in apps/gram-hs-cli/man (if we're in project root)
-  let manFile5 = currentDir </> "apps" </> "gram-hs-cli" </> "man" </> "gram-hs.1"
+  let manFile4 = currentDir </> ".." </> ".." </> "man" </> "gramref.1"
+  -- 5. Try in apps/gramref-cli/man (if we're in project root)
+  let manFile5 = currentDir </> "apps" </> "gramref-cli" </> "man" </> "gramref.1"
   
   -- Find which man page exists
   exists1 <- doesFileExist manFile1
@@ -59,7 +59,7 @@ installManPage _ _ pkg_descr lbi = do
       createDirectoryIfMissing True manDir
       
       -- Copy man page
-      let dst = manDir </> "gram-hs.1"
+      let dst = manDir </> "gramref.1"
       copyFile manFile dst
       putStrLn $ "Installed man page to " ++ dst
     else do

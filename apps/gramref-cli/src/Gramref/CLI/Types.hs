@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module GramHs.CLI.Types
+module Gramref.CLI.Types
   ( OutputFormat(..)
   , OutputOptions(..)
   , defaultOutputOptions

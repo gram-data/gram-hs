@@ -11,8 +11,8 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.Aeson.Key as Key
 import qualified Data.Vector as Vector
-import qualified GramHs.CLI.JSON as JSON
-import qualified GramHs.CLI.Types as Types
+import qualified Gramref.CLI.JSON as JSON
+import qualified Gramref.CLI.Types as Types
 import qualified Pattern.Core as Pattern
 import qualified Subject.Core as Subject
 import qualified Gram.Parse as Gram

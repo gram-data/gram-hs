@@ -16,7 +16,7 @@ These flags can be used with any command that produces JSON output.
 
 **Purpose**: Output only the result value without metadata wrapper.
 
-**Usage**: `gram-hs <command> [args...] --value-only`
+**Usage**: `gramref <command> [args...] --value-only`
 
 **Behavior**:
 - When used with successful commands: Output contains only the pattern/result JSON value
@@ -27,14 +27,14 @@ These flags can be used with any command that produces JSON output.
 **Example**:
 ```bash
 # Without --value-only
-$ gram-hs parse input.gram
+$ gramref parse input.gram
 {
   "Meta": { "Version": "0.1.0", "Command": "parse", ... },
   "Result": { "Type": "Pattern", "Value": { ... } }
 }
 
 # With --value-only
-$ gram-hs parse input.gram --value-only
+$ gramref parse input.gram --value-only
 {
   "value": { ... },
   "elements": [ ... ]
@@ -49,7 +49,7 @@ $ gram-hs parse input.gram --value-only
 
 **Purpose**: Ensure deterministic output by using fixed values for metadata or excluding it.
 
-**Usage**: `gram-hs <command> [args...] --deterministic`
+**Usage**: `gramref <command> [args...] --deterministic`
 
 **Behavior**:
 - When used: All metadata uses fixed values:
@@ -61,11 +61,11 @@ $ gram-hs parse input.gram --value-only
 **Example**:
 ```bash
 # Without --deterministic (changing timestamp/hash each run)
-$ gram-hs parse input.gram
+$ gramref parse input.gram
 { "Meta": { "Timestamp": "2025-12-27T10:30:45+0000", "Hash": "abc123..." }, ... }
 
 # With --deterministic (fixed values)
-$ gram-hs parse input.gram --deterministic
+$ gramref parse input.gram --deterministic
 { "Meta": { "Timestamp": "1970-01-01T00:00:00+0000", "Hash": "0000..." }, ... }
 ```
 
@@ -77,7 +77,7 @@ $ gram-hs parse input.gram --deterministic
 
 **Purpose**: Produce JSON with sorted keys at all nesting levels for reliable comparison.
 
-**Usage**: `gram-hs <command> [args...] --canonical`
+**Usage**: `gramref <command> [args...] --canonical`
 
 **Behavior**:
 - All object keys sorted alphabetically at every nesting level
@@ -88,11 +88,11 @@ $ gram-hs parse input.gram --deterministic
 **Example**:
 ```bash
 # Without --canonical (keys may be in any order)
-$ gram-hs parse input.gram
+$ gramref parse input.gram
 { "elements": [...], "value": {...} }
 
 # With --canonical (keys sorted)
-$ gram-hs parse input.gram --canonical
+$ gramref parse input.gram --canonical
 { "elements": [...], "value": {...} }  # Same order every time
 ```
 
@@ -110,7 +110,7 @@ $ gram-hs parse input.gram --canonical
 
 **Example**:
 ```bash
-$ gram-hs parse input.gram --value-only --canonical
+$ gramref parse input.gram --value-only --canonical
 { "elements": [], "value": { ... } }  # Sorted keys, no metadata
 ```
 
@@ -124,7 +124,7 @@ $ gram-hs parse input.gram --value-only --canonical
 
 **Example**:
 ```bash
-$ gram-hs parse input.gram --deterministic --value-only
+$ gramref parse input.gram --deterministic --value-only
 { "elements": [], "value": { ... } }  # No metadata, canonical (auto-enabled)
 ```
 
@@ -138,7 +138,7 @@ $ gram-hs parse input.gram --deterministic --value-only
 
 **Example**:
 ```bash
-$ gram-hs parse input.gram --deterministic --canonical
+$ gramref parse input.gram --deterministic --canonical
 { "Meta": { ... }, "Result": { ... } }  # Fixed metadata, sorted keys
 ```
 
@@ -150,7 +150,7 @@ $ gram-hs parse input.gram --deterministic --canonical
 
 **Purpose**: Generate test suites in the test suite format specification.
 
-**Usage**: `gram-hs generate --type suite [--count N] [--seed S] [--complexity LEVEL] [--format json]`
+**Usage**: `gramref generate --type suite [--count N] [--seed S] [--complexity LEVEL] [--format json]`
 
 **Required Flags**:
 - `--type suite` - Specifies test suite generation
@@ -188,10 +188,10 @@ $ gram-hs parse input.gram --deterministic --canonical
 **Example**:
 ```bash
 # Generate 10 test cases with seed 42
-$ gram-hs generate --type suite --count 10 --seed 42
+$ gramref generate --type suite --count 10 --seed 42
 
 # Generate 5 complex test cases
-$ gram-hs generate --type suite --count 5 --complexity complex --seed 100
+$ gramref generate --type suite --count 5 --complexity complex --seed 100
 ```
 
 **Exit Codes**:

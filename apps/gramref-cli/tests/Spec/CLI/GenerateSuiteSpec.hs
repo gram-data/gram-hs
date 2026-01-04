@@ -10,8 +10,8 @@ import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.Aeson.Key as Key
 import qualified Data.Text.Encoding as TE
 import qualified Data.Vector as Vector
-import qualified GramHs.CLI.Commands.Generate as Generate
-import qualified GramHs.CLI.Types as Types
+import qualified Gramref.CLI.Commands.Generate as Generate
+import qualified Gramref.CLI.Types as Types
 import System.Random (mkStdGen)
 import Data.Maybe (fromMaybe)
 

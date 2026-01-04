@@ -5,7 +5,7 @@
 
 ## Overview
 
-This feature adds three key improvements to the gram-hs CLI tool to make it easier to port the project to other languages:
+This feature adds three key improvements to the gramref CLI tool to make it easier to port the project to other languages:
 
 1. **Metadata Exclusion** (`--value-only`, `--deterministic`) - Compare outputs without changing metadata
 2. **Test Suite Generation** (`generate --type suite`) - Generate deterministic test cases
@@ -17,33 +17,33 @@ This feature adds three key improvements to the gram-hs CLI tool to make it easi
 
 ```bash
 # Output only the pattern value (no metadata)
-gram-hs parse input.gram --value-only
+gramref parse input.gram --value-only
 
 # Deterministic output with fixed metadata
-gram-hs parse input.gram --deterministic
+gramref parse input.gram --deterministic
 
 # Both: clean, deterministic output
-gram-hs parse input.gram --value-only --deterministic
+gramref parse input.gram --value-only --deterministic
 ```
 
 ### Generate Test Suites
 
 ```bash
 # Generate 10 test cases with seed 42
-gram-hs generate --type suite --count 10 --seed 42 > test_suite.json
+gramref generate --type suite --count 10 --seed 42 > test_suite.json
 
 # Generate complex test cases
-gram-hs generate --type suite --count 5 --complexity complex --seed 100
+gramref generate --type suite --count 5 --complexity complex --seed 100
 ```
 
 ### Canonical JSON for Comparison
 
 ```bash
 # Sorted keys at all levels
-gram-hs parse input.gram --canonical
+gramref parse input.gram --canonical
 
 # Combine with value-only for clean comparison
-gram-hs parse input.gram --value-only --canonical
+gramref parse input.gram --value-only --canonical
 ```
 
 ## Common Workflows
@@ -52,7 +52,7 @@ gram-hs parse input.gram --value-only --canonical
 
 ```bash
 # Generate reference output (deterministic, canonical, value-only)
-gram-hs parse input.gram --value-only --canonical --deterministic > reference.json
+gramref parse input.gram --value-only --canonical --deterministic > reference.json
 
 # Compare with other implementation
 other-impl parse input.gram | diff reference.json -
@@ -62,7 +62,7 @@ other-impl parse input.gram | diff reference.json -
 
 ```bash
 # Generate comprehensive test suite
-gram-hs generate --type suite --count 100 --complexity standard --seed 42 > test_suite.json
+gramref generate --type suite --count 100 --complexity standard --seed 42 > test_suite.json
 
 # Use test suite to validate port implementation
 # (test suite format can be consumed by validation tools)
@@ -72,7 +72,7 @@ gram-hs generate --type suite --count 100 --complexity standard --seed 42 > test
 
 ```bash
 # Generate deterministic snapshot
-gram-hs parse input.gram --canonical --deterministic > snapshot.json
+gramref parse input.gram --canonical --deterministic > snapshot.json
 
 # Compare snapshots (should be identical)
 diff snapshot1.json snapshot2.json

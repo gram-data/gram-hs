@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
-module GramHs.CLI.Commands.Generate
+module Gramref.CLI.Commands.Generate
   ( GenerateOptions(..)
   , generateOptions
   , runGenerate
@@ -9,9 +9,9 @@ module GramHs.CLI.Commands.Generate
   ) where
 
 import Options.Applicative
-import GramHs.CLI.Types (OutputFormat(..), OutputOptions(..), outputOptionsParser, enforceDeterministicCanonical, canonical)
-import qualified GramHs.CLI.Output as Output
-import qualified GramHs.CLI.JSON as JSON
+import Gramref.CLI.Types (OutputFormat(..), OutputOptions(..), outputOptionsParser, enforceDeterministicCanonical, canonical)
+import qualified Gramref.CLI.Output as Output
+import qualified Gramref.CLI.JSON as JSON
 import qualified Pattern.Core as Pattern
 import qualified Subject.Core as Subject
 import qualified Subject.Value as SubjectValue

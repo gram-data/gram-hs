@@ -1,30 +1,30 @@
-.TH GRAM-HS 1 "2025-01-27" "gram-hs-cli 0.1.0.0" "User Commands"
+.TH GRAMREF 1 "2025-01-27" "gramref-cli 0.1.0.0" "User Commands"
 .SH NAME
-gram-hs \- Reference implementation CLI for gram/pattern ecosystem
+gramref \- Reference implementation CLI for gram/pattern ecosystem
 .SH SYNOPSIS
-.B gram-hs
+.B gramref
 .I COMMAND
 [\fIOPTIONS\fR]
 .br
-.B gram-hs parse
+.B gramref parse
 [\fIINPUT-FILE\fR] [\fB\-\-format\fR \fIFORMAT\fR] [\fB\-\-value-only\fR] [\fB\-\-deterministic\fR] [\fB\-\-canonical\fR]
 .br
-.B gram-hs match
+.B gramref match
 \fIPATTERN-FILE\fR \fIDATA-FILE\fR [\fB\-\-format\fR \fIFORMAT\fR] [\fB\-\-value-only\fR] [\fB\-\-deterministic\fR] [\fB\-\-canonical\fR]
 .br
-.B gram-hs transform
+.B gramref transform
 \fB\-\-operation\fR \fIOPERATION\fR \fIINPUT-FILE\fR [\fB\-\-format\fR \fIFORMAT\fR] [\fB\-\-value-only\fR] [\fB\-\-deterministic\fR] [\fB\-\-canonical\fR]
 .br
-.B gram-hs generate
+.B gramref generate
 [\fB\-\-type\fR \fITYPE\fR] [\fB\-\-count\fR \fIN\fR] [\fB\-\-seed\fR \fISEED\fR] [\fB\-\-complexity\fR \fILEVEL\fR] [\fB\-\-format\fR \fIFORMAT\fR] [\fB\-\-value-only\fR] [\fB\-\-deterministic\fR] [\fB\-\-canonical\fR]
 .br
-.B gram-hs validate
+.B gramref validate
 \fITEST-SUITE\fR [\fB\-\-runner\fR \fICOMMAND\fR] [\fB\-\-value-only\fR] [\fB\-\-deterministic\fR] [\fB\-\-canonical\fR]
 .br
-.B gram-hs convert
+.B gramref convert
 \fIINPUT-FILE\fR \fB\-\-from\fR \fIFORMAT\fR \fB\-\-to\fR \fIFORMAT\fR [\fB\-\-value-only\fR] [\fB\-\-deterministic\fR] [\fB\-\-canonical\fR]
 .SH DESCRIPTION
-.B gram-hs
+.B gramref
 is the reference implementation and conformance testing tool for the
 gram/pattern ecosystem. It provides canonical outputs for pattern operations,
 generates test suites, and enables validation of ports to other languages.
@@ -170,7 +170,7 @@ Parse a gram file and output JSON:
 .PP
 .RS 4
 .nf
-gram-hs parse input.gram --format json
+gramref parse input.gram --format json
 .fi
 .RE
 .PP
@@ -178,7 +178,7 @@ Parse from stdin:
 .PP
 .RS 4
 .nf
-echo '(node1)' | gram-hs parse
+echo '(node1)' | gramref parse
 .fi
 .RE
 .PP
@@ -186,7 +186,7 @@ Match a pattern against data:
 .PP
 .RS 4
 .nf
-gram-hs match pattern.gram data.gram
+gramref match pattern.gram data.gram
 .fi
 .RE
 .PP
@@ -194,7 +194,7 @@ Reverse the elements of a pattern:
 .PP
 .RS 4
 .nf
-gram-hs transform --operation reverse input.gram
+gramref transform --operation reverse input.gram
 .fi
 .RE
 .PP
@@ -202,7 +202,7 @@ Generate 10 test patterns with a specific seed:
 .PP
 .RS 4
 .nf
-gram-hs generate --type pattern --count 10 --seed 42
+gramref generate --type pattern --count 10 --seed 42
 .fi
 .RE
 .PP
@@ -210,7 +210,7 @@ Generate a test suite with 5 test cases:
 .PP
 .RS 4
 .nf
-gram-hs generate --type suite --count 5 --seed 42 --complexity standard
+gramref generate --type suite --count 5 --seed 42 --complexity standard
 .fi
 .RE
 .PP
@@ -218,7 +218,7 @@ Parse with value-only output for comparison:
 .PP
 .RS 4
 .nf
-gram-hs parse input.gram --value-only
+gramref parse input.gram --value-only
 .fi
 .RE
 .PP
@@ -226,7 +226,7 @@ Parse with deterministic and canonical output:
 .PP
 .RS 4
 .nf
-gram-hs parse input.gram --deterministic --canonical
+gramref parse input.gram --deterministic --canonical
 .fi
 .RE
 .PP
@@ -234,7 +234,7 @@ Convert from gram to JSON:
 .PP
 .RS 4
 .nf
-gram-hs convert input.gram --from gram --to json
+gramref convert input.gram --from gram --to json
 .fi
 .RE
 .SH SEE ALSO

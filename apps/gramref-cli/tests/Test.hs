@@ -1,4 +1,4 @@
--- | Test runner for gram-hs-cli.
+-- | Test runner for gramref-cli.
 --
 -- This module uses HSpec to run all test suites.
 import Test.Hspec
@@ -12,7 +12,7 @@ main = hspec testSpec
 
 testSpec :: Spec
 testSpec = do
-  describe "gram-hs-cli" $ do
+  describe "gramref-cli" $ do
     OutputSpec.spec
     JSONSpec.spec
     GenerateSuiteSpec.spec

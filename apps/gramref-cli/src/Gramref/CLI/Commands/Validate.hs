@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-module GramHs.CLI.Commands.Validate
+module Gramref.CLI.Commands.Validate
   ( ValidateOptions(..)
   , validateOptions
   , runValidate
   ) where
 
 import Options.Applicative
-import GramHs.CLI.Types (OutputFormat(..), OutputOptions(..), outputOptionsParser, enforceDeterministicCanonical)
-import qualified GramHs.CLI.Output as Output
+import Gramref.CLI.Types (OutputFormat(..), OutputOptions(..), outputOptionsParser, enforceDeterministicCanonical)
+import qualified Gramref.CLI.Output as Output
 import System.Exit (ExitCode(..))
 import System.Directory (doesDirectoryExist, listDirectory)
 

@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-module GramHs.CLI.Commands.Match
+module Gramref.CLI.Commands.Match
   ( MatchOptions(..)
   , matchOptions
   , runMatch
   ) where
 
 import Options.Applicative
-import GramHs.CLI.Types (OutputFormat(..), OutputOptions(..), outputOptionsParser, enforceDeterministicCanonical)
-import qualified GramHs.CLI.Output as Output
+import Gramref.CLI.Types (OutputFormat(..), OutputOptions(..), outputOptionsParser, enforceDeterministicCanonical)
+import qualified Gramref.CLI.Output as Output
 import qualified Gram.Parse as Gram
 import qualified Pattern.Core as Pattern
 import System.Exit (ExitCode(..))
