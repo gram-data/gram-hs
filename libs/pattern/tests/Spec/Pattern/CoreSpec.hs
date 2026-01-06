@@ -4464,6 +4464,97 @@ spec = do
           name (result !! 1) `shouldBe` "Alice"
           name (result !! 2) `shouldBe` "Bob"
     
+    describe "Edge Cases (Phase 5)" $ do
+      
+      describe "Atomic patterns and empty elements" $ do
+        
+        it "T041: paramorphism on atomic pattern (no elements)" $ do
+          let p = point 5
+          let result = para (\pat rs -> value pat + sum rs) p
+          result `shouldBe` (5 :: Int)
+        
+        it "T042: paramorphism on pattern with empty elements list" $ do
+          let p = pattern 10 []
+          let result = para (\pat rs -> value pat + sum rs) p
+          result `shouldBe` (10 :: Int)
+        
+        it "T043: paramorphism on pattern with single element (singular pattern)" $ do
+          let p = pattern 10 [point 5]
+          let result = para (\pat rs -> value pat + sum rs) p
+          result `shouldBe` (15 :: Int)
+        
+        it "T044: paramorphism on pattern with many elements" $ do
+          let p = pattern 1 [point 2, point 3, point 4, point 5]
+          let result = para (\pat rs -> value pat + sum rs) p
+          result `shouldBe` (15 :: Int)  -- 1 + (2 + 3 + 4 + 5)
+        
+        it "T045: paramorphism on nested patterns with varying depths" $ do
+          let level3 = point 1
+          let level2a = pattern 2 [level3]
+          let level2b = point 3
+          let level1 = pattern 4 [level2a, level2b]
+          let p = pattern 5 [level1]
+          let result = para (\pat rs -> value pat + sum rs) p
+          result `shouldBe` (15 :: Int)  -- 5 + (4 + (2 + 1) + 3)
+        
+        it "T046: paramorphism with different value types (strings, integers, custom types)" $ do
+          -- String values
+          let p1 = pattern "root" [point "a", point "b"]
+          let result1 = para (\pat rs -> value pat : concat rs) p1
+          result1 `shouldBe` (["root", "a", "b"] :: [String])
+          
+          -- Integer values
+          let p2 = pattern 10 [point 5, point 3]
+          let result2 = para (\pat rs -> value pat + sum rs) p2
+          result2 `shouldBe` (18 :: Int)
+          
+          -- Custom type values
+          let p3 = Pattern { value = Person "Root" Nothing, elements = [
+                Pattern { value = Person "Alice" (Just 30), elements = [] },
+                Pattern { value = Person "Bob" (Just 25), elements = [] }
+              ]}
+          let result3 = para (\pat rs -> value pat : concat rs) p3
+          length result3 `shouldBe` 3
+        
+        it "T047: paramorphism verifying element order preservation" $ do
+          let p = pattern 1 [point 2, point 3, point 4]
+          let result = para (\pat rs -> value pat : concat rs) p
+          result `shouldBe` ([1, 2, 3, 4] :: [Int])
+    
+    describe "Comparison with Other Operations (Phase 5)" $ do
+      
+      describe "Comparison with Foldable" $ do
+        
+        it "T048: comparing paramorphism with Foldable demonstrating value-only vs. structure-aware folding" $ do
+          let p = pattern 10 [point 5, point 3]
+          -- Foldable: value-only folding
+          let foldableResult = foldr (+) 0 p
+          -- Paramorphism: structure-aware folding (can simulate Foldable)
+          let paraResult = para (\pat rs -> value pat + sum rs) p
+          foldableResult `shouldBe` paraResult
+          foldableResult `shouldBe` (18 :: Int)
+        
+        it "T048b: paramorphism enables structure-aware operations impossible with Foldable" $ do
+          let p = pattern 10 [point 5, point 3]
+          -- Foldable cannot access structure (depth, element count)
+          -- Paramorphism can:
+          let depthWeighted = para (\pat rs -> value pat * depth pat + sum rs) p
+          depthWeighted `shouldBe` (10 :: Int)  -- 10*1 + 5*0 + 3*0 = 10
+      
+      describe "Comparison with Comonad" $ do
+        
+        it "T049: comparing paramorphism with Comonad demonstrating structure-aware transformation vs. structure-aware folding" $ do
+          let p = pattern 10 [point 5, point 3]
+          -- Comonad: structure-aware transformation (returns Pattern)
+          let comonadResult = extend (\pat -> value pat * depth pat) p
+          extract comonadResult `shouldBe` (10 :: Int)  -- 10 * 1
+          extract (elements comonadResult !! 0) `shouldBe` (0 :: Int)  -- 5 * 0
+          extract (elements comonadResult !! 1) `shouldBe` (0 :: Int)  -- 3 * 0
+          
+          -- Paramorphism: structure-aware folding (returns aggregated value)
+          let paraResult = para (\pat rs -> value pat * depth pat + sum rs) p
+          paraResult `shouldBe` (10 :: Int)  -- Aggregated result, not Pattern structure
+    
     describe "Structure-Aware Aggregations (User Story 2)" $ do
       
       describe "Depth-weighted aggregations" $ do

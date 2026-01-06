@@ -109,16 +109,16 @@
 
 ### Documentation for User Story 3
 
-- [ ] T031 [P] [US3] Add paramorphism section to user guide explaining intuitive relationship to `Foldable` and `Comonad` in `docs/guide/06-advanced-morphisms.md`
-- [ ] T032 [P] [US3] Add examples comparing paramorphism with `Foldable` and `Comonad` in user guide in `docs/guide/06-advanced-morphisms.md`
-- [ ] T033 [P] [US3] Add "When to Use" guidance comparing paramorphism, `Foldable`, and `Comonad` in user guide in `docs/guide/06-advanced-morphisms.md`
-- [ ] T034 [P] [US3] Create reference documentation file for paramorphism with complete API reference in `docs/reference/features/paramorphism.md`
-- [ ] T035 [P] [US3] Add type signatures and function documentation to paramorphism reference in `docs/reference/features/paramorphism.md`
-- [ ] T036 [P] [US3] Add laws and properties to paramorphism reference in `docs/reference/features/paramorphism.md`
-- [ ] T037 [P] [US3] Add implementation details and examples to paramorphism reference in `docs/reference/features/paramorphism.md`
-- [ ] T038 [P] [US3] Add paramorphism porting notes explaining how to implement in other languages in `docs/reference/PORTING-GUIDE.md`
-- [ ] T039 [P] [US3] Add examples in multiple languages (Rust, TypeScript, Python) to porting guide in `docs/reference/PORTING-GUIDE.md`
-- [ ] T040 [P] [US3] Add relationship to `Foldable` and `Comonad` in other languages to porting guide in `docs/reference/PORTING-GUIDE.md`
+- [x] T031 [P] [US3] Add paramorphism section to user guide explaining intuitive relationship to `Foldable` and `Comonad` in `docs/guide/06-advanced-morphisms.md`
+- [x] T032 [P] [US3] Add examples comparing paramorphism with `Foldable` and `Comonad` in user guide in `docs/guide/06-advanced-morphisms.md`
+- [x] T033 [P] [US3] Add "When to Use" guidance comparing paramorphism, `Foldable`, and `Comonad` in user guide in `docs/guide/06-advanced-morphisms.md`
+- [x] T034 [P] [US3] Create reference documentation file for paramorphism with complete API reference in `docs/reference/features/paramorphism.md`
+- [x] T035 [P] [US3] Add type signatures and function documentation to paramorphism reference in `docs/reference/features/paramorphism.md`
+- [x] T036 [P] [US3] Add laws and properties to paramorphism reference in `docs/reference/features/paramorphism.md`
+- [x] T037 [P] [US3] Add implementation details and examples to paramorphism reference in `docs/reference/features/paramorphism.md`
+- [x] T038 [P] [US3] Add paramorphism porting notes explaining how to implement in other languages in `docs/reference/PORTING-GUIDE.md`
+- [x] T039 [P] [US3] Add examples in multiple languages (Rust, TypeScript, Python) to porting guide in `docs/reference/PORTING-GUIDE.md`
+- [x] T040 [P] [US3] Add relationship to `Foldable` and `Comonad` in other languages to porting guide in `docs/reference/PORTING-GUIDE.md`
 
 **Checkpoint**: At this point, User Story 3 should be complete. Documentation should clearly explain the relationship between paramorphism, `Foldable`, and `Comonad` with examples showing when to use each operation.
 
@@ -130,25 +130,25 @@
 
 ### Edge Case Tests
 
-- [ ] T041 [P] Write unit test for paramorphism on atomic pattern (no elements) in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T042 [P] Write unit test for paramorphism on pattern with empty elements list in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T043 [P] Write unit test for paramorphism on pattern with single element (singular pattern) in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T044 [P] Write unit test for paramorphism on pattern with many elements in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T045 [P] Write unit test for paramorphism on nested patterns with varying depths in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T046 [P] Write unit test for paramorphism with different value types (strings, integers, custom types) in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T047 [P] Write unit test for paramorphism verifying element order preservation in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
+- [x] T041 [P] Write unit test for paramorphism on atomic pattern (no elements) in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
+- [x] T042 [P] Write unit test for paramorphism on pattern with empty elements list in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
+- [x] T043 [P] Write unit test for paramorphism on pattern with single element (singular pattern) in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
+- [x] T044 [P] Write unit test for paramorphism on pattern with many elements in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
+- [x] T045 [P] Write unit test for paramorphism on nested patterns with varying depths in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
+- [x] T046 [P] Write unit test for paramorphism with different value types (strings, integers, custom types) in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
+- [x] T047 [P] Write unit test for paramorphism verifying element order preservation in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
 
 ### Comparison Tests
 
-- [ ] T048 [P] Write unit test comparing paramorphism with `Foldable` demonstrating value-only vs. structure-aware folding in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
-- [ ] T049 [P] Write unit test comparing paramorphism with `Comonad` demonstrating structure-aware transformation vs. structure-aware folding in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
+- [x] T048 [P] Write unit test comparing paramorphism with `Foldable` demonstrating value-only vs. structure-aware folding in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
+- [x] T049 [P] Write unit test comparing paramorphism with `Comonad` demonstrating structure-aware transformation vs. structure-aware folding in `libs/pattern/tests/Spec/Pattern/CoreSpec.hs`
 
 ### Final Polish
 
-- [ ] T050 Verify all tests pass and complete quickly (<10ms for property-based tests) in `libs/pattern/tests/Spec/Pattern/`
-- [ ] T051 Verify all success criteria from spec.md are met
-- [ ] T052 Review and update Haddock documentation for completeness in `libs/pattern/src/Pattern/Core.hs`
-- [ ] T053 Verify documentation examples compile and run correctly
+- [x] T050 Verify all tests pass and complete quickly (<10ms for property-based tests) in `libs/pattern/tests/Spec/Pattern/`
+- [x] T051 Verify all success criteria from spec.md are met
+- [x] T052 Review and update Haddock documentation for completeness in `libs/pattern/src/Pattern/Core.hs`
+- [x] T053 Verify documentation examples compile and run correctly
 
 **Checkpoint**: At this point, all edge cases should be handled, all tests should pass, and documentation should be complete. Feature is ready for review.
 
