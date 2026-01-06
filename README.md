@@ -18,6 +18,17 @@ ghcup install cabal
 ghcup set cabal
 ```
 
+**Clone with submodules** (required for corpus tests):
+```bash
+# When cloning for the first time
+git clone --recurse-submodules <repository-url>
+
+# Or if already cloned, initialize submodules
+git submodule update --init --recursive
+```
+
+The corpus tests require the `tree-sitter-gram` submodule to be initialized at `libs/gram/test-data/tree-sitter-gram`. Tests will skip gracefully if the submodule is not initialized.
+
 **Add to your project**:
 ```yaml
 build-depends:

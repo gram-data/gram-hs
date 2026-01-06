@@ -41,7 +41,12 @@ The Pattern library is the foundation. All other libraries depend on it.
    - `Ord`, `Semigroup`, `Monoid`, `Hashable`, `Applicative`, `Comonad`
    - See: `docs/reference/features/typeclass-instances.md`
 
-6. **Graph Lens** (optional but recommended)
+6. **Paramorphism** (structure-aware folding)
+   - `para :: (Pattern v -> [r] -> r) -> Pattern v -> r`
+   - Enables structure-aware aggregations
+   - See: `docs/reference/features/paramorphism.md` and section below
+
+7. **Graph Lens** (optional but recommended)
    - Enables graph interpretations
    - See: `docs/reference/features/graph-lens.md`
 
@@ -365,6 +370,163 @@ This ensures your port produces equivalent results to the reference implementati
 See `docs/reference/IMPLEMENTATION.md#testing` for patterns.
 
 ---
+
+## Paramorphism Implementation
+
+### Overview
+
+Paramorphism enables structure-aware folding over patterns. Unlike `Foldable` (which only provides values), paramorphism gives your folding function access to the full pattern structure at each position.
+
+### Core Function Signature
+
+```haskell
+para :: (Pattern v -> [r] -> r) -> Pattern v -> r
+```
+
+**Parameters**:
+- Folding function: `(Pattern v -> [r] -> r)` that receives:
+  - Current pattern subtree: `Pattern v`
+  - Recursively computed results from children: `[r]`
+- Pattern to fold over: `Pattern v`
+
+**Returns**: Aggregated result of type `r`
+
+### Implementation Pattern
+
+The standard paramorphism pattern for recursive tree structures:
+
+```haskell
+para f (Pattern v els) = 
+  f (Pattern v els) (map (para f) els)
+```
+
+**Breakdown**:
+1. Recursively compute results for all children using `para f`
+2. Apply folding function `f` to: (1) current pattern subtree, (2) list of child results
+3. Return aggregated result
+
+### Language-Specific Implementations
+
+#### Rust
+
+```rust
+impl<T> Pattern<T> {
+    pub fn para<R, F>(&self, f: F) -> R
+    where
+        F: Fn(&Pattern<T>, &[R]) -> R,
+    {
+        let child_results: Vec<R> = self.elements.iter()
+            .map(|child| child.para(&f))
+            .collect();
+        f(self, &child_results)
+    }
+}
+```
+
+**Key Considerations**:
+- Use references (`&Pattern<T>`) to avoid ownership issues
+- Collect child results into `Vec<R>` before passing to folding function
+- Generic over result type `R` and folding function `F`
+
+#### TypeScript
+
+```typescript
+function para<T, R>(
+  pattern: Pattern<T>,
+  f: (pat: Pattern<T>, childResults: R[]) => R
+): R {
+  const childResults = pattern.elements.map(child => para(child, f));
+  return f(pattern, childResults);
+}
+```
+
+**Key Considerations**:
+- TypeScript's type system supports generic functions
+- Array methods (`map`) work naturally with recursive structures
+- No special ownership concerns (managed by runtime)
+
+#### Python
+
+```python
+def para(pattern, f):
+    """
+    Paramorphism: structure-aware folding.
+    
+    Args:
+        pattern: Pattern to fold over
+        f: Folding function (pattern, child_results) -> result
+    
+    Returns:
+        Aggregated result
+    """
+    child_results = [para(child, f) for child in pattern.elements]
+    return f(pattern, child_results)
+```
+
+**Key Considerations**:
+- Python's dynamic typing simplifies implementation
+- List comprehensions provide clean recursive computation
+- No type annotations required (but recommended for clarity)
+
+### Relationship to Foldable and Comonad
+
+**Foldable** (value-only folding):
+- Operations: `foldr`, `foldl`, `foldMap`, `toList`
+- Access: Only values, no structure
+- Use when: You only need values, not structural information
+
+**Paramorphism** (structure-aware folding):
+- Operations: `para`
+- Access: Structure + values for folding/aggregation
+- Use when: You need structure-aware aggregations (depth-weighted sums, nesting-level statistics)
+
+**Comonad** (structure-aware transformation):
+- Operations: `extend`, `duplicate`, `extract`
+- Access: Structure for transformation
+- Use when: You need structure-aware transformation (not aggregation)
+
+### Example: Depth-Weighted Sum
+
+**Haskell**:
+```haskell
+depthWeightedSum = para (\pat rs -> value pat * depth pat + sum rs)
+```
+
+**Rust**:
+```rust
+let depth_weighted_sum = pattern.para(|pat, rs| {
+    pat.value * pat.depth() + rs.iter().sum::<i32>()
+});
+```
+
+**TypeScript**:
+```typescript
+const depthWeightedSum = para(pattern, (pat, rs) => 
+    pat.value * depth(pat) + rs.reduce((a, b) => a + b, 0)
+);
+```
+
+**Python**:
+```python
+def depth_weighted_sum(pattern):
+    return para(pattern, lambda pat, rs: 
+        pat.value * depth(pat) + sum(rs)
+    )
+```
+
+### Testing
+
+Verify paramorphism properties:
+
+1. **Structure Access**: `para (\p _ -> depth p) pattern == depth pattern`
+2. **Value Access**: `para (\p rs -> value p : concat rs) pattern == toList pattern`
+3. **Relationship to Foldable**: `para (\p rs -> value p + sum rs) pattern == foldr (+) 0 pattern`
+
+### Performance Considerations
+
+- **Time Complexity**: O(n) where n is total number of nodes
+- **Space Complexity**: O(d) where d is maximum nesting depth (recursion stack)
+- **Order Preservation**: Element order is preserved when aggregating results
 
 ## Language-Specific Considerations
 

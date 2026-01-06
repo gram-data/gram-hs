@@ -283,12 +283,113 @@ prop_comonad_extract_extend p f =
   extract (extend f p) == f p
 ```
 
+## Paramorphism: Structure-Aware Folding
+
+### Intuitive Explanation
+
+**Paramorphism** extends `Foldable` to provide structure-aware folding, just as `Comonad` extends `Functor` to provide structure-aware transformation. While `Foldable` operations (`foldr`, `foldl`, `foldMap`) only provide access to values, paramorphism gives your folding function access to the full pattern structure at each position.
+
+For Patterns, paramorphism enables:
+- **Structure-aware aggregations**: Consider depth, element count, nesting level in addition to values
+- **Context-dependent operations**: Adapt aggregation behavior based on structural properties
+- **Structure-preserving transformations**: Access original structure while computing aggregated results
+
+### Example: Depth-Weighted Sum
+
+Paramorphism enables aggregations that consider structural context:
+
+```haskell
+import Pattern.Core (pattern, point, para)
+
+-- Pattern structure
+p = pattern 10 [point 5, point 3]
+
+-- Foldable: Value-only folding
+sumValues = foldr (+) 0 p  -- 18 (only values, no structure access)
+
+-- Paramorphism: Structure-aware folding
+depthWeightedSum = para (\pat rs -> value pat * depth pat + sum rs) p
+-- Provides access to pattern structure (depth) and values
+```
+
+**Gram notation:**
+```gram
+[10 | 5, 3]  -- Pattern structure
+-- Foldable: sums all values → 18
+-- Paramorphism: weights by depth → 10*1 + 5*0 + 3*0 = 10
+```
+
+### Relationship to Foldable and Comonad
+
+Understanding when to use each operation:
+
+**Foldable** (value-only folding):
+- Use when you only need values, not structural information
+- Operations: `foldr`, `foldl`, `foldMap`, `toList`
+- Example: Sum all values, extract values as list
+
+**Paramorphism** (structure-aware folding):
+- Use when you need structure-aware aggregations
+- Operations: `para`
+- Example: Depth-weighted sums, nesting-level statistics, element-count-based aggregations
+
+**Comonad** (structure-aware transformation):
+- Use when you need structure-aware transformation (not aggregation)
+- Operations: `extend`, `duplicate`, `extract`
+- Example: Transform values based on structural context, return Pattern structure
+
+### Example: Comparing Operations
+
+```haskell
+import Pattern.Core (pattern, point, para)
+import Data.Foldable (foldr, toList)
+import Control.Comonad (extend)
+
+p = pattern 10 [point 5, point 3]
+
+-- Foldable: Value-only aggregation
+foldr (+) 0 p  -- 18 (sums all values)
+
+-- Paramorphism: Structure-aware aggregation
+para (\pat rs -> value pat * depth pat + sum rs) p  -- 10 (depth-weighted)
+
+-- Comonad: Structure-aware transformation
+extend (\pat -> value pat * depth pat) p  
+-- Pattern 10 [Pattern 0 [], Pattern 0 []] (transforms, returns Pattern)
+```
+
+### When to Use Paramorphism
+
+Use paramorphism when you need:
+- **Depth-aware operations**: Weight values by nesting depth
+- **Element-count-aware aggregations**: Consider number of children in aggregation
+- **Nesting-level statistics**: Compute statistics that depend on structural level
+- **Context-dependent aggregations**: Adapt aggregation based on structural properties
+
+### Formal Definition
+
+**Paramorphism** is a recursion scheme that enables folding over recursive structures while preserving access to the original structure at each position.
+
+For Patterns, paramorphism provides:
+- **Folding function signature**: `(Pattern v -> [r] -> r) -> Pattern v -> r`
+- **Structure access**: Folding function receives current pattern subtree
+- **Child results**: Folding function receives recursively computed results from children
+- **Structure-aware aggregation**: Enables aggregations considering structural properties
+
+The relationship:
+- **Foldable**: Provides value-only folding (`foldr`, `foldl`, `foldMap`)
+- **Paramorphism**: Extends `Foldable` to provide structure-aware folding (`para`)
+- **Comonad**: Provides structure-aware transformation (`extend`)
+
+Just as `Comonad` extends `Functor` to see structure (`extend` vs `fmap`), Paramorphism extends `Foldable` to see structure (`para` vs `foldr`).
+
 ## Summary
 
 - **Morphisms**: Structure-preserving transformations (Functor operations)
 - **Natural transformations**: Transformations between functors (`toList`, `extract`, `duplicate`)
 - **Mathematical laws**: Ensure correctness (Functor laws, Comonad laws)
 - **Categorical structures**: Patterns form functors and comonads
+- **Paramorphism**: Structure-aware folding extending `Foldable` (like `Comonad` extends `Functor`)
 - **Porting guidance**: Preserve mathematical laws when porting to other languages
 
 Understanding these foundations helps you reason about Patterns mathematically and ensure correctness.

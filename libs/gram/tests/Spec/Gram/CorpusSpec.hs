@@ -21,8 +21,39 @@ import Data.Char (isSpace)
 
 -- | Path to the tree-sitter-gram corpus directory
 -- This path is relative to the repository root
+-- The corpus files come from a git submodule at libs/gram/test-data/tree-sitter-gram
 corpusDir :: FilePath
 corpusDir = "libs/gram/test-data/tree-sitter-gram/test/corpus"
+
+-- | Check if the git submodule is initialized
+-- Returns True if the submodule directory exists and contains files
+isSubmoduleInitialized :: IO Bool
+isSubmoduleInitialized = do
+  cwd <- getCurrentDirectory
+  let submodulePath = "libs/gram/test-data/tree-sitter-gram"
+  exists <- doesDirectoryExist submodulePath
+  if not exists
+    then return False
+    else do
+      -- Check if directory contains files (not just .git)
+      contents <- listDirectory submodulePath
+      -- Filter out hidden files and check if there are actual files
+      let visibleFiles = filter (not . (== '.') . head) contents
+      return (not (null visibleFiles))
+
+-- | Get a helpful message about initializing the submodule
+submoduleInitMessage :: String
+submoduleInitMessage = unlines
+  [ "Corpus tests require the tree-sitter-gram submodule to be initialized."
+  , ""
+  , "To initialize the submodule, run:"
+  , "  git submodule update --init --recursive"
+  , ""
+  , "Or if you're cloning the repository for the first time:"
+  , "  git clone --recurse-submodules <repository-url>"
+  , ""
+  , "The submodule is located at: libs/gram/test-data/tree-sitter-gram"
+  ]
 
 -- | Example type: Name, Content, ShouldFail
 type CorpusExample = (String, String, Bool)
@@ -115,7 +146,8 @@ loadFromPath dir = do
     ) txtFiles
   return $ filter (not . null . snd) results
 
--- | Load all corpus files from the directory.
+-- | Load corpus files from the submodule directory
+-- Returns empty list if submodule is not initialized or corpus files not found
 loadCorpusFiles :: IO [(FilePath, [CorpusExample])]
 loadCorpusFiles = do
   cwd <- getCurrentDirectory
@@ -143,79 +175,91 @@ loadCorpusFiles = do
 testParsingCorpus :: Spec
 testParsingCorpus = do
   it "parses all corpus files successfully (or fails if marked :error)" $ do
+    submoduleInit <- isSubmoduleInitialized
     corpus <- loadCorpusFiles
-    let totalExamples = sum $ map (length . snd) corpus
-    totalExamples `shouldSatisfy` (> 0)
-    
-    -- Test parsing each example
-    let parseResults = concatMap (\(file, examples) ->
-          map (\(name, example, shouldFail) -> (file, name, example, shouldFail, fromGram example)) examples
-          ) corpus
-    
-    let failures = filter (\(_, _, _, shouldFail, result) -> case result of
-          Left _ -> not shouldFail  -- Failed but shouldn't have
-          Right _ -> shouldFail     -- Succeeded but should have failed
-          ) parseResults
-    
-    if null failures
-      then return ()
+    if length corpus == 0
+      then pendingWith $ if submoduleInit
+        then "Corpus directory found but contains no test files. Skipping corpus tests."
+        else submoduleInitMessage
       else do
-        let errorMsgs = map (\(file, name, example, shouldFail, result) ->
-              case (shouldFail, result) of
-                (False, Left (ParseError msg)) -> 
-                  file ++ ": " ++ name ++ "\nInput: " ++ take 100 example ++ "...\nError: " ++ msg
-                (True, Right _) -> 
-                  file ++ ": " ++ name ++ "\nInput: " ++ take 100 example ++ "...\nUnexpected success (expected failure)"
-                _ -> "Unexpected state"
-              ) failures
-        expectationFailure $ "Failed " ++ show (length failures) ++ 
-          " examples:\n" ++ unlines (take 10 errorMsgs)
+        let totalExamples = sum $ map (length . snd) corpus
+        totalExamples `shouldSatisfy` (> 0)
+        
+        -- Test parsing each example
+        let parseResults = concatMap (\(file, examples) ->
+              map (\(name, example, shouldFail) -> (file, name, example, shouldFail, fromGram example)) examples
+              ) corpus
+        
+        let failures = filter (\(_, _, _, shouldFail, result) -> case result of
+              Left _ -> not shouldFail  -- Failed but shouldn't have
+              Right _ -> shouldFail     -- Succeeded but should have failed
+              ) parseResults
+        
+        if null failures
+          then return ()
+          else do
+            let errorMsgs = map (\(file, name, example, shouldFail, result) ->
+                  case (shouldFail, result) of
+                    (False, Left (ParseError msg)) -> 
+                      file ++ ": " ++ name ++ "\nInput: " ++ take 100 example ++ "...\nError: " ++ msg
+                    (True, Right _) -> 
+                      file ++ ": " ++ name ++ "\nInput: " ++ take 100 example ++ "...\nUnexpected success (expected failure)"
+                    _ -> "Unexpected state"
+                  ) failures
+            expectationFailure $ "Failed " ++ show (length failures) ++ 
+              " examples:\n" ++ unlines (take 10 errorMsgs)
 
 -- | Test round-trip conversion (only for valid examples).
 testRoundTripCorpus :: Spec
 testRoundTripCorpus = do
   it "round-trip conversion preserves structure for all valid corpus files" $ do
+    submoduleInit <- isSubmoduleInitialized
     corpus <- loadCorpusFiles
     
-    -- Filter only valid examples
-    let validExamples = concatMap (\(file, examples) ->
-          map (\(name, ex, _) -> (file, name, ex)) $ filter (\(_, _, shouldFail) -> not shouldFail) examples
-          ) corpus
-    
-    length validExamples `shouldSatisfy` (> 0)
-    
-    let results = map (\(file, name, example) -> (file, name, example, fromGram example)) validExamples
-    
-    -- Filter out parse failures (handled by testParsingCorpus)
-    let successfulParses = filter (\(_, _, _, result) -> case result of
-          Right _ -> True
-          Left _ -> False
-          ) results
-    
-    let roundTripFailures = concatMap (\(file, name, original, result) ->
-          case result of
-            Right pattern -> 
-              let serialized = toGram pattern
-                  reparsed = fromGram serialized
-              in case reparsed of
-                Right reparsedPattern -> 
-                  -- Use structural equality (Subject has Eq instance that handles Symbol "" correctly)
-                  if pattern == reparsedPattern
-                    then []
-                    else [(file, name, original, "Round-trip structure mismatch\nOriginal: " ++ show pattern ++ "\nReparsed: " ++ show reparsedPattern)]
-                Left err -> [(file, name, original, "Failed to reparse: " ++ show err)]
-            Left _ -> []
-          ) successfulParses
-    
-    if null roundTripFailures
-      then return ()
+    if length corpus == 0
+      then pendingWith $ if submoduleInit
+        then "Corpus directory found but contains no test files. Skipping corpus tests."
+        else submoduleInitMessage
       else do
-        let errorMsgs = map (\(file, name, example, msg) ->
-              file ++ ": " ++ name ++ "\nInput: " ++ take 100 example ++ "...\n" ++ msg
-              ) (take 10 roundTripFailures)
-        expectationFailure $ "Round-trip failed for " ++ 
-          show (length roundTripFailures) ++ " examples:\n" ++ 
-          unlines errorMsgs
+        -- Filter only valid examples
+        let validExamples = concatMap (\(file, examples) ->
+              map (\(name, ex, _) -> (file, name, ex)) $ filter (\(_, _, shouldFail) -> not shouldFail) examples
+              ) corpus
+        
+        length validExamples `shouldSatisfy` (> 0)
+        
+        let results = map (\(file, name, example) -> (file, name, example, fromGram example)) validExamples
+        
+        -- Filter out parse failures (handled by testParsingCorpus)
+        let successfulParses = filter (\(_, _, _, result) -> case result of
+              Right _ -> True
+              Left _ -> False
+              ) results
+        
+        let roundTripFailures = concatMap (\(file, name, original, result) ->
+              case result of
+                Right pattern -> 
+                  let serialized = toGram pattern
+                      reparsed = fromGram serialized
+                  in case reparsed of
+                    Right reparsedPattern -> 
+                      -- Use structural equality (Subject has Eq instance that handles Symbol "" correctly)
+                      if pattern == reparsedPattern
+                        then []
+                        else [(file, name, original, "Round-trip structure mismatch\nOriginal: " ++ show pattern ++ "\nReparsed: " ++ show reparsedPattern)]
+                    Left err -> [(file, name, original, "Failed to reparse: " ++ show err)]
+                Left _ -> []
+              ) successfulParses
+        
+        if null roundTripFailures
+          then return ()
+          else do
+            let errorMsgs = map (\(file, name, example, msg) ->
+                  file ++ ": " ++ name ++ "\nInput: " ++ take 100 example ++ "...\n" ++ msg
+                  ) (take 10 roundTripFailures)
+            expectationFailure $ "Round-trip failed for " ++ 
+              show (length roundTripFailures) ++ " examples:\n" ++ 
+              unlines errorMsgs
 
 -- | Test comment handling in corpus files.
 testCommentHandling :: Spec
@@ -259,10 +303,16 @@ spec = do
   describe "Tree-sitter-gram corpus integration" $ do
     describe "corpus file loading" $ do
       it "can load corpus files from directory" $ do
+        submoduleInit <- isSubmoduleInitialized
         corpus <- loadCorpusFiles
-        length corpus `shouldSatisfy` (> 0)
-        let totalExamples = sum $ map (length . snd) corpus
-        totalExamples `shouldSatisfy` (> 0)
+        if length corpus == 0
+          then pendingWith $ if submoduleInit
+            then "Corpus directory found but contains no test files. Skipping corpus tests."
+            else submoduleInitMessage
+          else do
+            length corpus `shouldSatisfy` (> 0)
+            let totalExamples = sum $ map (length . snd) corpus
+            totalExamples `shouldSatisfy` (> 0)
     
     describe "parsing corpus files" $ do
       testParsingCorpus
