@@ -1,24 +1,25 @@
 -- | Unit tests for Pattern.Core module.
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# OPTIONS_GHC -fno-warn-x-partial #-}
 module Spec.Pattern.CoreSpec where
 
 import Control.Monad.State (State, get, put, runState)
 import Data.Char (toUpper)
-import Data.Either (Either(..))
-import Data.Foldable (foldl, foldMap, toList)
+import Data.Foldable (toList)
 import Data.Functor.Identity (Identity(..))
 import Data.Hashable (hash, hashWithSalt)
 import Data.List (sort)
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.HashSet as HashSet
 import qualified Data.Map as Map
-import Data.Maybe (fromJust)
 import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Monoid (All(..), Any(..), Endo(..), Product(..), Sum(..), mconcat)
+import Data.Monoid (All(..), Any(..), Endo(..), Product(..), Sum(..))
 import Data.Semigroup (sconcat, stimes)
 import qualified Data.Set as Set
 import Test.Hspec
 import Control.Comonad (extract, extend, duplicate)
-import Pattern.Core (Pattern(..), pattern, patternWith, fromList, toTuple, size, depth, values, anyValue, allValues, filterPatterns, findPattern, findAllPatterns, matches, contains, depthAt, sizeAt, indicesAt)
+import Pattern.Core (Pattern(..), pattern, point, fromList, toTuple, size, depth, values, anyValue, allValues, filterPatterns, findPattern, findAllPatterns, matches, contains, depthAt, sizeAt, indicesAt)
 import qualified Pattern.Core as PC
 
 -- Custom type for testing
@@ -33,17 +34,17 @@ spec = do
       
       describe "Creating atomic patterns with different value types" $ do
         
-        it "creates an atomic pattern with string value" $ do
+        it "creates an atomic point with string value" $ do
           let atom = Pattern { value = "node1", elements = [] }
           value atom `shouldBe` "node1"
           elements atom `shouldBe` ([] :: [Pattern String])
         
-        it "creates an atomic pattern with integer value" $ do
+        it "creates an atomic point with integer value" $ do
           let atom = Pattern { value = 42, elements = [] }
           value atom `shouldBe` (42 :: Int)
           elements atom `shouldBe` ([] :: [Pattern Int])
         
-        it "creates an atomic pattern with custom type value" $ do
+        it "creates an atomic point with custom type value" $ do
           let person = Person "Alice" (Just 30)
           let atom = Pattern { value = person, elements = [] }
           value atom `shouldBe` person
@@ -51,15 +52,15 @@ spec = do
       
       describe "Value field accessor" $ do
         
-        it "returns the correct value for an atomic pattern with string" $ do
+        it "returns the correct value for an atomic point with string" $ do
           let atom = Pattern { value = "test", elements = [] }
           value atom `shouldBe` "test"
         
-        it "returns the correct value for an atomic pattern with integer" $ do
+        it "returns the correct value for an atomic point with integer" $ do
           let atom = Pattern { value = 100, elements = [] }
           value atom `shouldBe` (100 :: Int)
         
-        it "returns the correct value for an atomic pattern with custom type" $ do
+        it "returns the correct value for an atomic point with custom type" $ do
           let person = Person "Bob" (Just 25)
           let atom = Pattern { value = person, elements = [] }
           value atom `shouldBe` person
@@ -70,7 +71,7 @@ spec = do
           let atom = Pattern { value = "empty", elements = [] }
           elements atom `shouldBe` ([] :: [Pattern String])
         
-        it "returns empty list for atomic pattern with different value types" $ do
+        it "returns empty list for atomic point with different value types" $ do
           let atomInt = Pattern { value = 42, elements = [] }
           let atomString = Pattern { value = "test", elements = [] }
           elements atomInt `shouldBe` ([] :: [Pattern Int])
@@ -78,7 +79,7 @@ spec = do
       
       describe "Edge cases" $ do
         
-        it "atomic pattern with explicitly empty list of elements behaves correctly" $ do
+        it "atomic point with explicitly empty list of elements behaves correctly" $ do
           let atom = Pattern { value = "node", elements = [] }
           value atom `shouldBe` "node"
           elements atom `shouldBe` ([] :: [Pattern String])
@@ -105,59 +106,63 @@ spec = do
         
         it "creates a singular pattern" $ do
           let elem = Pattern { value = "elem", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem] }
-          value pattern `shouldBe` "pattern"
-          length (elements pattern) `shouldBe` 1
-          head (elements pattern) `shouldBe` elem
+          let p = Pattern { value = "pattern", elements = [elem] }
+          value p `shouldBe` "pattern"
+          length (elements p) `shouldBe` 1
+          case elements p of
+            [x] -> x `shouldBe` elem
+            _ -> expectationFailure "Expected exactly one element"
         
-        it "creates a pattern with multiple elements" $ do
+        it "creates a point with multiple elements" $ do
           let elem1 = Pattern { value = "elem1", elements = [] }
           let elem2 = Pattern { value = "elem2", elements = [] }
           let elem3 = Pattern { value = "elem3", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
-          value pattern `shouldBe` "pattern"
-          length (elements pattern) `shouldBe` 3
-          elements pattern `shouldBe` [elem1, elem2, elem3]
+          let p = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          value p `shouldBe` "pattern"
+          length (elements p) `shouldBe` 3
+          elements p `shouldBe` [elem1, elem2, elem3]
       
       describe "Value field accessor for patterns with elements" $ do
         
         it "returns the correct value for singular pattern" $ do
           let elem = Pattern { value = "elem", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem] }
-          value pattern `shouldBe` "pattern"
+          let p = Pattern { value = "pattern", elements = [elem] }
+          value p `shouldBe` "pattern"
         
-        it "returns the correct value for pattern with multiple elements" $ do
+        it "returns the correct value for point with multiple elements" $ do
           let elem1 = Pattern { value = "e1", elements = [] }
           let elem2 = Pattern { value = "e2", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2] }
-          value pattern `shouldBe` "pattern"
+          let p = Pattern { value = "pattern", elements = [elem1, elem2] }
+          value p `shouldBe` "pattern"
         
-        it "returns the correct value for pattern with integer value and elements" $ do
+        it "returns the correct value for point with integer value and elements" $ do
           let elem = Pattern { value = 10, elements = [] }
-          let pattern = Pattern { value = 100, elements = [elem] }
-          value pattern `shouldBe` (100 :: Int)
+          let p = Pattern { value = 100, elements = [elem] }
+          value p `shouldBe` (100 :: Int)
       
       describe "Elements field accessor for patterns with elements" $ do
         
         it "returns correct element list for singular pattern" $ do
           let elem = Pattern { value = "elem", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem] }
-          elements pattern `shouldBe` [elem]
+          let p = Pattern { value = "pattern", elements = [elem] }
+          elements p `shouldBe` [elem]
         
-        it "returns correct element list for pattern with multiple elements" $ do
+        it "returns correct element list for point with multiple elements" $ do
           let elem1 = Pattern { value = "e1", elements = [] }
           let elem2 = Pattern { value = "e2", elements = [] }
           let elem3 = Pattern { value = "e3", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
-          elements pattern `shouldBe` [elem1, elem2, elem3]
+          let p = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          elements p `shouldBe` [elem1, elem2, elem3]
         
         it "returns correct element list preserving order" $ do
           let elem1 = Pattern { value = "first", elements = [] }
           let elem2 = Pattern { value = "second", elements = [] }
           let elem3 = Pattern { value = "third", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
-          let elems = elements pattern
-          value (head elems) `shouldBe` "first"
+          let p = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          let elems = elements p
+          case elems of
+            (x:_) -> value x `shouldBe` "first"
+            [] -> expectationFailure "Expected at least one element"
           value (elems !! 1) `shouldBe` "second"
           value (elems !! 2) `shouldBe` "third"
       
@@ -167,43 +172,53 @@ spec = do
           let elem1 = Pattern { value = "a", elements = [] }
           let elem2 = Pattern { value = "b", elements = [] }
           let elem3 = Pattern { value = "c", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
-          let elems = elements pattern
+          let p = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          let elems = elements p
           elems `shouldBe` [elem1, elem2, elem3]
           map value elems `shouldBe` ["a", "b", "c"]
         
         it "can access individual elements by index" $ do
           let elem1 = Pattern { value = "first", elements = [] }
           let elem2 = Pattern { value = "second", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2] }
-          let elems = elements pattern
-          head elems `shouldBe` elem1
+          let p = Pattern { value = "pattern", elements = [elem1, elem2] }
+          let elems = elements p
+          case elems of
+            (x:_) -> x `shouldBe` elem1
+            [] -> expectationFailure "Expected at least one element"
           last elems `shouldBe` elem2
       
       describe "Edge cases" $ do
         
-        it "pattern with zero elements behaves like atomic pattern" $ do
-          let pattern = Pattern { value = "node", elements = [] }
-          value pattern `shouldBe` "node"
-          elements pattern `shouldBe` ([] :: [Pattern String])
-          null (elements pattern) `shouldBe` True
+        it "point with zero elements behaves like atomic pattern" $ do
+          let p = Pattern { value = "node", elements = [] }
+          value p `shouldBe` "node"
+          elements p `shouldBe` ([] :: [Pattern String])
+          null (elements p) `shouldBe` True
         
         it "deeply nested patterns (multiple levels)" $ do
           let inner = Pattern { value = "inner", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner] }
           let outer = Pattern { value = "outer", elements = [middle] }
-          let pattern = Pattern { value = "pattern", elements = [outer] }
-          value pattern `shouldBe` "pattern"
-          length (elements pattern) `shouldBe` 1
-          value (head (elements pattern)) `shouldBe` "outer"
-          let outerElems = elements (head (elements pattern))
-          length outerElems `shouldBe` 1
-          value (head outerElems) `shouldBe` "middle"
-          let middleElems = elements (head outerElems)
-          length middleElems `shouldBe` 1
-          value (head middleElems) `shouldBe` "inner"
+          let p = Pattern { value = "pattern", elements = [outer] }
+          value p `shouldBe` "pattern"
+          length (elements p) `shouldBe` 1
+          case elements p of
+            (outer:_) -> do
+              value outer `shouldBe` "outer"
+              let outerElems = elements outer
+              length outerElems `shouldBe` 1
+              case outerElems of
+                (middle:_) -> do
+                  value middle `shouldBe` "middle"
+                  let middleElems = elements middle
+                  length middleElems `shouldBe` 1
+                  case middleElems of
+                    (inner:_) -> value inner `shouldBe` "inner"
+                    [] -> expectationFailure "Expected at least one element"
+                [] -> expectationFailure "Expected at least one element"
+            [] -> expectationFailure "Expected at least one element"
         
-        it "pattern containing pattern containing pattern (arbitrary depth)" $ do
+        it "point containing point containing point (arbitrary depth)" $ do
           let innermost = Pattern { value = "innermost", elements = [] }
           let middle = Pattern { value = "middle", elements = [innermost] }
           let outer = Pattern { value = "outer", elements = [middle] }
@@ -226,140 +241,140 @@ spec = do
       
       describe "Show instance for atomic patterns" $ do
         
-        it "shows atomic pattern with string value correctly" $ do
+        it "shows atomic point with string value correctly" $ do
           let atom = Pattern { value = "test", elements = [] }
           show atom `shouldBe` "Pattern {value = \"test\", elements = []}"
         
-        it "shows atomic pattern with integer value correctly" $ do
+        it "shows atomic point with integer value correctly" $ do
           let atom = Pattern { value = 42, elements = [] }
           show atom `shouldBe` "Pattern {value = 42, elements = []}"
         
-        it "shows atomic pattern with custom type value correctly" $ do
+        it "shows atomic point with custom type value correctly" $ do
           let person = Person "Alice" (Just 30)
           let atom = Pattern { value = person, elements = [] }
           show atom `shouldBe` "Pattern {value = Person {name = \"Alice\", age = Just 30}, elements = []}"
       
       describe "Show instance for patterns with elements" $ do
         
-        it "shows singular pattern correctly" $ do
+        it "shows singular point correctly" $ do
           let elem = Pattern { value = "elem", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem] }
-          show pattern `shouldBe` "Pattern {value = \"pattern\", elements = [Pattern {value = \"elem\", elements = []}]}"
+          let p = Pattern { value = "pattern", elements = [elem] }
+          show p `shouldBe` "Pattern {value = \"pattern\", elements = [Pattern {value = \"elem\", elements = []}]}"
         
-        it "shows pattern with multiple elements correctly" $ do
+        it "shows point with multiple elements correctly" $ do
           let elem1 = Pattern { value = "e1", elements = [] }
           let elem2 = Pattern { value = "e2", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2] }
-          show pattern `shouldBe` "Pattern {value = \"pattern\", elements = [Pattern {value = \"e1\", elements = []},Pattern {value = \"e2\", elements = []}]}"
+          let p = Pattern { value = "pattern", elements = [elem1, elem2] }
+          show p `shouldBe` "Pattern {value = \"pattern\", elements = [Pattern {value = \"e1\", elements = []},Pattern {value = \"e2\", elements = []}]}"
         
         it "shows nested patterns correctly" $ do
           let inner = Pattern { value = "inner", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner] }
           let outer = Pattern { value = "outer", elements = [middle] }
-          let pattern = Pattern { value = "pattern", elements = [outer] }
-          show pattern `shouldContain` "Pattern {value = \"pattern\""
-          show pattern `shouldContain` "Pattern {value = \"outer\""
-          show pattern `shouldContain` "Pattern {value = \"middle\""
-          show pattern `shouldContain` "Pattern {value = \"inner\""
+          let p = Pattern { value = "pattern", elements = [outer] }
+          show p `shouldContain` "Pattern {value = \"pattern\""
+          show p `shouldContain` "Pattern {value = \"outer\""
+          show p `shouldContain` "Pattern {value = \"middle\""
+          show p `shouldContain` "Pattern {value = \"inner\""
     
     describe "Constructor Functions (User Story 1)" $ do
       
-      describe "pattern function - creating atomic patterns" $ do
+      describe "point function - creating atomic patterns" $ do
         
-        it "creates atomic pattern with string value using pattern function" $ do
-          let atom = pattern "node1"
+        it "creates atomic point with string value using point function" $ do
+          let atom = point "node1"
           value atom `shouldBe` "node1"
           elements atom `shouldBe` ([] :: [Pattern String])
         
-        it "creates atomic pattern with integer value using pattern function" $ do
-          let atom = pattern (42 :: Int)
+        it "creates atomic point with integer value using point function" $ do
+          let atom = point (42 :: Int)
           value atom `shouldBe` (42 :: Int)
           elements atom `shouldBe` ([] :: [Pattern Int])
         
-        it "creates atomic pattern with custom type value using pattern function" $ do
+        it "creates atomic point with custom type value using point function" $ do
           let person = Person "Alice" (Just 30)
-          let atom = pattern person
+          let atom = point person
           value atom `shouldBe` person
           elements atom `shouldBe` ([] :: [Pattern Person])
         
-        it "pattern function produces patterns functionally identical to record syntax" $ do
-          let atom1 = pattern "test"
+        it "point function produces patterns functionally identical to record syntax" $ do
+          let atom1 = point "test"
           let atom2 = Pattern { value = "test", elements = [] }
           atom1 `shouldBe` atom2
           value atom1 `shouldBe` value atom2
           elements atom1 `shouldBe` elements atom2
           
-          let atom3 = pattern (100 :: Int)
+          let atom3 = point (100 :: Int)
           let atom4 = Pattern { value = 100, elements = [] }
           atom3 `shouldBe` atom4
           
           let person = Person "Bob" (Just 25)
-          let atom5 = pattern person
+          let atom5 = point person
           let atom6 = Pattern { value = person, elements = [] }
           atom5 `shouldBe` atom6
     
     describe "Constructor Functions (User Story 2)" $ do
       
-      describe "patternWith function - creating patterns with elements" $ do
+      describe "pattern function - creating patterns with elements" $ do
         
-        it "creates singular pattern (one element) using patternWith" $ do
-          let elem = pattern "a team sport involving kicking a ball"
-          let singular = patternWith "soccer" [elem]
+        it "creates singular point (one element) using pattern" $ do
+          let elem = point "a team sport involving kicking a ball"
+          let singular = pattern "soccer" [elem]
           value singular `shouldBe` "soccer"
           length (elements singular) `shouldBe` 1
           head (elements singular) `shouldBe` elem
         
-        it "creates role-based singular pattern with custom type" $ do
+        it "creates role-based singular point with custom type" $ do
           -- "The goalie" is "Hans"
-          let goalie = patternWith (Person "Goalie" Nothing) [pattern (Person "Hans" (Just 25))]
+          let goalie = pattern (Person "Goalie" Nothing) [point (Person "Hans" (Just 25))]
           value goalie `shouldBe` Person "Goalie" Nothing
           length (elements goalie) `shouldBe` 1
           value (head (elements goalie)) `shouldBe` Person "Hans" (Just 25)
         
-        it "creates pair pattern (two elements) using patternWith" $ do
-          let elem1 = pattern "Alice"
-          let elem2 = pattern "Bob"
-          let pair = patternWith "knows" [elem1, elem2]
+        it "creates pair point (two elements) using pattern" $ do
+          let elem1 = point "Alice"
+          let elem2 = point "Bob"
+          let pair = pattern "knows" [elem1, elem2]
           value pair `shouldBe` "knows"
           length (elements pair) `shouldBe` 2
           elements pair `shouldBe` [elem1, elem2]
         
-        it "creates extended pattern (many elements) using patternWith" $ do
-          let elem1 = pattern "elem1"
-          let elem2 = pattern "elem2"
-          let elem3 = pattern "elem3"
-          let elem4 = pattern "elem4"
-          let extended = patternWith "graph" [elem1, elem2, elem3, elem4]
+        it "creates extended point (many elements) using pattern" $ do
+          let elem1 = point "elem1"
+          let elem2 = point "elem2"
+          let elem3 = point "elem3"
+          let elem4 = point "elem4"
+          let extended = pattern "graph" [elem1, elem2, elem3, elem4]
           value extended `shouldBe` "graph"
           length (elements extended) `shouldBe` 4
           elements extended `shouldBe` [elem1, elem2, elem3, elem4]
         
-        it "empty list in patternWith produces atomic pattern" $ do
-          let atomic = patternWith "empty" []
+        it "empty list in pattern produces atomic pattern" $ do
+          let atomic = pattern "empty" []
           value atomic `shouldBe` "empty"
           elements atomic `shouldBe` ([] :: [Pattern String])
-          atomic `shouldBe` pattern "empty"
+          atomic `shouldBe` point "empty"
         
-        it "patternWith preserves element order" $ do
-          let elem1 = pattern "first"
-          let elem2 = pattern "second"
-          let elem3 = pattern "third"
-          let p = patternWith "sequence" [elem1, elem2, elem3]
+        it "pattern preserves element order" $ do
+          let elem1 = point "first"
+          let elem2 = point "second"
+          let elem3 = point "third"
+          let p = pattern "sequence" [elem1, elem2, elem3]
           let elems = elements p
           value (head elems) `shouldBe` "first"
           value (elems !! 1) `shouldBe` "second"
           value (elems !! 2) `shouldBe` "third"
         
-        it "patternWith produces patterns functionally identical to record syntax" $ do
-          let elem1 = pattern "elem1"
-          let elem2 = pattern "elem2"
-          let p1 = patternWith "test" [elem1, elem2]
+        it "pattern produces patterns functionally identical to record syntax" $ do
+          let elem1 = point "elem1"
+          let elem2 = point "elem2"
+          let p1 = pattern "test" [elem1, elem2]
           let p2 = Pattern { value = "test", elements = [elem1, elem2] }
           p1 `shouldBe` p2
           value p1 `shouldBe` value p2
           elements p1 `shouldBe` elements p2
           
-          let singular1 = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
+          let singular1 = pattern "soccer" [point "a team sport involving kicking a ball"]
           let singular2 = Pattern { value = "soccer", elements = [Pattern { value = "a team sport involving kicking a ball", elements = [] }] }
           singular1 `shouldBe` singular2
     
@@ -367,19 +382,19 @@ spec = do
       
       describe "fromList function - creating patterns from lists of values" $ do
         
-        it "creates pattern from list of strings using fromList" $ do
+        it "creates point from list of strings using fromList" $ do
           let p = fromList "graph" ["Alice", "Bob", "Charlie"]
           value p `shouldBe` "graph"
           length (elements p) `shouldBe` 3
           map value (elements p) `shouldBe` ["Alice", "Bob", "Charlie"]
         
-        it "creates pattern from list of integers using fromList" $ do
+        it "creates point from list of integers using fromList" $ do
           let nums = fromList (0 :: Int) [1, 2, 3, 4, 5]
           value nums `shouldBe` (0 :: Int)
           length (elements nums) `shouldBe` 5
           map value (elements nums) `shouldBe` [1, 2, 3, 4, 5]
         
-        it "creates pattern from list of custom types using fromList" $ do
+        it "creates point from list of custom types using fromList" $ do
           let person1 = Person "Alice" (Just 30)
           let person2 = Person "Bob" (Just 25)
           let person3 = Person "Charlie" (Just 35)
@@ -393,7 +408,7 @@ spec = do
           let atomic = fromList "empty" []
           value atomic `shouldBe` "empty"
           elements atomic `shouldBe` ([] :: [Pattern String])
-          atomic `shouldBe` pattern "empty"
+          atomic `shouldBe` point "empty"
         
         it "fromList preserves value order" $ do
           let p = fromList "sequence" ["first", "second", "third"]
@@ -408,47 +423,47 @@ spec = do
           all (\e -> elements e == []) elems `shouldBe` True
           map value elems `shouldBe` ["a", "b", "c"]
         
-        it "fromList produces patterns functionally identical to patternWith decoration (map pattern values)" $ do
+        it "fromList produces patterns functionally identical to pattern decoration (map point values)" $ do
           let values = ["a", "b", "c"]
           let p1 = fromList "test" values
-          let p2 = patternWith "test" (map pattern values)
+          let p2 = pattern "test" (map point values)
           p1 `shouldBe` p2
           value p1 `shouldBe` value p2
           elements p1 `shouldBe` elements p2
           
           let intValues = [1, 2, 3]
           let p3 = fromList (0 :: Int) intValues
-          let p4 = patternWith (0 :: Int) (map pattern intValues)
+          let p4 = pattern (0 :: Int) (map point intValues)
           p3 `shouldBe` p4
     
     describe "Constructor Functions (User Story 4)" $ do
       
-      describe "Comprehensive edge case testing - patternWith" $ do
+      describe "Comprehensive edge case testing - pattern" $ do
         
-        it "patternWith with 0 elements produces atomic pattern" $ do
-          let atomic = patternWith "test" []
+        it "pattern with 0 elements produces atomic pattern" $ do
+          let atomic = pattern "test" []
           value atomic `shouldBe` "test"
           elements atomic `shouldBe` ([] :: [Pattern String])
-          atomic `shouldBe` pattern "test"
+          atomic `shouldBe` point "test"
         
-        it "patternWith with 1 element produces singular pattern" $ do
-          let elem = pattern "definition"
-          let singular = patternWith "term" [elem]
+        it "pattern with 1 element produces singular pattern" $ do
+          let elem = point "definition"
+          let singular = pattern "term" [elem]
           value singular `shouldBe` "term"
           length (elements singular) `shouldBe` 1
           head (elements singular) `shouldBe` elem
         
-        it "patternWith with 2 elements produces pair pattern" $ do
-          let elem1 = pattern "Alice"
-          let elem2 = pattern "Bob"
-          let pair = patternWith "relationship" [elem1, elem2]
+        it "pattern with 2 elements produces pair pattern" $ do
+          let elem1 = point "Alice"
+          let elem2 = point "Bob"
+          let pair = pattern "relationship" [elem1, elem2]
           value pair `shouldBe` "relationship"
           length (elements pair) `shouldBe` 2
           elements pair `shouldBe` [elem1, elem2]
         
-        it "patternWith with many elements produces extended pattern" $ do
-          let elems = map pattern ["a", "b", "c", "d", "e"]
-          let extended = patternWith "collection" elems
+        it "pattern with many elements produces extended pattern" $ do
+          let elems = map point ["a", "b", "c", "d", "e"]
+          let extended = pattern "collection" elems
           value extended `shouldBe` "collection"
           length (elements extended) `shouldBe` 5
           elements extended `shouldBe` elems
@@ -459,7 +474,7 @@ spec = do
           let atomic = fromList "empty" []
           value atomic `shouldBe` "empty"
           elements atomic `shouldBe` ([] :: [Pattern String])
-          atomic `shouldBe` pattern "empty"
+          atomic `shouldBe` point "empty"
         
         it "fromList with 1 value produces singular pattern" $ do
           let singular = fromList "term" ["definition"]
@@ -482,18 +497,18 @@ spec = do
       
       describe "Nested patterns with all constructors" $ do
         
-        it "nested patterns using pattern, patternWith, and fromList" $ do
-          -- Atomic pattern at base
-          let base = pattern "base"
+        it "nested patterns using pattern, pattern, and fromList" $ do
+          -- Atomic point at base
+          let base = point "base"
           
-          -- Pattern with elements using patternWith
-          let mid = patternWith "middle" [base]
+          -- Pattern with elements using pattern
+          let mid = pattern "middle" [base]
           
           -- Pattern from list using fromList
           let top = fromList "top" ["value1", "value2"]
           
-          -- Combine all using patternWith
-          let nested = patternWith "root" [mid, top]
+          -- Combine all using pattern
+          let nested = pattern "root" [mid, top]
           
           value nested `shouldBe` "root"
           length (elements nested) `shouldBe` 2
@@ -511,19 +526,19 @@ spec = do
         
         it "deeply nested patterns with all constructors" $ do
           -- Level 4: atomic
-          let level4 = pattern "deep"
+          let level4 = point "deep"
           
           -- Level 3: fromList
           let level3 = fromList "level3" ["a", "b"]
           
-          -- Level 2: patternWith
-          let level2 = patternWith "level2" [level4, level3]
+          -- Level 2: pattern
+          let level2 = pattern "level2" [level4, level3]
           
-          -- Level 1: patternWith with fromList
-          let level1 = patternWith "level1" [level2, fromList "other" ["x", "y"]]
+          -- Level 1: pattern with fromList
+          let level1 = pattern "level1" [level2, fromList "other" ["x", "y"]]
           
-          -- Root: patternWith
-          let root = patternWith "root" [level1]
+          -- Root: pattern
+          let root = pattern "root" [level1]
           
           value root `shouldBe` "root"
           length (elements root) `shouldBe` 1
@@ -535,9 +550,9 @@ spec = do
       
       describe "All value types with all constructors" $ do
         
-        it "string values with pattern, patternWith, and fromList" $ do
-          let p1 = pattern "string"
-          let p2 = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
+        it "string values with pattern, pattern, and fromList" $ do
+          let p1 = point "string"
+          let p2 = pattern "soccer" [point "a team sport involving kicking a ball"]
           let p3 = fromList "list" ["a", "b", "c"]
           
           value p1 `shouldBe` "string"
@@ -547,9 +562,9 @@ spec = do
           length (elements p2) `shouldBe` 1
           length (elements p3) `shouldBe` 3
         
-        it "integer values with pattern, patternWith, and fromList" $ do
-          let p1 = pattern (42 :: Int)
-          let p2 = patternWith (100 :: Int) [pattern 10, pattern 20]
+        it "integer values with pattern, pattern, and fromList" $ do
+          let p1 = point (42 :: Int)
+          let p2 = pattern (100 :: Int) [point 10, point 20]
           let p3 = fromList (0 :: Int) [1, 2, 3, 4]
           
           value p1 `shouldBe` (42 :: Int)
@@ -559,14 +574,14 @@ spec = do
           length (elements p2) `shouldBe` 2
           length (elements p3) `shouldBe` 4
         
-        it "custom type values with pattern, patternWith, and fromList" $ do
+        it "custom type values with pattern, pattern, and fromList" $ do
           let person1 = Person "Alice" (Just 30)
           let person2 = Person "Bob" (Just 25)
           let person3 = Person "Charlie" (Just 35)
           let decoration = Person "Team" Nothing
           
-          let p1 = pattern person1
-          let p2 = patternWith decoration [pattern person1, pattern person2]
+          let p1 = point person1
+          let p2 = pattern decoration [point person1, point person2]
           let p3 = fromList decoration [person1, person2, person3]
           
           value p1 `shouldBe` person1
@@ -610,31 +625,31 @@ spec = do
         it "two identical patterns with elements are equal" $ do
           let elem1 = Pattern { value = "elem1", elements = [] }
           let elem2 = Pattern { value = "elem2", elements = [] }
-          let pattern1 = Pattern { value = "pattern", elements = [elem1, elem2] }
-          let pattern2 = Pattern { value = "pattern", elements = [elem1, elem2] }
-          pattern1 `shouldBe` pattern2
+          let p1 = Pattern { value = "pattern", elements = [elem1, elem2] }
+          let p2 = Pattern { value = "pattern", elements = [elem1, elem2] }
+          p1 `shouldBe` p2
         
         it "patterns with same value but different elements are not equal" $ do
           let elem1 = Pattern { value = "elem1", elements = [] }
           let elem2 = Pattern { value = "elem2", elements = [] }
           let elem3 = Pattern { value = "elem3", elements = [] }
-          let pattern1 = Pattern { value = "pattern", elements = [elem1, elem2] }
-          let pattern2 = Pattern { value = "pattern", elements = [elem1, elem3] }
-          pattern1 `shouldNotBe` pattern2
+          let p1 = Pattern { value = "pattern", elements = [elem1, elem2] }
+          let p2 = Pattern { value = "pattern", elements = [elem1, elem3] }
+          p1 `shouldNotBe` p2
         
         it "patterns with different values but same elements are not equal" $ do
           let elem1 = Pattern { value = "elem1", elements = [] }
           let elem2 = Pattern { value = "elem2", elements = [] }
-          let pattern1 = Pattern { value = "pattern1", elements = [elem1, elem2] }
-          let pattern2 = Pattern { value = "pattern2", elements = [elem1, elem2] }
-          pattern1 `shouldNotBe` pattern2
+          let p1 = Pattern { value = "p1", elements = [elem1, elem2] }
+          let p2 = Pattern { value = "p2", elements = [elem1, elem2] }
+          p1 `shouldNotBe` p2
         
         it "patterns with different numbers of elements are not equal" $ do
           let elem1 = Pattern { value = "elem1", elements = [] }
           let elem2 = Pattern { value = "elem2", elements = [] }
-          let pattern1 = Pattern { value = "pattern", elements = [elem1] }
-          let pattern2 = Pattern { value = "pattern", elements = [elem1, elem2] }
-          pattern1 `shouldNotBe` pattern2
+          let p1 = Pattern { value = "pattern", elements = [elem1] }
+          let p2 = Pattern { value = "pattern", elements = [elem1, elem2] }
+          p1 `shouldNotBe` p2
       
       describe "Equality for nested patterns" $ do
         
@@ -642,22 +657,21 @@ spec = do
           let inner = Pattern { value = "inner", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner] }
           let outer = Pattern { value = "outer", elements = [middle] }
-          let pattern1 = Pattern { value = "pattern", elements = [outer] }
-          let pattern2 = Pattern { value = "pattern", elements = [outer] }
-          pattern1 `shouldBe` pattern2
+          let p1 = Pattern { value = "pattern", elements = [outer] }
+          let p2 = Pattern { value = "pattern", elements = [outer] }
+          p1 `shouldBe` p2
         
         it "nested patterns with different structure are not equal" $ do
           let innerA = Pattern { value = "inner", elements = [] }
           let middleA = Pattern { value = "middle", elements = [innerA] }
           let outerA = Pattern { value = "outer", elements = [middleA] }
-          let pattern1 = Pattern { value = "pattern", elements = [outerA] }
+          let p1 = Pattern { value = "pattern", elements = [outerA] }
           
-          let innerB = Pattern { value = "inner", elements = [] }
           let middleB = Pattern { value = "middle", elements = [] }
           let outerB = Pattern { value = "outer", elements = [middleB] }
-          let pattern2 = Pattern { value = "pattern", elements = [outerB] }
+          let p2 = Pattern { value = "pattern", elements = [outerB] }
           
-          pattern1 `shouldNotBe` pattern2
+          p1 `shouldNotBe` p2
       
       describe "Equality edge cases" $ do
         
@@ -666,9 +680,10 @@ spec = do
           let atom2 = Pattern { value = "test", elements = [] }
           atom1 `shouldBe` atom2
         
-        it "reflexivity: pattern equals itself" $ do
-          let pattern = Pattern { value = "test", elements = [] }
-          (pattern == pattern) `shouldBe` True
+        it "reflexivity: point equals itself" $ do
+          let p1 = Pattern { value = "test", elements = [] }
+          let p2 = Pattern { value = "test", elements = [] }
+          (p1 == p2) `shouldBe` True
         
         it "symmetry: if a == b, then b == a" $ do
           let a = Pattern { value = "test", elements = [] }
@@ -679,7 +694,7 @@ spec = do
       
       describe "Transforming atomic patterns" $ do
         
-        it "transforms atomic pattern with string value" $ do
+        it "transforms atomic point with string value" $ do
           let atom = Pattern { value = "test", elements = [] }
           let transformed = fmap (map toUpper) atom
           value transformed `shouldBe` "TEST"
@@ -687,24 +702,24 @@ spec = do
       
       describe "Transforming patterns with multiple elements" $ do
         
-        it "transforms pattern with multiple elements" $ do
+        it "transforms point with multiple elements" $ do
           let elem1 = Pattern { value = "hello", elements = [] }
           let elem2 = Pattern { value = "world", elements = [] }
-          let pattern = Pattern { value = "greeting", elements = [elem1, elem2] }
-          let transformed = fmap (map toUpper) pattern
+          let p = Pattern { value = "greeting", elements = [elem1, elem2] }
+          let transformed = fmap (map toUpper) p
           value transformed `shouldBe` "GREETING"
           length (elements transformed) `shouldBe` 2
           value (head (elements transformed)) `shouldBe` "HELLO"
           value (last (elements transformed)) `shouldBe` "WORLD"
       
-      describe "Transforming nested pattern structures" $ do
+      describe "Transforming nested point structures" $ do
         
-        it "transforms nested pattern structure" $ do
+        it "transforms nested point structure" $ do
           let inner = Pattern { value = "inner", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner] }
           let outer = Pattern { value = "outer", elements = [middle] }
-          let pattern = Pattern { value = "root", elements = [outer] }
-          let transformed = fmap (map toUpper) pattern
+          let p = Pattern { value = "root", elements = [outer] }
+          let transformed = fmap (map toUpper) p
           value transformed `shouldBe` "ROOT"
           length (elements transformed) `shouldBe` 1
           value (head (elements transformed)) `shouldBe` "OUTER"
@@ -717,24 +732,24 @@ spec = do
       
       describe "Transforming patterns with integer values" $ do
         
-        it "transforms pattern with integer values" $ do
+        it "transforms point with integer values" $ do
           let elem1 = Pattern { value = 5, elements = [] }
           let elem2 = Pattern { value = 10, elements = [] }
-          let pattern = Pattern { value = 20, elements = [elem1, elem2] }
-          let transformed = fmap (* 2) pattern
+          let p = Pattern { value = 20, elements = [elem1, elem2] }
+          let transformed = fmap (* 2) p
           value transformed `shouldBe` (40 :: Int)
           value (head (elements transformed)) `shouldBe` (10 :: Int)
           value (last (elements transformed)) `shouldBe` (20 :: Int)
       
       describe "Transforming patterns with custom type values" $ do
         
-        it "transforms pattern with custom type values" $ do
+        it "transforms point with custom type values" $ do
           let person1 = Person "Alice" (Just 30)
           let person2 = Person "Bob" (Just 25)
           let elem1 = Pattern { value = person1, elements = [] }
           let elem2 = Pattern { value = person2, elements = [] }
-          let pattern = Pattern { value = person1, elements = [elem1, elem2] }
-          let transformed = fmap (\p -> Person (name p) (fmap (+ 1) (age p))) pattern
+          let p = Pattern { value = person1, elements = [elem1, elem2] }
+          let transformed = fmap (\p -> Person (name p) (fmap (+ 1) (age p))) p
           age (value transformed) `shouldBe` Just 31
           age (value (head (elements transformed))) `shouldBe` Just 31
           age (value (last (elements transformed))) `shouldBe` Just 26
@@ -745,18 +760,18 @@ spec = do
           let elem1 = Pattern { value = "a", elements = [] }
           let elem2 = Pattern { value = "b", elements = [] }
           let elem3 = Pattern { value = "c", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
-          let transformed = fmap (map toUpper) pattern
-          length (elements pattern) `shouldBe` length (elements transformed)
+          let p = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          let transformed = fmap (map toUpper) p
+          length (elements p) `shouldBe` length (elements transformed)
           length (elements transformed) `shouldBe` 3
         
         it "preserves element order during transformation" $ do
           let elem1 = Pattern { value = "first", elements = [] }
           let elem2 = Pattern { value = "second", elements = [] }
           let elem3 = Pattern { value = "third", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
-          let transformed = fmap (map toUpper) pattern
-          let originalValues = map value (elements pattern)
+          let p = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          let transformed = fmap (map toUpper) p
+          let originalValues = map value (elements p)
           let transformedValues = map value (elements transformed)
           originalValues `shouldBe` ["first", "second", "third"]
           transformedValues `shouldBe` ["FIRST", "SECOND", "THIRD"]
@@ -767,11 +782,11 @@ spec = do
       
       describe "Type transformation" $ do
         
-        it "transforms pattern from String to Int type" $ do
+        it "transforms point from String to Int type" $ do
           let elem1 = Pattern { value = "5", elements = [] }
           let elem2 = Pattern { value = "10", elements = [] }
-          let pattern = Pattern { value = "20", elements = [elem1, elem2] }
-          let transformed = fmap (read :: String -> Int) pattern
+          let p = Pattern { value = "20", elements = [elem1, elem2] }
+          let transformed = fmap (read :: String -> Int) p
           value transformed `shouldBe` (20 :: Int)
           value (head (elements transformed)) `shouldBe` (5 :: Int)
           value (last (elements transformed)) `shouldBe` (10 :: Int)
@@ -785,54 +800,54 @@ spec = do
           fmap id atom `shouldBe` atom
           fmap id atom `shouldBe` id atom
         
-        it "fmap id = id for pattern with elements" $ do
+        it "fmap id = id for point with elements" $ do
           let elem1 = Pattern { value = "hello", elements = [] }
           let elem2 = Pattern { value = "world", elements = [] }
-          let pattern = Pattern { value = "greeting", elements = [elem1, elem2] }
-          fmap id pattern `shouldBe` pattern
-          fmap id pattern `shouldBe` id pattern
+          let p = Pattern { value = "greeting", elements = [elem1, elem2] }
+          fmap id p `shouldBe` p
+          fmap id p `shouldBe` id p
       
       describe "Composition Law" $ do
         
         it "fmap (f . g) = fmap f . fmap g with two transformation functions" $ do
           let elem1 = Pattern { value = "hello", elements = [] }
           let elem2 = Pattern { value = "world", elements = [] }
-          let pattern = Pattern { value = "greeting", elements = [elem1, elem2] }
+          let p = Pattern { value = "greeting", elements = [elem1, elem2] }
           let f = map toUpper :: String -> String
           let g = reverse :: String -> String
-          fmap (f . g) pattern `shouldBe` (fmap f . fmap g) pattern
+          fmap (f . g) p `shouldBe` (fmap f . fmap g) p
         
         it "fmap (f . g) = fmap f . fmap g with nested patterns" $ do
           let inner = Pattern { value = "inner", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner] }
           let outer = Pattern { value = "outer", elements = [middle] }
-          let pattern = Pattern { value = "root", elements = [outer] }
+          let p = Pattern { value = "root", elements = [outer] }
           let f = map toUpper :: String -> String
           let g = reverse :: String -> String
-          fmap (f . g) pattern `shouldBe` (fmap f . fmap g) pattern
+          fmap (f . g) p `shouldBe` (fmap f . fmap g) p
     
     describe "Nested Pattern Transformation (User Story 3)" $ do
       
       describe "Transforming patterns with 3+ levels of nesting" $ do
         
-        it "transforms pattern with 3 levels of nesting" $ do
+        it "transforms point with 3 levels of nesting" $ do
           let level3 = Pattern { value = "level3", elements = [] }
           let level2 = Pattern { value = "level2", elements = [level3] }
           let level1 = Pattern { value = "level1", elements = [level2] }
-          let pattern = Pattern { value = "root", elements = [level1] }
-          let transformed = fmap (map toUpper) pattern
+          let p = Pattern { value = "root", elements = [level1] }
+          let transformed = fmap (map toUpper) p
           value transformed `shouldBe` "ROOT"
           value (head (elements transformed)) `shouldBe` "LEVEL1"
           value (head (elements (head (elements transformed)))) `shouldBe` "LEVEL2"
           value (head (elements (head (elements (head (elements transformed)))))) `shouldBe` "LEVEL3"
         
-        it "transforms pattern with 4 levels of nesting" $ do
+        it "transforms point with 4 levels of nesting" $ do
           let level4 = Pattern { value = "level4", elements = [] }
           let level3 = Pattern { value = "level3", elements = [level4] }
           let level2 = Pattern { value = "level2", elements = [level3] }
           let level1 = Pattern { value = "level1", elements = [level2] }
-          let pattern = Pattern { value = "root", elements = [level1] }
-          let transformed = fmap (map toUpper) pattern
+          let p = Pattern { value = "root", elements = [level1] }
+          let transformed = fmap (map toUpper) p
           value transformed `shouldBe` "ROOT"
           value (head (elements transformed)) `shouldBe` "LEVEL1"
           value (head (elements (head (elements transformed)))) `shouldBe` "LEVEL2"
@@ -841,7 +856,7 @@ spec = do
       
       describe "Transforming patterns with varying nesting depths in different branches" $ do
         
-        it "transforms pattern with different nesting depths in different branches" $ do
+        it "transforms point with different nesting depths in different branches" $ do
           -- Branch 1: 2 levels deep
           let branch1Level2 = Pattern { value = "b1l2", elements = [] }
           let branch1Level1 = Pattern { value = "b1l1", elements = [branch1Level2] }
@@ -851,8 +866,8 @@ spec = do
           let branch2Level1 = Pattern { value = "b2l1", elements = [branch2Level2] }
           -- Branch 3: 1 level deep (atomic)
           let branch3Level1 = Pattern { value = "b3l1", elements = [] }
-          let pattern = Pattern { value = "root", elements = [branch1Level1, branch2Level1, branch3Level1] }
-          let transformed = fmap (map toUpper) pattern
+          let p = Pattern { value = "root", elements = [branch1Level1, branch2Level1, branch3Level1] }
+          let transformed = fmap (map toUpper) p
           value transformed `shouldBe` "ROOT"
           length (elements transformed) `shouldBe` 3
           -- Verify branch 1 (2 levels)
@@ -865,18 +880,18 @@ spec = do
       
       describe "Transforming patterns with mixed structures at different levels" $ do
         
-        it "transforms pattern with mixed structures (atomic and with elements) at different levels" $ do
-          -- Level 1: pattern with multiple elements
+        it "transforms point with mixed structures (atomic and with elements) at different levels" $ do
+          -- Level 1: point with multiple elements
           let atom1 = Pattern { value = "atom1", elements = [] }
           let atom2 = Pattern { value = "atom2", elements = [] }
           let level1 = Pattern { value = "level1", elements = [atom1, atom2] }
           -- Level 2: atomic pattern
           let level2 = Pattern { value = "level2", elements = [] }
-          -- Level 3: pattern with single element
+          -- Level 3: point with single element
           let level3Atom = Pattern { value = "level3atom", elements = [] }
           let level3 = Pattern { value = "level3", elements = [level3Atom] }
-          let pattern = Pattern { value = "root", elements = [level1, level2, level3] }
-          let transformed = fmap (map toUpper) pattern
+          let p = Pattern { value = "root", elements = [level1, level2, level3] }
+          let transformed = fmap (map toUpper) p
           value transformed `shouldBe` "ROOT"
           length (elements transformed) `shouldBe` 3
           -- Verify level 1 (multiple elements)
@@ -903,8 +918,8 @@ spec = do
           let leaf3 = Pattern { value = "leaf3", elements = [] }
           let subbranch = Pattern { value = "subbranch", elements = [leaf3] }
           let branch2 = Pattern { value = "branch2", elements = [subbranch] }
-          let pattern = Pattern { value = "root", elements = [branch1, branch2] }
-          let transformed = fmap (map toUpper) pattern
+          let p = Pattern { value = "root", elements = [branch1, branch2] }
+          let transformed = fmap (map toUpper) p
           -- Verify root level
           value transformed `shouldBe` "ROOT"
           -- Verify branch1 and its leaves
@@ -920,7 +935,7 @@ spec = do
       
       describe "Transforming atomic patterns" $ do
         
-        it "transforms atomic pattern (no elements)" $ do
+        it "transforms atomic point (no elements)" $ do
           let atom = Pattern { value = "atom", elements = [] }
           let transformed = fmap (map toUpper) atom
           value transformed `shouldBe` "ATOM"
@@ -929,19 +944,19 @@ spec = do
       
       describe "Transforming patterns with empty elements list" $ do
         
-        it "transforms pattern with empty elements list" $ do
-          let pattern = Pattern { value = "empty", elements = [] }
-          let transformed = fmap (map toUpper) pattern
+        it "transforms point with empty elements list" $ do
+          let p = Pattern { value = "empty", elements = [] }
+          let transformed = fmap (map toUpper) p
           value transformed `shouldBe` "EMPTY"
           elements transformed `shouldBe` ([] :: [Pattern String])
           null (elements transformed) `shouldBe` True
       
       describe "Transforming singular patterns" $ do
         
-        it "transforms singular pattern (one element)" $ do
+        it "transforms singular point (one element)" $ do
           let elem = Pattern { value = "elem", elements = [] }
-          let pattern = Pattern { value = "singular", elements = [elem] }
-          let transformed = fmap (map toUpper) pattern
+          let p = Pattern { value = "singular", elements = [elem] }
+          let transformed = fmap (map toUpper) p
           value transformed `shouldBe` "SINGULAR"
           length (elements transformed) `shouldBe` 1
           value (head (elements transformed)) `shouldBe` "ELEM"
@@ -949,11 +964,11 @@ spec = do
       
       describe "Transforming pair patterns" $ do
         
-        it "transforms pair pattern (two elements)" $ do
+        it "transforms pair point (two elements)" $ do
           let elem1 = Pattern { value = "first", elements = [] }
           let elem2 = Pattern { value = "second", elements = [] }
-          let pattern = Pattern { value = "pair", elements = [elem1, elem2] }
-          let transformed = fmap (map toUpper) pattern
+          let p = Pattern { value = "pair", elements = [elem1, elem2] }
+          let transformed = fmap (map toUpper) p
           value transformed `shouldBe` "PAIR"
           length (elements transformed) `shouldBe` 2
           value (head (elements transformed)) `shouldBe` "FIRST"
@@ -961,10 +976,10 @@ spec = do
       
       describe "Transforming extended patterns" $ do
         
-        it "transforms extended pattern (many elements)" $ do
+        it "transforms extended point (many elements)" $ do
           let elems = map (\i -> Pattern { value = "elem" ++ show i, elements = [] }) [1..10]
-          let pattern = Pattern { value = "extended", elements = elems }
-          let transformed = fmap (map toUpper) pattern
+          let p = Pattern { value = "extended", elements = elems }
+          let transformed = fmap (map toUpper) p
           value transformed `shouldBe` "EXTENDED"
           length (elements transformed) `shouldBe` 10
           value (head (elements transformed)) `shouldBe` "ELEM1"
@@ -975,19 +990,19 @@ spec = do
       describe "Transforming patterns with different value types" $ do
         
         it "transforms patterns with string values" $ do
-          let pattern = Pattern { value = "test", elements = [] }
-          let transformed = fmap (map toUpper) pattern
+          let p = Pattern { value = "test", elements = [] }
+          let transformed = fmap (map toUpper) p
           value transformed `shouldBe` "TEST"
         
         it "transforms patterns with integer values" $ do
-          let pattern = Pattern { value = 42, elements = [] }
-          let transformed = fmap (* 2) pattern
+          let p = Pattern { value = 42, elements = [] }
+          let transformed = fmap (* 2) p
           value transformed `shouldBe` (84 :: Int)
         
         it "transforms patterns with custom type values" $ do
           let person = Person "Alice" (Just 30)
-          let pattern = Pattern { value = person, elements = [] }
-          let transformed = fmap (\p -> Person (name p) (fmap (+ 5) (age p))) pattern
+          let p = Pattern { value = person, elements = [] }
+          let transformed = fmap (\p -> Person (name p) (fmap (+ 5) (age p))) p
           age (value transformed) `shouldBe` Just 35
           name (value transformed) `shouldBe` "Alice"
         
@@ -996,117 +1011,117 @@ spec = do
           let person2 = Person "Bob" (Just 25)
           let elem1 = Pattern { value = person1, elements = [] }
           let elem2 = Pattern { value = person2, elements = [] }
-          let pattern = Pattern { value = person1, elements = [elem1, elem2] }
-          let transformed = fmap (\p -> Person (map toUpper (name p)) (age p)) pattern
+          let p = Pattern { value = person1, elements = [elem1, elem2] }
+          let transformed = fmap (\p -> Person (map toUpper (name p)) (age p)) p
           name (value transformed) `shouldBe` "ALICE"
           name (value (head (elements transformed))) `shouldBe` "ALICE"
           name (value (last (elements transformed))) `shouldBe` "BOB"
       
       describe "Type transformation edge cases" $ do
         
-        it "transforms pattern from String to Int with empty string" $ do
-          let pattern = Pattern { value = "0", elements = [] }
-          let transformed = fmap (read :: String -> Int) pattern
+        it "transforms point from String to Int with empty string" $ do
+          let p = Pattern { value = "0", elements = [] }
+          let transformed = fmap (read :: String -> Int) p
           value transformed `shouldBe` (0 :: Int)
         
-        it "transforms pattern from String to Int with negative numbers" $ do
+        it "transforms point from String to Int with negative numbers" $ do
           let elem1 = Pattern { value = "-5", elements = [] }
           let elem2 = Pattern { value = "-10", elements = [] }
-          let pattern = Pattern { value = "-20", elements = [elem1, elem2] }
-          let transformed = fmap (read :: String -> Int) pattern
+          let p = Pattern { value = "-20", elements = [elem1, elem2] }
+          let transformed = fmap (read :: String -> Int) p
           value transformed `shouldBe` (-20 :: Int)
           value (head (elements transformed)) `shouldBe` (-5 :: Int)
           value (last (elements transformed)) `shouldBe` (-10 :: Int)
         
-        it "transforms pattern from Int to String" $ do
+        it "transforms point from Int to String" $ do
           let elem1 = Pattern { value = 5, elements = [] }
           let elem2 = Pattern { value = 10, elements = [] }
-          let pattern = Pattern { value = 20, elements = [elem1, elem2] }
-          let transformed = fmap show pattern
+          let p = Pattern { value = 20, elements = [elem1, elem2] }
+          let transformed = fmap show p
           value transformed `shouldBe` "20"
           value (head (elements transformed)) `shouldBe` "5"
           value (last (elements transformed)) `shouldBe` "10"
         
-        it "transforms pattern with identity function preserves structure" $ do
+        it "transforms point with identity function preserves structure" $ do
           let elem1 = Pattern { value = "a", elements = [] }
           let elem2 = Pattern { value = "b", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1, elem2] }
-          let transformed = fmap id pattern
-          transformed `shouldBe` pattern
-          value transformed `shouldBe` value pattern
-          length (elements transformed) `shouldBe` length (elements pattern)
+          let p = Pattern { value = "root", elements = [elem1, elem2] }
+          let transformed = fmap id p
+          transformed `shouldBe` p
+          value transformed `shouldBe` value p
+          length (elements transformed) `shouldBe` length (elements p)
     
     describe "Foldable Instance (User Story 1)" $ do
       
       describe "Folding atomic patterns with foldr" $ do
         
-        it "folds atomic pattern with integer value using foldr" $ do
+        it "folds atomic point with integer value using foldr" $ do
           let atom = Pattern { value = 5, elements = [] }
           foldr (+) 0 atom `shouldBe` (5 :: Int)
         
-        it "folds atomic pattern with string value using foldr" $ do
+        it "folds atomic point with string value using foldr" $ do
           let atom = Pattern { value = "test", elements = [] }
           foldr (++) "" atom `shouldBe` "test"
       
       describe "Folding patterns with multiple values using foldr" $ do
         
-        it "folds pattern with multiple integer values using foldr" $ do
+        it "folds point with multiple integer values using foldr" $ do
           let elem1 = Pattern { value = 10, elements = [] }
           let elem2 = Pattern { value = 20, elements = [] }
           let elem3 = Pattern { value = 30, elements = [] }
-          let pattern = Pattern { value = 100, elements = [elem1, elem2, elem3] }
+          let p = Pattern { value = 100, elements = [elem1, elem2, elem3] }
           -- Should sum: 100 (pattern's value) + 10 + 20 + 30 = 160
-          foldr (+) 0 pattern `shouldBe` (160 :: Int)
+          foldr (+) 0 p `shouldBe` (160 :: Int)
         
-        it "folds pattern with string values using foldr" $ do
+        it "folds point with string values using foldr" $ do
           let elem1 = Pattern { value = "hello", elements = [] }
           let elem2 = Pattern { value = "world", elements = [] }
-          let pattern = Pattern { value = "greeting", elements = [elem1, elem2] }
+          let p = Pattern { value = "greeting", elements = [elem1, elem2] }
           -- Should concatenate: "greeting" ++ "hello" ++ "world" = "greetinghelloworld"
-          foldr (++) "" pattern `shouldBe` "greetinghelloworld"
+          foldr (++) "" p `shouldBe` "greetinghelloworld"
       
-      describe "Folding nested pattern structures using foldr" $ do
+      describe "Folding nested point structures using foldr" $ do
         
-        it "folds nested pattern structure using foldr" $ do
+        it "folds nested point structure using foldr" $ do
           let inner = Pattern { value = 1, elements = [] }
           let middle = Pattern { value = 2, elements = [inner] }
           let outer = Pattern { value = 3, elements = [middle] }
-          let pattern = Pattern { value = 4, elements = [outer] }
+          let p = Pattern { value = 4, elements = [outer] }
           -- Should sum: 4 + 3 + 2 + 1 = 10
-          foldr (+) 0 pattern `shouldBe` (10 :: Int)
+          foldr (+) 0 p `shouldBe` (10 :: Int)
         
-        it "folds deeply nested pattern structure using foldr" $ do
+        it "folds deeply nested point structure using foldr" $ do
           let level4 = Pattern { value = 1, elements = [] }
           let level3 = Pattern { value = 2, elements = [level4] }
           let level2 = Pattern { value = 3, elements = [level3] }
           let level1 = Pattern { value = 4, elements = [level2] }
-          let pattern = Pattern { value = 5, elements = [level1] }
+          let p = Pattern { value = 5, elements = [level1] }
           -- Should sum: 5 + 4 + 3 + 2 + 1 = 15
-          foldr (+) 0 pattern `shouldBe` (15 :: Int)
+          foldr (+) 0 p `shouldBe` (15 :: Int)
       
       describe "Folding patterns with custom type values using foldr" $ do
         
-        it "folds pattern with custom type values using foldr" $ do
+        it "folds point with custom type values using foldr" $ do
           let person1 = Person "Alice" (Just 30)
           let person2 = Person "Bob" (Just 25)
           let elem1 = Pattern { value = person1, elements = [] }
           let elem2 = Pattern { value = person2, elements = [] }
-          let pattern = Pattern { value = person1, elements = [elem1, elem2] }
+          let p = Pattern { value = person1, elements = [elem1, elem2] }
           -- Count all Person values (pattern's value + 2 elements = 3)
-          foldr (\_ acc -> acc + 1) 0 pattern `shouldBe` (3 :: Int)
+          foldr (\_ acc -> acc + 1) 0 p `shouldBe` (3 :: Int)
       
       describe "Verifying foldr processes pattern's own value" $ do
         
         it "foldr processes pattern's own value" $ do
-          let pattern = Pattern { value = 42, elements = [] }
+          let p = Pattern { value = 42, elements = [] }
           -- Should include the pattern's own value (42)
-          foldr (+) 0 pattern `shouldBe` (42 :: Int)
+          foldr (+) 0 p `shouldBe` (42 :: Int)
         
         it "foldr processes pattern's own value even when elements exist" $ do
           let elem1 = Pattern { value = 10, elements = [] }
-          let pattern = Pattern { value = 5, elements = [elem1] }
+          let p = Pattern { value = 5, elements = [elem1] }
           -- Should sum: 5 (pattern's value) + 10 (element) = 15
-          foldr (+) 0 pattern `shouldBe` (15 :: Int)
+          foldr (+) 0 p `shouldBe` (15 :: Int)
       
       describe "Verifying foldr processes all element values recursively" $ do
         
@@ -1114,75 +1129,75 @@ spec = do
           let elem1 = Pattern { value = 1, elements = [] }
           let elem2 = Pattern { value = 2, elements = [] }
           let elem3 = Pattern { value = 3, elements = [] }
-          let pattern = Pattern { value = 0, elements = [elem1, elem2, elem3] }
+          let p = Pattern { value = 0, elements = [elem1, elem2, elem3] }
           -- Should sum: 0 + 1 + 2 + 3 = 6
-          foldr (+) 0 pattern `shouldBe` (6 :: Int)
+          foldr (+) 0 p `shouldBe` (6 :: Int)
         
         it "foldr processes nested element values recursively" $ do
           let inner1 = Pattern { value = 1, elements = [] }
           let inner2 = Pattern { value = 2, elements = [] }
           let middle = Pattern { value = 10, elements = [inner1, inner2] }
-          let pattern = Pattern { value = 100, elements = [middle] }
+          let p = Pattern { value = 100, elements = [middle] }
           -- Should sum: 100 + 10 + 1 + 2 = 113
-          foldr (+) 0 pattern `shouldBe` (113 :: Int)
+          foldr (+) 0 p `shouldBe` (113 :: Int)
         
         it "foldr processes all values from multiple nested elements" $ do
           let inner1 = Pattern { value = 1, elements = [] }
           let inner2 = Pattern { value = 2, elements = [] }
           let middle1 = Pattern { value = 10, elements = [inner1] }
           let middle2 = Pattern { value = 20, elements = [inner2] }
-          let pattern = Pattern { value = 100, elements = [middle1, middle2] }
+          let p = Pattern { value = 100, elements = [middle1, middle2] }
           -- Should sum: 100 + 10 + 1 + 20 + 2 = 133
-          foldr (+) 0 pattern `shouldBe` (133 :: Int)
+          foldr (+) 0 p `shouldBe` (133 :: Int)
     
     describe "toList Operation (User Story 2)" $ do
       
       describe "toList on atomic patterns" $ do
         
-        it "toList on atomic pattern returns single-element list" $ do
+        it "toList on atomic point returns single-element list" $ do
           let atom = Pattern { value = "test", elements = [] }
           toList atom `shouldBe` ["test"]
       
       describe "toList on patterns with multiple elements" $ do
         
-        it "toList on pattern with multiple elements returns flat list with all values" $ do
+        it "toList on point with multiple elements returns flat list with all values" $ do
           let elem1 = Pattern { value = "a", elements = [] }
           let elem2 = Pattern { value = "b", elements = [] }
           let elem3 = Pattern { value = "c", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1, elem2, elem3] }
+          let p = Pattern { value = "root", elements = [elem1, elem2, elem3] }
           -- Should return flat list: ["root", "a", "b", "c"]
-          toList pattern `shouldBe` ["root", "a", "b", "c"]
+          toList p `shouldBe` ["root", "a", "b", "c"]
       
       describe "toList on nested patterns" $ do
         
-        it "toList on nested pattern returns flat list with all values from all levels" $ do
+        it "toList on nested point returns flat list with all values from all levels" $ do
           let inner = Pattern { value = "inner", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner] }
           let outer = Pattern { value = "outer", elements = [middle] }
-          let pattern = Pattern { value = "root", elements = [outer] }
+          let p = Pattern { value = "root", elements = [outer] }
           -- Should return flat list: ["root", "outer", "middle", "inner"]
-          toList pattern `shouldBe` ["root", "outer", "middle", "inner"]
+          toList p `shouldBe` ["root", "outer", "middle", "inner"]
       
       describe "toList on patterns with integer values" $ do
         
-        it "toList on pattern with integer values returns flat list of integers" $ do
+        it "toList on point with integer values returns flat list of integers" $ do
           let elem1 = Pattern { value = 10, elements = [] }
           let elem2 = Pattern { value = 20, elements = [] }
-          let pattern = Pattern { value = 100, elements = [elem1, elem2] }
+          let p = Pattern { value = 100, elements = [elem1, elem2] }
           -- Should return flat list: [100, 10, 20]
-          toList pattern `shouldBe` [100, 10, 20]
+          toList p `shouldBe` [100, 10, 20]
       
       describe "Verifying toList includes pattern's own value" $ do
         
         it "toList includes pattern's own value" $ do
-          let pattern = Pattern { value = "test", elements = [] }
-          toList pattern `shouldBe` ["test"]
+          let p = Pattern { value = "test", elements = [] }
+          toList p `shouldBe` ["test"]
         
         it "toList includes pattern's own value even when elements exist" $ do
           let elem1 = Pattern { value = "a", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1] }
+          let p = Pattern { value = "root", elements = [elem1] }
           -- Should include "root" as first element
-          toList pattern `shouldBe` ["root", "a"]
+          toList p `shouldBe` ["root", "a"]
       
       describe "Verifying toList preserves element order" $ do
         
@@ -1190,54 +1205,54 @@ spec = do
           let elem1 = Pattern { value = "first", elements = [] }
           let elem2 = Pattern { value = "second", elements = [] }
           let elem3 = Pattern { value = "third", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1, elem2, elem3] }
+          let p = Pattern { value = "root", elements = [elem1, elem2, elem3] }
           -- Should preserve order: root, first, second, third
-          toList pattern `shouldBe` ["root", "first", "second", "third"]
+          toList p `shouldBe` ["root", "first", "second", "third"]
         
         it "toList preserves order in nested structures" $ do
           let inner1 = Pattern { value = "inner1", elements = [] }
           let inner2 = Pattern { value = "inner2", elements = [] }
           let middle1 = Pattern { value = "middle1", elements = [inner1] }
           let middle2 = Pattern { value = "middle2", elements = [inner2] }
-          let pattern = Pattern { value = "root", elements = [middle1, middle2] }
+          let p = Pattern { value = "root", elements = [middle1, middle2] }
           -- Should preserve order: root, middle1, inner1, middle2, inner2
-          toList pattern `shouldBe` ["root", "middle1", "inner1", "middle2", "inner2"]
+          toList p `shouldBe` ["root", "middle1", "inner1", "middle2", "inner2"]
     
     describe "toTuple Operation (User Story 2b)" $ do
       
       describe "toTuple on atomic patterns" $ do
         
-        it "toTuple on atomic pattern returns tuple with value and empty list" $ do
+        it "toTuple on atomic point returns tuple with value and empty list" $ do
           let atom = Pattern { value = "test", elements = [] }
           toTuple atom `shouldBe` ("test", [] :: [Pattern String])
         
-        it "toTuple on atomic pattern with integer value returns tuple with integer and empty list" $ do
+        it "toTuple on atomic point with integer value returns tuple with integer and empty list" $ do
           let atom = Pattern { value = 42, elements = [] }
           toTuple atom `shouldBe` (42 :: Int, [] :: [Pattern Int])
       
       describe "toTuple on patterns with multiple elements" $ do
         
-        it "toTuple on pattern with multiple elements returns tuple with value and list of element patterns" $ do
+        it "toTuple on point with multiple elements returns tuple with value and list of element patterns" $ do
           let elem1 = Pattern { value = "a", elements = [] }
           let elem2 = Pattern { value = "b", elements = [] }
           let elem3 = Pattern { value = "c", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1, elem2, elem3] }
-          toTuple pattern `shouldBe` ("root", [elem1, elem2, elem3])
+          let p = Pattern { value = "root", elements = [elem1, elem2, elem3] }
+          toTuple p `shouldBe` ("root", [elem1, elem2, elem3])
         
-        it "toTuple on pattern with integer values returns tuple with integer value and list of Pattern Int" $ do
+        it "toTuple on point with integer values returns tuple with integer value and list of Pattern Int" $ do
           let elem1 = Pattern { value = 10, elements = [] }
           let elem2 = Pattern { value = 20, elements = [] }
-          let pattern = Pattern { value = 100, elements = [elem1, elem2] }
-          toTuple pattern `shouldBe` (100 :: Int, [elem1, elem2])
+          let p = Pattern { value = 100, elements = [elem1, elem2] }
+          toTuple p `shouldBe` (100 :: Int, [elem1, elem2])
       
       describe "toTuple on nested patterns" $ do
         
-        it "toTuple on nested pattern returns tuple where elements list contains nested Pattern structures" $ do
+        it "toTuple on nested point returns tuple where elements list contains nested Pattern structures" $ do
           let inner = Pattern { value = "inner", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner] }
           let outer = Pattern { value = "outer", elements = [middle] }
-          let pattern = Pattern { value = "root", elements = [outer] }
-          let (val, els) = toTuple pattern
+          let p = Pattern { value = "root", elements = [outer] }
+          let (val, els) = toTuple p
           val `shouldBe` "root"
           length els `shouldBe` 1
           head els `shouldBe` outer
@@ -1247,13 +1262,13 @@ spec = do
           length outerEls `shouldBe` 1
           head outerEls `shouldBe` middle
       
-      describe "Verifying toTuple preserves pattern structure" $ do
+      describe "Verifying toTuple preserves point structure" $ do
         
-        it "toTuple preserves pattern structure" $ do
+        it "toTuple preserves point structure" $ do
           let elem1 = Pattern { value = "first", elements = [] }
           let elem2 = Pattern { value = "second", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1, elem2] }
-          let (val, els) = toTuple pattern
+          let p = Pattern { value = "root", elements = [elem1, elem2] }
+          let (val, els) = toTuple p
           val `shouldBe` "root"
           length els `shouldBe` 2
           els `shouldBe` [elem1, elem2]
@@ -1261,13 +1276,13 @@ spec = do
           value (head els) `shouldBe` "first"
           value (last els) `shouldBe` "second"
         
-        it "toTuple preserves nested pattern structure" $ do
+        it "toTuple preserves nested point structure" $ do
           let inner1 = Pattern { value = "inner1", elements = [] }
           let inner2 = Pattern { value = "inner2", elements = [] }
           let middle1 = Pattern { value = "middle1", elements = [inner1] }
           let middle2 = Pattern { value = "middle2", elements = [inner2] }
-          let pattern = Pattern { value = "root", elements = [middle1, middle2] }
-          let (val, els) = toTuple pattern
+          let p = Pattern { value = "root", elements = [middle1, middle2] }
+          let (val, els) = toTuple p
           val `shouldBe` "root"
           length els `shouldBe` 2
           -- Verify nested structures are preserved
@@ -1290,20 +1305,20 @@ spec = do
           -- Result: 100 + 10 + 20 = 130
           let elem1 = Pattern { value = 10, elements = [] }
           let elem2 = Pattern { value = 20, elements = [] }
-          let pattern = Pattern { value = 100, elements = [elem1, elem2] }
+          let p = Pattern { value = 100, elements = [elem1, elem2] }
           -- foldr (+) 0 should sum: 100 + 10 + 20 = 130
-          foldr (+) 0 pattern `shouldBe` (130 :: Int)
+          foldr (+) 0 p `shouldBe` (130 :: Int)
         
-        it "foldr processes values in correct order for pattern with three elements" $ do
+        it "foldr processes values in correct order for point with three elements" $ do
           -- Pattern: value=1, elements=[2, 3, 4]
           -- foldr should process: 1 + 2 + 3 + 4 = 10
           let elem1 = Pattern { value = 2, elements = [] }
           let elem2 = Pattern { value = 3, elements = [] }
           let elem3 = Pattern { value = 4, elements = [] }
-          let pattern = Pattern { value = 1, elements = [elem1, elem2, elem3] }
-          foldr (+) 0 pattern `shouldBe` (10 :: Int)
+          let p = Pattern { value = 1, elements = [elem1, elem2, elem3] }
+          foldr (+) 0 p `shouldBe` (10 :: Int)
         
-        it "foldr processes atomic pattern value correctly" $ do
+        it "foldr processes atomic point value correctly" $ do
           -- Atomic pattern: value=42
           -- foldr should process: 42
           let atom = Pattern { value = 42, elements = [] }
@@ -1316,28 +1331,28 @@ spec = do
           -- foldr (:) [] should produce: ["root", "a", "b"]
           let elem1 = Pattern { value = "a", elements = [] }
           let elem2 = Pattern { value = "b", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1, elem2] }
+          let p = Pattern { value = "root", elements = [elem1, elem2] }
           -- toList uses foldr internally, should preserve order: pattern's value first, then elements
-          toList pattern `shouldBe` ["root", "a", "b"]
+          toList p `shouldBe` ["root", "a", "b"]
         
-        it "foldr builds list in correct order for pattern with multiple string elements" $ do
+        it "foldr builds list in correct order for point with multiple string elements" $ do
           -- Pattern: value="first", elements=["second", "third", "fourth"]
           -- foldr should produce: ["first", "second", "third", "fourth"]
           let elem1 = Pattern { value = "second", elements = [] }
           let elem2 = Pattern { value = "third", elements = [] }
           let elem3 = Pattern { value = "fourth", elements = [] }
-          let pattern = Pattern { value = "first", elements = [elem1, elem2, elem3] }
-          toList pattern `shouldBe` ["first", "second", "third", "fourth"]
+          let p = Pattern { value = "first", elements = [elem1, elem2, elem3] }
+          toList p `shouldBe` ["first", "second", "third", "fourth"]
         
-        it "foldr builds list correctly for atomic pattern with string value" $ do
+        it "foldr builds list correctly for atomic point with string value" $ do
           -- Atomic pattern: value="test"
           -- foldr should produce: ["test"]
           let atom = Pattern { value = "test", elements = [] }
           toList atom `shouldBe` ["test"]
       
-      describe "foldr processing nested pattern values in correct order" $ do
+      describe "foldr processing nested point values in correct order" $ do
         
-        it "foldr processes nested pattern values in correct order" $ do
+        it "foldr processes nested point values in correct order" $ do
           -- Nested structure:
           -- Pattern { value = 4, elements = [
           --   Pattern { value = 3, elements = [
@@ -1350,10 +1365,10 @@ spec = do
           let inner = Pattern { value = 1, elements = [] }
           let middle = Pattern { value = 2, elements = [inner] }
           let outer = Pattern { value = 3, elements = [middle] }
-          let pattern = Pattern { value = 4, elements = [outer] }
-          foldr (+) 0 pattern `shouldBe` (10 :: Int)
+          let p = Pattern { value = 4, elements = [outer] }
+          foldr (+) 0 p `shouldBe` (10 :: Int)
         
-        it "foldr processes nested pattern values in correct order for multiple nested elements" $ do
+        it "foldr processes nested point values in correct order for multiple nested elements" $ do
           -- Pattern { value = 100, elements = [
           --   Pattern { value = 10, elements = [Pattern { value = 1, elements = [] }] },
           --   Pattern { value = 20, elements = [Pattern { value = 2, elements = [] }] }
@@ -1363,28 +1378,28 @@ spec = do
           let inner2 = Pattern { value = 2, elements = [] }
           let middle1 = Pattern { value = 10, elements = [inner1] }
           let middle2 = Pattern { value = 20, elements = [inner2] }
-          let pattern = Pattern { value = 100, elements = [middle1, middle2] }
-          foldr (+) 0 pattern `shouldBe` (133 :: Int)
+          let p = Pattern { value = 100, elements = [middle1, middle2] }
+          foldr (+) 0 p `shouldBe` (133 :: Int)
         
-        it "foldr processes deeply nested pattern values in correct order" $ do
+        it "foldr processes deeply nested point values in correct order" $ do
           -- 5 levels deep: 5 + 4 + 3 + 2 + 1 = 15
           let level4 = Pattern { value = 1, elements = [] }
           let level3 = Pattern { value = 2, elements = [level4] }
           let level2 = Pattern { value = 3, elements = [level3] }
           let level1 = Pattern { value = 4, elements = [level2] }
-          let pattern = Pattern { value = 5, elements = [level1] }
-          foldr (+) 0 pattern `shouldBe` (15 :: Int)
+          let p = Pattern { value = 5, elements = [level1] }
+          foldr (+) 0 p `shouldBe` (15 :: Int)
       
       describe "foldr right-associativity property" $ do
         
         it "foldr right-associativity property: foldr f z = foldr f z . toList" $ do
-          -- For commutative operations, foldr on pattern should equal foldr on toList
+          -- For commutative operations, foldr on point should equal foldr on toList
           let elem1 = Pattern { value = 10, elements = [] }
           let elem2 = Pattern { value = 20, elements = [] }
-          let pattern = Pattern { value = 100, elements = [elem1, elem2] }
+          let p = Pattern { value = 100, elements = [elem1, elem2] }
           -- Addition is commutative, so both should produce same result
-          let patternFold = foldr (+) 0 pattern
-          let listFold = foldr (+) 0 (toList pattern)
+          let patternFold = foldr (+) 0 p
+          let listFold = foldr (+) 0 (toList p)
           patternFold `shouldBe` listFold
           patternFold `shouldBe` (130 :: Int)
         
@@ -1392,22 +1407,22 @@ spec = do
           -- For non-commutative operations like list building, order is preserved
           let elem1 = Pattern { value = "a", elements = [] }
           let elem2 = Pattern { value = "b", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1, elem2] }
+          let p = Pattern { value = "root", elements = [elem1, elem2] }
           -- toList preserves order: pattern's value first, then elements
-          toList pattern `shouldBe` ["root", "a", "b"]
+          toList p `shouldBe` ["root", "a", "b"]
           -- foldr (:) [] should produce same order
-          foldr (:) [] pattern `shouldBe` ["root", "a", "b"]
+          foldr (:) [] p `shouldBe` ["root", "a", "b"]
         
-        it "foldr right-associativity property: pattern value processed before elements" $ do
+        it "foldr right-associativity property: point value processed before elements" $ do
           -- Verify that pattern's own value is processed first (combined with accumulated elements)
           -- Using a function that reveals order: building a list with markers
           let elem1 = Pattern { value = "elem1", elements = [] }
           let elem2 = Pattern { value = "elem2", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2] }
+          let p = Pattern { value = "pattern", elements = [elem1, elem2] }
           -- foldr builds: pattern's value first, then elements in order
-          toList pattern `shouldBe` ["pattern", "elem1", "elem2"]
+          toList p `shouldBe` ["pattern", "elem1", "elem2"]
           -- Verify order by checking first element is pattern's value
-          head (toList pattern) `shouldBe` "pattern"
+          head (toList p) `shouldBe` "pattern"
     
     describe "Fold with Left-Associative Operations (User Story 4)" $ do
       
@@ -1418,20 +1433,20 @@ spec = do
           -- foldl should process: ((0 + 100) + 10) + 20 = 130
           let elem1 = Pattern { value = 10, elements = [] }
           let elem2 = Pattern { value = 20, elements = [] }
-          let pattern = Pattern { value = 100, elements = [elem1, elem2] }
+          let p = Pattern { value = 100, elements = [elem1, elem2] }
           -- foldl (+) 0 should sum: ((0 + 100) + 10) + 20 = 130
-          foldl (+) 0 pattern `shouldBe` (130 :: Int)
+          foldl (+) 0 p `shouldBe` (130 :: Int)
         
-        it "foldl processes values in left-to-right order for pattern with three elements" $ do
+        it "foldl processes values in left-to-right order for point with three elements" $ do
           -- Pattern: value=1, elements=[2, 3, 4]
           -- foldl should process: (((0 + 1) + 2) + 3) + 4 = 10
           let elem1 = Pattern { value = 2, elements = [] }
           let elem2 = Pattern { value = 3, elements = [] }
           let elem3 = Pattern { value = 4, elements = [] }
-          let pattern = Pattern { value = 1, elements = [elem1, elem2, elem3] }
-          foldl (+) 0 pattern `shouldBe` (10 :: Int)
+          let p = Pattern { value = 1, elements = [elem1, elem2, elem3] }
+          foldl (+) 0 p `shouldBe` (10 :: Int)
         
-        it "foldl processes atomic pattern value correctly" $ do
+        it "foldl processes atomic point value correctly" $ do
           -- Atomic pattern: value=42
           -- foldl should process: 0 + 42 = 42
           let atom = Pattern { value = 42, elements = [] }
@@ -1444,16 +1459,16 @@ spec = do
           -- foldl should compute: ((0 + 10) + 20) + 30 = 60
           let elem1 = Pattern { value = 20, elements = [] }
           let elem2 = Pattern { value = 30, elements = [] }
-          let pattern = Pattern { value = 10, elements = [elem1, elem2] }
-          foldl (+) 0 pattern `shouldBe` (60 :: Int)
+          let p = Pattern { value = 10, elements = [elem1, elem2] }
+          foldl (+) 0 p `shouldBe` (60 :: Int)
         
         it "foldl computes running total correctly for nested pattern" $ do
           -- Pattern: value=1, elements=[Pattern { value=2, elements=[Pattern { value=3 }] }]
           -- foldl should compute: (((0 + 1) + 2) + 3) = 6
           let inner = Pattern { value = 3, elements = [] }
           let middle = Pattern { value = 2, elements = [inner] }
-          let pattern = Pattern { value = 1, elements = [middle] }
-          foldl (+) 0 pattern `shouldBe` (6 :: Int)
+          let p = Pattern { value = 1, elements = [middle] }
+          foldl (+) 0 p `shouldBe` (6 :: Int)
         
         it "foldl computes running total correctly with multiple nested elements" $ do
           -- Pattern: value=100, elements=[Pattern { value=10, elements=[Pattern { value=1 }] }, Pattern { value=20, elements=[Pattern { value=2 }] }]
@@ -1462,12 +1477,12 @@ spec = do
           let inner2 = Pattern { value = 2, elements = [] }
           let middle1 = Pattern { value = 10, elements = [inner1] }
           let middle2 = Pattern { value = 20, elements = [inner2] }
-          let pattern = Pattern { value = 100, elements = [middle1, middle2] }
-          foldl (+) 0 pattern `shouldBe` (133 :: Int)
+          let p = Pattern { value = 100, elements = [middle1, middle2] }
+          foldl (+) 0 p `shouldBe` (133 :: Int)
       
-      describe "foldl processing nested pattern values in left-to-right order" $ do
+      describe "foldl processing nested point values in left-to-right order" $ do
         
-        it "foldl processes nested pattern values in left-to-right order" $ do
+        it "foldl processes nested point values in left-to-right order" $ do
           -- Nested structure:
           -- Pattern { value = 4, elements = [
           --   Pattern { value = 3, elements = [
@@ -1480,10 +1495,10 @@ spec = do
           let inner = Pattern { value = 1, elements = [] }
           let middle = Pattern { value = 2, elements = [inner] }
           let outer = Pattern { value = 3, elements = [middle] }
-          let pattern = Pattern { value = 4, elements = [outer] }
-          foldl (+) 0 pattern `shouldBe` (10 :: Int)
+          let p = Pattern { value = 4, elements = [outer] }
+          foldl (+) 0 p `shouldBe` (10 :: Int)
         
-        it "foldl processes nested pattern values in left-to-right order for multiple nested elements" $ do
+        it "foldl processes nested point values in left-to-right order for multiple nested elements" $ do
           -- Pattern { value = 100, elements = [
           --   Pattern { value = 10, elements = [Pattern { value = 1, elements = [] }] },
           --   Pattern { value = 20, elements = [Pattern { value = 2, elements = [] }] }
@@ -1493,28 +1508,28 @@ spec = do
           let inner2 = Pattern { value = 2, elements = [] }
           let middle1 = Pattern { value = 10, elements = [inner1] }
           let middle2 = Pattern { value = 20, elements = [inner2] }
-          let pattern = Pattern { value = 100, elements = [middle1, middle2] }
-          foldl (+) 0 pattern `shouldBe` (133 :: Int)
+          let p = Pattern { value = 100, elements = [middle1, middle2] }
+          foldl (+) 0 p `shouldBe` (133 :: Int)
         
-        it "foldl processes deeply nested pattern values in left-to-right order" $ do
+        it "foldl processes deeply nested point values in left-to-right order" $ do
           -- 5 levels deep: (((((0 + 5) + 4) + 3) + 2) + 1) = 15
           let level4 = Pattern { value = 1, elements = [] }
           let level3 = Pattern { value = 2, elements = [level4] }
           let level2 = Pattern { value = 3, elements = [level3] }
           let level1 = Pattern { value = 4, elements = [level2] }
-          let pattern = Pattern { value = 5, elements = [level1] }
-          foldl (+) 0 pattern `shouldBe` (15 :: Int)
+          let p = Pattern { value = 5, elements = [level1] }
+          foldl (+) 0 p `shouldBe` (15 :: Int)
       
       describe "foldl left-associativity property" $ do
         
         it "foldl left-associativity property: foldl f z = foldl f z . toList for commutative operations" $ do
-          -- For commutative operations, foldl on pattern should equal foldl on toList
+          -- For commutative operations, foldl on point should equal foldl on toList
           let elem1 = Pattern { value = 10, elements = [] }
           let elem2 = Pattern { value = 20, elements = [] }
-          let pattern = Pattern { value = 100, elements = [elem1, elem2] }
+          let p = Pattern { value = 100, elements = [elem1, elem2] }
           -- Addition is commutative, so both should produce same result
-          let patternFold = foldl (+) 0 pattern
-          let listFold = foldl (+) 0 (toList pattern)
+          let patternFold = foldl (+) 0 p
+          let listFold = foldl (+) 0 (toList p)
           patternFold `shouldBe` listFold
           patternFold `shouldBe` (130 :: Int)
         
@@ -1522,18 +1537,18 @@ spec = do
           -- For non-commutative operations like subtraction, order matters
           let elem1 = Pattern { value = 5, elements = [] }
           let elem2 = Pattern { value = 3, elements = [] }
-          let pattern = Pattern { value = 10, elements = [elem1, elem2] }
+          let p = Pattern { value = 10, elements = [elem1, elem2] }
           -- foldl (-) 0 should compute: (((0 - 10) - 5) - 3) = -18
-          foldl (-) 0 pattern `shouldBe` (-18 :: Int)
+          foldl (-) 0 p `shouldBe` (-18 :: Int)
         
-        it "foldl left-associativity property: pattern value processed first" $ do
+        it "foldl left-associativity property: point value processed first" $ do
           -- Verify that pattern's own value is processed first (left-to-right)
-          -- Using subtraction to reveal order: ((0 - pattern) - elem1) - elem2
+          -- Using subtraction to reveal order: ((0 - p) - elem1) - elem2
           let elem1 = Pattern { value = 5, elements = [] }
           let elem2 = Pattern { value = 3, elements = [] }
-          let pattern = Pattern { value = 10, elements = [elem1, elem2] }
+          let p = Pattern { value = 10, elements = [elem1, elem2] }
           -- foldl (-) 0 should compute: (((0 - 10) - 5) - 3) = -18
-          foldl (-) 0 pattern `shouldBe` (-18 :: Int)
+          foldl (-) 0 p `shouldBe` (-18 :: Int)
           -- Verify by checking intermediate steps
           foldl (-) 0 (Pattern { value = 10, elements = [] }) `shouldBe` (-10 :: Int)
     
@@ -1541,136 +1556,136 @@ spec = do
       
       describe "foldMap with Sum monoid on integer pattern" $ do
         
-        it "foldMap with Sum monoid on atomic pattern with integer value" $ do
+        it "foldMap with Sum monoid on atomic point with integer value" $ do
           let atom = Pattern { value = 5, elements = [] }
           getSum (foldMap Sum atom) `shouldBe` (5 :: Int)
         
-        it "foldMap with Sum monoid on pattern with multiple integer values" $ do
+        it "foldMap with Sum monoid on point with multiple integer values" $ do
           let elem1 = Pattern { value = 10, elements = [] }
           let elem2 = Pattern { value = 20, elements = [] }
           let elem3 = Pattern { value = 30, elements = [] }
-          let pattern = Pattern { value = 100, elements = [elem1, elem2, elem3] }
+          let p = Pattern { value = 100, elements = [elem1, elem2, elem3] }
           -- Should sum: 100 + 10 + 20 + 30 = 160
-          getSum (foldMap Sum pattern) `shouldBe` (160 :: Int)
+          getSum (foldMap Sum p) `shouldBe` (160 :: Int)
         
-        it "foldMap with Sum monoid on pattern with negative integer values" $ do
+        it "foldMap with Sum monoid on point with negative integer values" $ do
           let elem1 = Pattern { value = -5, elements = [] }
           let elem2 = Pattern { value = -10, elements = [] }
-          let pattern = Pattern { value = 100, elements = [elem1, elem2] }
+          let p = Pattern { value = 100, elements = [elem1, elem2] }
           -- Should sum: 100 + (-5) + (-10) = 85
-          getSum (foldMap Sum pattern) `shouldBe` (85 :: Int)
+          getSum (foldMap Sum p) `shouldBe` (85 :: Int)
       
       describe "foldMap with list monoid on string pattern" $ do
         
-        it "foldMap with list monoid on atomic pattern with string value" $ do
+        it "foldMap with list monoid on atomic point with string value" $ do
           let atom = Pattern { value = "test", elements = [] }
           foldMap (: []) atom `shouldBe` ["test"]
         
-        it "foldMap with list monoid on pattern with multiple string values" $ do
+        it "foldMap with list monoid on point with multiple string values" $ do
           let elem1 = Pattern { value = "hello", elements = [] }
           let elem2 = Pattern { value = "world", elements = [] }
-          let pattern = Pattern { value = "greeting", elements = [elem1, elem2] }
+          let p = Pattern { value = "greeting", elements = [elem1, elem2] }
           -- Should concatenate: ["greeting", "hello", "world"]
-          foldMap (: []) pattern `shouldBe` ["greeting", "hello", "world"]
+          foldMap (: []) p `shouldBe` ["greeting", "hello", "world"]
         
         it "foldMap with list monoid concatenates string values correctly" $ do
           let elem1 = Pattern { value = "a", elements = [] }
           let elem2 = Pattern { value = "b", elements = [] }
           let elem3 = Pattern { value = "c", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1, elem2, elem3] }
+          let p = Pattern { value = "root", elements = [elem1, elem2, elem3] }
           -- Should produce: ["root", "a", "b", "c"]
-          foldMap (: []) pattern `shouldBe` ["root", "a", "b", "c"]
+          foldMap (: []) p `shouldBe` ["root", "a", "b", "c"]
       
       describe "foldMap with All monoid on boolean pattern" $ do
         
-        it "foldMap with All monoid on atomic pattern with boolean value" $ do
+        it "foldMap with All monoid on atomic point with boolean value" $ do
           let atom = Pattern { value = True, elements = [] }
           getAll (foldMap All atom) `shouldBe` True
         
-        it "foldMap with All monoid on pattern with multiple boolean values (all True)" $ do
+        it "foldMap with All monoid on point with multiple boolean values (all True)" $ do
           let elem1 = Pattern { value = True, elements = [] }
           let elem2 = Pattern { value = True, elements = [] }
-          let pattern = Pattern { value = True, elements = [elem1, elem2] }
+          let p = Pattern { value = True, elements = [elem1, elem2] }
           -- Should produce: True && True && True = True
-          getAll (foldMap All pattern) `shouldBe` True
+          getAll (foldMap All p) `shouldBe` True
         
-        it "foldMap with All monoid on pattern with multiple boolean values (one False)" $ do
+        it "foldMap with All monoid on point with multiple boolean values (one False)" $ do
           let elem1 = Pattern { value = True, elements = [] }
           let elem2 = Pattern { value = False, elements = [] }
-          let pattern = Pattern { value = True, elements = [elem1, elem2] }
+          let p = Pattern { value = True, elements = [elem1, elem2] }
           -- Should produce: True && True && False = False
-          getAll (foldMap All pattern) `shouldBe` False
+          getAll (foldMap All p) `shouldBe` False
         
-        it "foldMap with All monoid on pattern with multiple boolean values (all False)" $ do
+        it "foldMap with All monoid on point with multiple boolean values (all False)" $ do
           let elem1 = Pattern { value = False, elements = [] }
           let elem2 = Pattern { value = False, elements = [] }
-          let pattern = Pattern { value = False, elements = [elem1, elem2] }
+          let p = Pattern { value = False, elements = [elem1, elem2] }
           -- Should produce: False && False && False = False
-          getAll (foldMap All pattern) `shouldBe` False
+          getAll (foldMap All p) `shouldBe` False
       
-      describe "foldMap processing nested pattern values correctly" $ do
+      describe "foldMap processing nested point values correctly" $ do
         
-        it "foldMap with Sum monoid processes nested pattern values correctly" $ do
+        it "foldMap with Sum monoid processes nested point values correctly" $ do
           let inner = Pattern { value = 1, elements = [] }
           let middle = Pattern { value = 2, elements = [inner] }
           let outer = Pattern { value = 3, elements = [middle] }
-          let pattern = Pattern { value = 4, elements = [outer] }
+          let p = Pattern { value = 4, elements = [outer] }
           -- Should sum: 4 + 3 + 2 + 1 = 10
-          getSum (foldMap Sum pattern) `shouldBe` (10 :: Int)
+          getSum (foldMap Sum p) `shouldBe` (10 :: Int)
         
-        it "foldMap with list monoid processes nested pattern values correctly" $ do
+        it "foldMap with list monoid processes nested point values correctly" $ do
           let inner = Pattern { value = "inner", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner] }
           let outer = Pattern { value = "outer", elements = [middle] }
-          let pattern = Pattern { value = "root", elements = [outer] }
+          let p = Pattern { value = "root", elements = [outer] }
           -- Should produce: ["root", "outer", "middle", "inner"]
-          foldMap (: []) pattern `shouldBe` ["root", "outer", "middle", "inner"]
+          foldMap (: []) p `shouldBe` ["root", "outer", "middle", "inner"]
         
-        it "foldMap with All monoid processes nested pattern values correctly" $ do
+        it "foldMap with All monoid processes nested point values correctly" $ do
           let inner = Pattern { value = True, elements = [] }
           let middle = Pattern { value = True, elements = [inner] }
           let outer = Pattern { value = True, elements = [middle] }
-          let pattern = Pattern { value = True, elements = [outer] }
+          let p = Pattern { value = True, elements = [outer] }
           -- Should produce: True && True && True && True = True
-          getAll (foldMap All pattern) `shouldBe` True
+          getAll (foldMap All p) `shouldBe` True
         
-        it "foldMap processes deeply nested pattern values correctly" $ do
+        it "foldMap processes deeply nested point values correctly" $ do
           let level4 = Pattern { value = 1, elements = [] }
           let level3 = Pattern { value = 2, elements = [level4] }
           let level2 = Pattern { value = 3, elements = [level3] }
           let level1 = Pattern { value = 4, elements = [level2] }
-          let pattern = Pattern { value = 5, elements = [level1] }
+          let p = Pattern { value = 5, elements = [level1] }
           -- Should sum: 5 + 4 + 3 + 2 + 1 = 15
-          getSum (foldMap Sum pattern) `shouldBe` (15 :: Int)
+          getSum (foldMap Sum p) `shouldBe` (15 :: Int)
         
         it "foldMap processes multiple nested elements correctly" $ do
           let inner1 = Pattern { value = 1, elements = [] }
           let inner2 = Pattern { value = 2, elements = [] }
           let middle1 = Pattern { value = 10, elements = [inner1] }
           let middle2 = Pattern { value = 20, elements = [inner2] }
-          let pattern = Pattern { value = 100, elements = [middle1, middle2] }
+          let p = Pattern { value = 100, elements = [middle1, middle2] }
           -- Should sum: 100 + 10 + 1 + 20 + 2 = 133
-          getSum (foldMap Sum pattern) `shouldBe` (133 :: Int)
+          getSum (foldMap Sum p) `shouldBe` (133 :: Int)
     
     describe "Edge Cases & Comprehensive Testing (Phase 7)" $ do
       
       describe "Folding atomic patterns (no elements)" $ do
         
-        it "folds atomic pattern (no elements) with foldr" $ do
+        it "folds atomic point (no elements) with foldr" $ do
           let atom = Pattern { value = 42, elements = [] }
           foldr (+) 0 atom `shouldBe` (42 :: Int)
           toList atom `shouldBe` [42]
           foldl (+) 0 atom `shouldBe` (42 :: Int)
           getSum (foldMap Sum atom) `shouldBe` (42 :: Int)
         
-        it "folds atomic pattern (no elements) with string value" $ do
+        it "folds atomic point (no elements) with string value" $ do
           let atom = Pattern { value = "test", elements = [] }
           foldr (++) "" atom `shouldBe` "test"
           toList atom `shouldBe` ["test"]
           foldl (++) "" atom `shouldBe` "test"
           foldMap (: []) atom `shouldBe` ["test"]
         
-        it "folds atomic pattern (no elements) with custom type" $ do
+        it "folds atomic point (no elements) with custom type" $ do
           let person = Person "Alice" (Just 30)
           let atom = Pattern { value = person, elements = [] }
           foldr (\_ acc -> acc + 1) 0 atom `shouldBe` (1 :: Int)
@@ -1679,109 +1694,109 @@ spec = do
       
       describe "Folding patterns with empty elements list" $ do
         
-        it "folds pattern with empty elements list using foldr" $ do
-          let pattern = Pattern { value = 10, elements = [] }
-          foldr (+) 0 pattern `shouldBe` (10 :: Int)
-          toList pattern `shouldBe` [10]
-          length (toList pattern) `shouldBe` 1
+        it "folds point with empty elements list using foldr" $ do
+          let p = Pattern { value = 10, elements = [] }
+          foldr (+) 0 p `shouldBe` (10 :: Int)
+          toList p `shouldBe` [10]
+          length (toList p) `shouldBe` 1
         
-        it "folds pattern with empty elements list using foldl" $ do
-          let pattern = Pattern { value = 20, elements = [] }
-          foldl (+) 0 pattern `shouldBe` (20 :: Int)
-          toList pattern `shouldBe` [20]
+        it "folds point with empty elements list using foldl" $ do
+          let p = Pattern { value = 20, elements = [] }
+          foldl (+) 0 p `shouldBe` (20 :: Int)
+          toList p `shouldBe` [20]
         
-        it "folds pattern with empty elements list using foldMap" $ do
-          let pattern = Pattern { value = 30, elements = [] }
-          getSum (foldMap Sum pattern) `shouldBe` (30 :: Int)
-          toList pattern `shouldBe` [30]
+        it "folds point with empty elements list using foldMap" $ do
+          let p = Pattern { value = 30, elements = [] }
+          getSum (foldMap Sum p) `shouldBe` (30 :: Int)
+          toList p `shouldBe` [30]
         
-        it "folds pattern with empty elements list preserves structure" $ do
-          let pattern = Pattern { value = "empty", elements = [] }
-          toTuple pattern `shouldBe` ("empty", [] :: [Pattern String])
-          toList pattern `shouldBe` ["empty"]
+        it "folds point with empty elements list preserves structure" $ do
+          let p = Pattern { value = "empty", elements = [] }
+          toTuple p `shouldBe` ("empty", [] :: [Pattern String])
+          toList p `shouldBe` ["empty"]
       
       describe "Folding singular patterns (one element)" $ do
         
-        it "folds singular pattern (one element) using foldr" $ do
+        it "folds singular point (one element) using foldr" $ do
           let elem = Pattern { value = 5, elements = [] }
-          let pattern = Pattern { value = 10, elements = [elem] }
+          let p = Pattern { value = 10, elements = [elem] }
           -- Should sum: 10 + 5 = 15
-          foldr (+) 0 pattern `shouldBe` (15 :: Int)
-          toList pattern `shouldBe` [10, 5]
+          foldr (+) 0 p `shouldBe` (15 :: Int)
+          toList p `shouldBe` [10, 5]
         
-        it "folds singular pattern (one element) using foldl" $ do
+        it "folds singular point (one element) using foldl" $ do
           let elem = Pattern { value = 3, elements = [] }
-          let pattern = Pattern { value = 7, elements = [elem] }
+          let p = Pattern { value = 7, elements = [elem] }
           -- Should sum: ((0 + 7) + 3) = 10
-          foldl (+) 0 pattern `shouldBe` (10 :: Int)
-          toList pattern `shouldBe` [7, 3]
+          foldl (+) 0 p `shouldBe` (10 :: Int)
+          toList p `shouldBe` [7, 3]
         
-        it "folds singular pattern (one element) using foldMap" $ do
+        it "folds singular point (one element) using foldMap" $ do
           let elem = Pattern { value = 2, elements = [] }
-          let pattern = Pattern { value = 8, elements = [elem] }
+          let p = Pattern { value = 8, elements = [elem] }
           -- Should sum: 8 + 2 = 10
-          getSum (foldMap Sum pattern) `shouldBe` (10 :: Int)
-          toList pattern `shouldBe` [8, 2]
+          getSum (foldMap Sum p) `shouldBe` (10 :: Int)
+          toList p `shouldBe` [8, 2]
         
-        it "folds singular pattern (one element) with string values" $ do
+        it "folds singular point (one element) with string values" $ do
           let elem = Pattern { value = "world", elements = [] }
-          let pattern = Pattern { value = "hello", elements = [elem] }
-          toList pattern `shouldBe` ["hello", "world"]
-          foldr (++) "" pattern `shouldBe` "helloworld"
+          let p = Pattern { value = "hello", elements = [elem] }
+          toList p `shouldBe` ["hello", "world"]
+          foldr (++) "" p `shouldBe` "helloworld"
       
       describe "Folding patterns with many elements" $ do
         
-        it "folds pattern with many elements using foldr" $ do
+        it "folds point with many elements using foldr" $ do
           let elems = map (\i -> Pattern { value = i, elements = [] }) [1..10]
-          let pattern = Pattern { value = 100, elements = elems }
+          let p = Pattern { value = 100, elements = elems }
           -- Should sum: 100 + 1 + 2 + ... + 10 = 100 + 55 = 155
-          foldr (+) 0 pattern `shouldBe` (155 :: Int)
-          length (toList pattern) `shouldBe` 11
-          head (toList pattern) `shouldBe` 100
+          foldr (+) 0 p `shouldBe` (155 :: Int)
+          length (toList p) `shouldBe` 11
+          head (toList p) `shouldBe` 100
         
-        it "folds pattern with many elements using foldl" $ do
+        it "folds point with many elements using foldl" $ do
           let elems = map (\i -> Pattern { value = i, elements = [] }) [1..5]
-          let pattern = Pattern { value = 50, elements = elems }
+          let p = Pattern { value = 50, elements = elems }
           -- Should sum: (((((0 + 50) + 1) + 2) + 3) + 4) + 5 = 65
-          foldl (+) 0 pattern `shouldBe` (65 :: Int)
-          length (toList pattern) `shouldBe` 6
+          foldl (+) 0 p `shouldBe` (65 :: Int)
+          length (toList p) `shouldBe` 6
         
-        it "folds pattern with many elements using foldMap" $ do
+        it "folds point with many elements using foldMap" $ do
           let elems = map (\i -> Pattern { value = i * 2, elements = [] }) [1..5]
-          let pattern = Pattern { value = 100, elements = elems }
+          let p = Pattern { value = 100, elements = elems }
           -- Should sum: 100 + 2 + 4 + 6 + 8 + 10 = 130
-          getSum (foldMap Sum pattern) `shouldBe` (130 :: Int)
-          length (toList pattern) `shouldBe` 6
+          getSum (foldMap Sum p) `shouldBe` (130 :: Int)
+          length (toList p) `shouldBe` 6
         
-        it "folds pattern with many string elements" $ do
+        it "folds point with many string elements" $ do
           let elems = map (\i -> Pattern { value = "elem" ++ show i, elements = [] }) [1..10]
-          let pattern = Pattern { value = "root", elements = elems }
-          length (toList pattern) `shouldBe` 11
-          head (toList pattern) `shouldBe` "root"
-          last (toList pattern) `shouldBe` "elem10"
+          let p = Pattern { value = "root", elements = elems }
+          length (toList p) `shouldBe` 11
+          head (toList p) `shouldBe` "root"
+          last (toList p) `shouldBe` "elem10"
       
       describe "Folding nested patterns with varying depths" $ do
         
         it "folds nested patterns with depth 2" $ do
           let inner = Pattern { value = 1, elements = [] }
-          let pattern = Pattern { value = 2, elements = [inner] }
-          foldr (+) 0 pattern `shouldBe` (3 :: Int)
-          toList pattern `shouldBe` [2, 1]
+          let p = Pattern { value = 2, elements = [inner] }
+          foldr (+) 0 p `shouldBe` (3 :: Int)
+          toList p `shouldBe` [2, 1]
         
         it "folds nested patterns with depth 3" $ do
           let inner = Pattern { value = 1, elements = [] }
           let middle = Pattern { value = 2, elements = [inner] }
-          let pattern = Pattern { value = 3, elements = [middle] }
-          foldr (+) 0 pattern `shouldBe` (6 :: Int)
-          toList pattern `shouldBe` [3, 2, 1]
+          let p = Pattern { value = 3, elements = [middle] }
+          foldr (+) 0 p `shouldBe` (6 :: Int)
+          toList p `shouldBe` [3, 2, 1]
         
         it "folds nested patterns with depth 4" $ do
           let level3 = Pattern { value = 1, elements = [] }
           let level2 = Pattern { value = 2, elements = [level3] }
           let level1 = Pattern { value = 3, elements = [level2] }
-          let pattern = Pattern { value = 4, elements = [level1] }
-          foldr (+) 0 pattern `shouldBe` (10 :: Int)
-          toList pattern `shouldBe` [4, 3, 2, 1]
+          let p = Pattern { value = 4, elements = [level1] }
+          foldr (+) 0 p `shouldBe` (10 :: Int)
+          toList p `shouldBe` [4, 3, 2, 1]
         
         it "folds nested patterns with varying depths in different branches" $ do
           -- Branch 1: depth 2
@@ -1793,57 +1808,57 @@ spec = do
           let branch2 = Pattern { value = 200, elements = [branch2Level1] }
           -- Branch 3: depth 1 (atomic)
           let branch3 = Pattern { value = 300, elements = [] }
-          let pattern = Pattern { value = 1000, elements = [branch1, branch2, branch3] }
+          let p = Pattern { value = 1000, elements = [branch1, branch2, branch3] }
           -- Should sum: 1000 + 10 + 1 + 200 + 20 + 2 + 300 = 1533
-          foldr (+) 0 pattern `shouldBe` (1533 :: Int)
-          length (toList pattern) `shouldBe` 7
+          foldr (+) 0 p `shouldBe` (1533 :: Int)
+          length (toList p) `shouldBe` 7
         
         it "folds nested patterns with multiple elements at each level" $ do
           let inner1 = Pattern { value = 1, elements = [] }
           let inner2 = Pattern { value = 2, elements = [] }
           let middle = Pattern { value = 10, elements = [inner1, inner2] }
-          let pattern = Pattern { value = 100, elements = [middle] }
+          let p = Pattern { value = 100, elements = [middle] }
           -- Should sum: 100 + 10 + 1 + 2 = 113
-          foldr (+) 0 pattern `shouldBe` (113 :: Int)
-          toList pattern `shouldBe` [100, 10, 1, 2]
+          foldr (+) 0 p `shouldBe` (113 :: Int)
+          toList p `shouldBe` [100, 10, 1, 2]
       
       describe "Folding patterns with different value types" $ do
         
         it "folds patterns with string values" $ do
           let elem1 = Pattern { value = "hello", elements = [] }
           let elem2 = Pattern { value = "world", elements = [] }
-          let pattern = Pattern { value = "greeting", elements = [elem1, elem2] }
-          foldr (++) "" pattern `shouldBe` "greetinghelloworld"
-          toList pattern `shouldBe` ["greeting", "hello", "world"]
-          foldMap (: []) pattern `shouldBe` ["greeting", "hello", "world"]
+          let p = Pattern { value = "greeting", elements = [elem1, elem2] }
+          foldr (++) "" p `shouldBe` "greetinghelloworld"
+          toList p `shouldBe` ["greeting", "hello", "world"]
+          foldMap (: []) p `shouldBe` ["greeting", "hello", "world"]
         
         it "folds patterns with integer values" $ do
           let elem1 = Pattern { value = 10, elements = [] }
           let elem2 = Pattern { value = 20, elements = [] }
-          let pattern = Pattern { value = 100, elements = [elem1, elem2] }
-          foldr (+) 0 pattern `shouldBe` (130 :: Int)
-          toList pattern `shouldBe` [100, 10, 20]
-          getSum (foldMap Sum pattern) `shouldBe` (130 :: Int)
+          let p = Pattern { value = 100, elements = [elem1, elem2] }
+          foldr (+) 0 p `shouldBe` (130 :: Int)
+          toList p `shouldBe` [100, 10, 20]
+          getSum (foldMap Sum p) `shouldBe` (130 :: Int)
         
         it "folds patterns with custom type values" $ do
           let person1 = Person "Alice" (Just 30)
           let person2 = Person "Bob" (Just 25)
           let elem1 = Pattern { value = person1, elements = [] }
           let elem2 = Pattern { value = person2, elements = [] }
-          let pattern = Pattern { value = person1, elements = [elem1, elem2] }
+          let p = Pattern { value = person1, elements = [elem1, elem2] }
           -- Count all Person values
-          foldr (\_ acc -> acc + 1) 0 pattern `shouldBe` (3 :: Int)
-          length (toList pattern) `shouldBe` 3
-          head (toList pattern) `shouldBe` person1
+          foldr (\_ acc -> acc + 1) 0 p `shouldBe` (3 :: Int)
+          length (toList p) `shouldBe` 3
+          head (toList p) `shouldBe` person1
         
         it "folds patterns with mixed value types in nested structure" $ do
           -- All values must be same type, so test with strings
           let inner1 = Pattern { value = "inner1", elements = [] }
           let inner2 = Pattern { value = "inner2", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner1, inner2] }
-          let pattern = Pattern { value = "root", elements = [middle] }
-          toList pattern `shouldBe` ["root", "middle", "inner1", "inner2"]
-          foldr (++) "" pattern `shouldBe` "rootmiddleinner1inner2"
+          let p = Pattern { value = "root", elements = [middle] }
+          toList p `shouldBe` ["root", "middle", "inner1", "inner2"]
+          foldr (++) "" p `shouldBe` "rootmiddleinner1inner2"
       
       describe "Order preservation in folding operations" $ do
         
@@ -1851,259 +1866,259 @@ spec = do
           let elem1 = Pattern { value = "first", elements = [] }
           let elem2 = Pattern { value = "second", elements = [] }
           let elem3 = Pattern { value = "third", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1, elem2, elem3] }
+          let p = Pattern { value = "root", elements = [elem1, elem2, elem3] }
           -- toList should preserve order: root, first, second, third
-          toList pattern `shouldBe` ["root", "first", "second", "third"]
-          head (toList pattern) `shouldBe` "root"
-          last (toList pattern) `shouldBe` "third"
+          toList p `shouldBe` ["root", "first", "second", "third"]
+          head (toList p) `shouldBe` "root"
+          last (toList p) `shouldBe` "third"
         
         it "order preservation in foldr" $ do
           let elem1 = Pattern { value = 1, elements = [] }
           let elem2 = Pattern { value = 2, elements = [] }
           let elem3 = Pattern { value = 3, elements = [] }
-          let pattern = Pattern { value = 0, elements = [elem1, elem2, elem3] }
+          let p = Pattern { value = 0, elements = [elem1, elem2, elem3] }
           -- foldr (:) [] should preserve order
-          foldr (:) [] pattern `shouldBe` [0, 1, 2, 3]
-          toList pattern `shouldBe` [0, 1, 2, 3]
+          foldr (:) [] p `shouldBe` [0, 1, 2, 3]
+          toList p `shouldBe` [0, 1, 2, 3]
         
         it "order preservation in foldl" $ do
           let elem1 = Pattern { value = "1", elements = [] }
           let elem2 = Pattern { value = "2", elements = [] }
-          let pattern = Pattern { value = "0", elements = [elem1, elem2] }
+          let p = Pattern { value = "0", elements = [elem1, elem2] }
           -- foldl should process in left-to-right order
-          foldl (++) "" pattern `shouldBe` "012"
-          toList pattern `shouldBe` ["0", "1", "2"]
+          foldl (++) "" p `shouldBe` "012"
+          toList p `shouldBe` ["0", "1", "2"]
         
         it "order preservation in nested structures" $ do
           let inner1 = Pattern { value = "inner1", elements = [] }
           let inner2 = Pattern { value = "inner2", elements = [] }
           let middle1 = Pattern { value = "middle1", elements = [inner1] }
           let middle2 = Pattern { value = "middle2", elements = [inner2] }
-          let pattern = Pattern { value = "root", elements = [middle1, middle2] }
+          let p = Pattern { value = "root", elements = [middle1, middle2] }
           -- Order should be: root, middle1, inner1, middle2, inner2
-          toList pattern `shouldBe` ["root", "middle1", "inner1", "middle2", "inner2"]
+          toList p `shouldBe` ["root", "middle1", "inner1", "middle2", "inner2"]
         
         it "order preservation with foldMap" $ do
           let elem1 = Pattern { value = "a", elements = [] }
           let elem2 = Pattern { value = "b", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1, elem2] }
+          let p = Pattern { value = "root", elements = [elem1, elem2] }
           -- foldMap (: []) should preserve order
-          foldMap (: []) pattern `shouldBe` ["root", "a", "b"]
-          toList pattern `shouldBe` ["root", "a", "b"]
+          foldMap (: []) p `shouldBe` ["root", "a", "b"]
+          toList p `shouldBe` ["root", "a", "b"]
       
       describe "Deep nesting (3+ levels)" $ do
         
-        it "folds pattern with 3 levels of nesting" $ do
+        it "folds point with 3 levels of nesting" $ do
           let level3 = Pattern { value = 1, elements = [] }
           let level2 = Pattern { value = 2, elements = [level3] }
           let level1 = Pattern { value = 3, elements = [level2] }
-          let pattern = Pattern { value = 4, elements = [level1] }
+          let p = Pattern { value = 4, elements = [level1] }
           -- Should sum: 4 + 3 + 2 + 1 = 10
-          foldr (+) 0 pattern `shouldBe` (10 :: Int)
-          toList pattern `shouldBe` [4, 3, 2, 1]
-          foldl (+) 0 pattern `shouldBe` (10 :: Int)
-          getSum (foldMap Sum pattern) `shouldBe` (10 :: Int)
+          foldr (+) 0 p `shouldBe` (10 :: Int)
+          toList p `shouldBe` [4, 3, 2, 1]
+          foldl (+) 0 p `shouldBe` (10 :: Int)
+          getSum (foldMap Sum p) `shouldBe` (10 :: Int)
         
-        it "folds pattern with 4 levels of nesting" $ do
+        it "folds point with 4 levels of nesting" $ do
           let level4 = Pattern { value = 1, elements = [] }
           let level3 = Pattern { value = 2, elements = [level4] }
           let level2 = Pattern { value = 3, elements = [level3] }
           let level1 = Pattern { value = 4, elements = [level2] }
-          let pattern = Pattern { value = 5, elements = [level1] }
+          let p = Pattern { value = 5, elements = [level1] }
           -- Should sum: 5 + 4 + 3 + 2 + 1 = 15
-          foldr (+) 0 pattern `shouldBe` (15 :: Int)
-          toList pattern `shouldBe` [5, 4, 3, 2, 1]
-          length (toList pattern) `shouldBe` 5
+          foldr (+) 0 p `shouldBe` (15 :: Int)
+          toList p `shouldBe` [5, 4, 3, 2, 1]
+          length (toList p) `shouldBe` 5
         
-        it "folds pattern with 5 levels of nesting" $ do
+        it "folds point with 5 levels of nesting" $ do
           let level5 = Pattern { value = 1, elements = [] }
           let level4 = Pattern { value = 2, elements = [level5] }
           let level3 = Pattern { value = 3, elements = [level4] }
           let level2 = Pattern { value = 4, elements = [level3] }
           let level1 = Pattern { value = 5, elements = [level2] }
-          let pattern = Pattern { value = 6, elements = [level1] }
+          let p = Pattern { value = 6, elements = [level1] }
           -- Should sum: 6 + 5 + 4 + 3 + 2 + 1 = 21
-          foldr (+) 0 pattern `shouldBe` (21 :: Int)
-          toList pattern `shouldBe` [6, 5, 4, 3, 2, 1]
-          length (toList pattern) `shouldBe` 6
+          foldr (+) 0 p `shouldBe` (21 :: Int)
+          toList p `shouldBe` [6, 5, 4, 3, 2, 1]
+          length (toList p) `shouldBe` 6
         
-        it "folds pattern with deep nesting and multiple elements at each level" $ do
+        it "folds point with deep nesting and multiple elements at each level" $ do
           let level3a = Pattern { value = 1, elements = [] }
           let level3b = Pattern { value = 2, elements = [] }
           let level2 = Pattern { value = 10, elements = [level3a, level3b] }
           let level1 = Pattern { value = 20, elements = [level2] }
-          let pattern = Pattern { value = 100, elements = [level1] }
+          let p = Pattern { value = 100, elements = [level1] }
           -- Should sum: 100 + 20 + 10 + 1 + 2 = 133
-          foldr (+) 0 pattern `shouldBe` (133 :: Int)
-          toList pattern `shouldBe` [100, 20, 10, 1, 2]
-          length (toList pattern) `shouldBe` 5
+          foldr (+) 0 p `shouldBe` (133 :: Int)
+          toList p `shouldBe` [100, 20, 10, 1, 2]
+          length (toList p) `shouldBe` 5
         
-        it "folds pattern with deep nesting using all foldable operations" $ do
+        it "folds point with deep nesting using all foldable operations" $ do
           let level3 = Pattern { value = "level3", elements = [] }
           let level2 = Pattern { value = "level2", elements = [level3] }
           let level1 = Pattern { value = "level1", elements = [level2] }
-          let pattern = Pattern { value = "root", elements = [level1] }
+          let p = Pattern { value = "root", elements = [level1] }
           -- Test all operations
-          toList pattern `shouldBe` ["root", "level1", "level2", "level3"]
-          foldr (++) "" pattern `shouldBe` "rootlevel1level2level3"
-          foldl (++) "" pattern `shouldBe` "rootlevel1level2level3"
-          foldMap (: []) pattern `shouldBe` ["root", "level1", "level2", "level3"]
+          toList p `shouldBe` ["root", "level1", "level2", "level3"]
+          foldr (++) "" p `shouldBe` "rootlevel1level2level3"
+          foldl (++) "" p `shouldBe` "rootlevel1level2level3"
+          foldMap (: []) p `shouldBe` ["root", "level1", "level2", "level3"]
     
     describe "Traversable Instance (User Story 1)" $ do
       
       describe "Traversing atomic patterns with Identity" $ do
         
-        it "traverses atomic pattern with Identity" $ do
-          -- T009: Unit test for traversing atomic pattern with Identity
-          let atom = pattern "test"
+        it "traverses atomic point with Identity" $ do
+          -- T009: Unit test for traversing atomic point with Identity
+          let atom = point "test"
               result = traverse Identity atom
           runIdentity result `shouldBe` atom
       
       describe "Traversing atomic patterns with Maybe" $ do
         
-        it "traverses atomic pattern with Maybe (Just value)" $ do
-          -- T010: Unit test for traversing atomic pattern with Maybe (Just value)
+        it "traverses atomic point with Maybe (Just value)" $ do
+          -- T010: Unit test for traversing atomic point with Maybe (Just value)
           let validate x = if x > 0 then Just x else Nothing
-              atom = pattern 5
+              atom = point 5
               result = traverse validate atom
           result `shouldBe` Just atom
         
-        it "traverses atomic pattern with Maybe (Nothing on failure)" $ do
-          -- T011: Unit test for traversing atomic pattern with Maybe (Nothing on failure)
+        it "traverses atomic point with Maybe (Nothing on failure)" $ do
+          -- T011: Unit test for traversing atomic point with Maybe (Nothing on failure)
           let validate x = if x > 0 then Just x else Nothing
-              atom = pattern (-3)
+              atom = point (-3)
               result = traverse validate atom
           result `shouldBe` Nothing
       
       describe "Traversing atomic patterns with Either" $ do
         
-        it "traverses atomic pattern with Either (Right value)" $ do
-          -- T012: Unit test for traversing atomic pattern with Either (Right value)
+        it "traverses atomic point with Either (Right value)" $ do
+          -- T012: Unit test for traversing atomic point with Either (Right value)
           let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
-              atom = pattern 5
+              atom = point 5
               result = traverse validate atom
           result `shouldBe` Right atom
         
-        it "traverses atomic pattern with Either (Left error)" $ do
-          -- T013: Unit test for traversing atomic pattern with Either (Left error)
+        it "traverses atomic point with Either (Left error)" $ do
+          -- T013: Unit test for traversing atomic point with Either (Left error)
           let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
-              atom = pattern (-3)
+              atom = point (-3)
               result = traverse validate atom
           result `shouldBe` Left "Invalid: -3"
       
       describe "Traversing patterns with multiple elements using Identity" $ do
         
-        it "traverses pattern with multiple elements using Identity" $ do
-          -- T014: Unit test for traversing pattern with multiple elements using Identity
-          let elem1 = pattern "elem1"
-              elem2 = pattern "elem2"
-              p = patternWith "root" [elem1, elem2]
+        it "traverses point with multiple elements using Identity" $ do
+          -- T014: Unit test for traversing point with multiple elements using Identity
+          let elem1 = point "elem1"
+              elem2 = point "elem2"
+              p = pattern "root" [elem1, elem2]
               result = traverse Identity p
           runIdentity result `shouldBe` p
       
       describe "Traversing patterns with multiple elements using Maybe" $ do
         
-        it "traverses pattern with multiple elements using Maybe (all succeed)" $ do
-          -- T015: Unit test for traversing pattern with multiple elements using Maybe (all succeed)
+        it "traverses point with multiple elements using Maybe (all succeed)" $ do
+          -- T015: Unit test for traversing point with multiple elements using Maybe (all succeed)
           let validate x = if x > 0 then Just x else Nothing
-              elem1 = pattern 5
-              elem2 = pattern 10
-              p = patternWith 20 [elem1, elem2]
+              elem1 = point 5
+              elem2 = point 10
+              p = pattern 20 [elem1, elem2]
               result = traverse validate p
           result `shouldBe` Just p
         
-        it "traverses pattern with multiple elements using Maybe (one fails)" $ do
-          -- T016: Unit test for traversing pattern with multiple elements using Maybe (one fails)
+        it "traverses point with multiple elements using Maybe (one fails)" $ do
+          -- T016: Unit test for traversing point with multiple elements using Maybe (one fails)
           let validate x = if x > 0 then Just x else Nothing
-              elem1 = pattern 5
-              elem2 = pattern (-3)
-              p = patternWith 20 [elem1, elem2]
+              elem1 = point 5
+              elem2 = point (-3)
+              p = pattern 20 [elem1, elem2]
               result = traverse validate p
           result `shouldBe` Nothing
       
       describe "Traversing patterns with multiple elements using Either" $ do
         
-        it "traverses pattern with multiple elements using Either (all succeed)" $ do
-          -- T017: Unit test for traversing pattern with multiple elements using Either (all succeed)
+        it "traverses point with multiple elements using Either (all succeed)" $ do
+          -- T017: Unit test for traversing point with multiple elements using Either (all succeed)
           let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
-              elem1 = pattern 5
-              elem2 = pattern 10
-              p = patternWith 20 [elem1, elem2]
+              elem1 = point 5
+              elem2 = point 10
+              p = pattern 20 [elem1, elem2]
               result = traverse validate p
           result `shouldBe` Right p
         
-        it "traverses pattern with multiple elements using Either (one fails)" $ do
-          -- T018: Unit test for traversing pattern with multiple elements using Either (one fails)
+        it "traverses point with multiple elements using Either (one fails)" $ do
+          -- T018: Unit test for traversing point with multiple elements using Either (one fails)
           let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
-              elem1 = pattern 5
-              elem2 = pattern (-3)
-              p = patternWith 20 [elem1, elem2]
+              elem1 = point 5
+              elem2 = point (-3)
+              p = pattern 20 [elem1, elem2]
               result = traverse validate p
           result `shouldBe` Left "Invalid: -3"
       
-      describe "Traversing nested pattern structures with Identity" $ do
+      describe "Traversing nested point structures with Identity" $ do
         
-        it "traverses nested pattern structure with Identity" $ do
-          -- T019: Unit test for traversing nested pattern structure with Identity
-          let inner = pattern "inner"
-              middle = patternWith "middle" [inner]
-              outer = patternWith "outer" [middle]
-              p = patternWith "root" [outer]
+        it "traverses nested point structure with Identity" $ do
+          -- T019: Unit test for traversing nested point structure with Identity
+          let inner = point "inner"
+              middle = pattern "middle" [inner]
+              outer = pattern "outer" [middle]
+              p = pattern "root" [outer]
               result = traverse Identity p
           runIdentity result `shouldBe` p
       
-      describe "Traversing nested pattern structures with Maybe" $ do
+      describe "Traversing nested point structures with Maybe" $ do
         
-        it "traverses nested pattern structure with Maybe (all succeed)" $ do
-          -- T020: Unit test for traversing nested pattern structure with Maybe (all succeed)
+        it "traverses nested point structure with Maybe (all succeed)" $ do
+          -- T020: Unit test for traversing nested point structure with Maybe (all succeed)
           let validate x = if x > 0 then Just x else Nothing
-              inner = pattern 1
-              middle = patternWith 2 [inner]
-              outer = patternWith 3 [middle]
-              p = patternWith 4 [outer]
+              inner = point 1
+              middle = pattern 2 [inner]
+              outer = pattern 3 [middle]
+              p = pattern 4 [outer]
               result = traverse validate p
           result `shouldBe` Just p
         
-        it "traverses nested pattern structure with Maybe (one fails)" $ do
-          -- T021: Unit test for traversing nested pattern structure with Maybe (one fails)
+        it "traverses nested point structure with Maybe (one fails)" $ do
+          -- T021: Unit test for traversing nested point structure with Maybe (one fails)
           let validate x = if x > 0 then Just x else Nothing
-              inner = pattern (-1)
-              middle = patternWith 2 [inner]
-              outer = patternWith 3 [middle]
-              p = patternWith 4 [outer]
+              inner = point (-1)
+              middle = pattern 2 [inner]
+              outer = pattern 3 [middle]
+              p = pattern 4 [outer]
               result = traverse validate p
           result `shouldBe` Nothing
       
-      describe "Traversing nested pattern structures with Either" $ do
+      describe "Traversing nested point structures with Either" $ do
         
-        it "traverses nested pattern structure with Either (all succeed)" $ do
-          -- T022: Unit test for traversing nested pattern structure with Either (all succeed)
+        it "traverses nested point structure with Either (all succeed)" $ do
+          -- T022: Unit test for traversing nested point structure with Either (all succeed)
           let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
-              inner = pattern 1
-              middle = patternWith 2 [inner]
-              outer = patternWith 3 [middle]
-              p = patternWith 4 [outer]
+              inner = point 1
+              middle = pattern 2 [inner]
+              outer = pattern 3 [middle]
+              p = pattern 4 [outer]
               result = traverse validate p
           result `shouldBe` Right p
         
-        it "traverses nested pattern structure with Either (one fails)" $ do
-          -- T023: Unit test for traversing nested pattern structure with Either (one fails)
+        it "traverses nested point structure with Either (one fails)" $ do
+          -- T023: Unit test for traversing nested point structure with Either (one fails)
           let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
-              inner = pattern (-1)
-              middle = patternWith 2 [inner]
-              outer = patternWith 3 [middle]
-              p = patternWith 4 [outer]
+              inner = point (-1)
+              middle = pattern 2 [inner]
+              outer = pattern 3 [middle]
+              p = pattern 4 [outer]
               result = traverse validate p
           result `shouldBe` Left "Invalid: -1"
       
       describe "Structure preservation in traverse" $ do
         
-        it "traverse preserves pattern structure (element count, nesting depth, element order)" $ do
-          -- T024: Unit test verifying traverse preserves pattern structure
-          let elem1 = pattern "a"
-              elem2 = pattern "b"
-              elem3 = pattern "c"
-              p = patternWith "root" [elem1, elem2, elem3]
+        it "traverse preserves point structure (element count, nesting depth, element order)" $ do
+          -- T024: Unit test verifying traverse preserves point structure
+          let elem1 = point "a"
+              elem2 = point "b"
+              elem3 = point "c"
+              p = pattern "root" [elem1, elem2, elem3]
               result = traverse Identity p
               p' = runIdentity result
           length (elements p') `shouldBe` 3
@@ -2114,50 +2129,50 @@ spec = do
         it "traverse processes pattern's own value" $ do
           -- T025: Unit test verifying traverse processes pattern's own value
           let validate x = if x > 0 then Just (x * 2) else Nothing
-              atom = pattern 5
+              atom = point 5
               result = traverse validate atom
-          result `shouldBe` Just (pattern 10)
+          result `shouldBe` Just (point 10)
         
         it "traverse processes all element values recursively" $ do
           -- T026: Unit test verifying traverse processes all element values recursively
           let validate x = if x > 0 then Just (x * 2) else Nothing
-              elem1 = pattern 5
-              elem2 = pattern 10
-              p = patternWith 20 [elem1, elem2]
+              elem1 = point 5
+              elem2 = point 10
+              p = pattern 20 [elem1, elem2]
               result = traverse validate p
-          result `shouldBe` Just (patternWith 40 [pattern 10, pattern 20])
+          result `shouldBe` Just (pattern 40 [point 10, point 20])
       
       describe "Traversing patterns with different value types" $ do
         
-        it "traverses pattern with string values using Identity" $ do
-          -- T027: Unit test for traversing pattern with string values using Identity
-          let elem1 = pattern "hello"
-              elem2 = pattern "world"
-              p = patternWith "greeting" [elem1, elem2]
+        it "traverses point with string values using Identity" $ do
+          -- T027: Unit test for traversing point with string values using Identity
+          let elem1 = point "hello"
+              elem2 = point "world"
+              p = pattern "greeting" [elem1, elem2]
               result = traverse Identity p
           runIdentity result `shouldBe` p
         
-        it "traverses pattern with integer values using Maybe" $ do
-          -- T028: Unit test for traversing pattern with integer values using Maybe
+        it "traverses point with integer values using Maybe" $ do
+          -- T028: Unit test for traversing point with integer values using Maybe
           let validate x = if x > 0 then Just x else Nothing
-              elem1 = pattern 5
-              elem2 = pattern 10
-              p = patternWith 20 [elem1, elem2]
+              elem1 = point 5
+              elem2 = point 10
+              p = pattern 20 [elem1, elem2]
               result = traverse validate p
           result `shouldBe` Just p
         
-        it "traverses pattern with custom type values using Either" $ do
-          -- T029: Unit test for traversing pattern with custom type values using Either
+        it "traverses point with custom type values using Either" $ do
+          -- T029: Unit test for traversing point with custom type values using Either
           let validate (Person name age) = 
                 if name /= "" && age /= Nothing 
                 then Right (Person name age)
                 else Left "Invalid person"
               person1 = Person "Alice" (Just 30)
               person2 = Person "Bob" (Just 25)
-              elem1 = pattern person1
-              elem2 = pattern person2
+              elem1 = point person1
+              elem2 = point person2
               rootPerson = Person "Root" (Just 40)
-              p = patternWith rootPerson [elem1, elem2]
+              p = pattern rootPerson [elem1, elem2]
               result = traverse validate p
           result `shouldBe` Right p
     
@@ -2165,126 +2180,128 @@ spec = do
       
       describe "sequenceA on patterns containing Identity values" $ do
         
-        it "sequences pattern containing Identity values" $ do
-          -- T037: Unit test for sequenceA on pattern containing Identity values
-          let atom = pattern (Identity "test")
+        it "sequences point containing Identity values" $ do
+          -- T037: Unit test for sequenceA on point containing Identity values
+          let atom = point (Identity "test")
               result = sequenceA atom
-          runIdentity result `shouldBe` pattern "test"
+          runIdentity result `shouldBe` point "test"
       
       describe "sequenceA on patterns containing Maybe values" $ do
         
-        it "sequences pattern containing Maybe values (all Just)" $ do
-          -- T038: Unit test for sequenceA on pattern containing Maybe values (all Just)
-          let elem1 = pattern (Just 5)
-              elem2 = pattern (Just 10)
-              p = patternWith (Just 20) [elem1, elem2]
+        it "sequences point containing Maybe values (all Just)" $ do
+          -- T038: Unit test for sequenceA on point containing Maybe values (all Just)
+          let elem1 = point (Just 5)
+              elem2 = point (Just 10)
+              p = pattern (Just 20) [elem1, elem2]
               result = sequenceA p
-          result `shouldBe` Just (patternWith 20 [pattern 5, pattern 10])
+          result `shouldBe` Just (pattern 20 [point 5, point 10])
         
-        it "sequences pattern containing Maybe values (one Nothing)" $ do
-          -- T039: Unit test for sequenceA on pattern containing Maybe values (one Nothing)
-          let elem1 = pattern (Just 5)
-              elem2 = pattern Nothing
-              p = patternWith (Just 20) [elem1, elem2]
+        it "sequences point containing Maybe values (one Nothing)" $ do
+          -- T039: Unit test for sequenceA on point containing Maybe values (one Nothing)
+          let elem1 = point (Just 5)
+              elem2 = point Nothing
+              p = pattern (Just 20) [elem1, elem2]
               result = sequenceA p
           result `shouldBe` Nothing
       
       describe "sequenceA on patterns containing Either values" $ do
         
-        it "sequences pattern containing Either values (all Right)" $ do
-          -- T040: Unit test for sequenceA on pattern containing Either values (all Right)
-          let elem1 = pattern (Right 5 :: Either String Int)
-              elem2 = pattern (Right 10 :: Either String Int)
-              p = patternWith (Right 20 :: Either String Int) [elem1, elem2]
+        it "sequences point containing Either values (all Right)" $ do
+          -- T040: Unit test for sequenceA on point containing Either values (all Right)
+          let elem1 = point (Right 5 :: Either String Int)
+              elem2 = point (Right 10 :: Either String Int)
+              p = pattern (Right 20 :: Either String Int) [elem1, elem2]
               result = sequenceA p
-          result `shouldBe` (Right (patternWith 20 [pattern 5, pattern 10]) :: Either String (Pattern Int))
+          result `shouldBe` (Right (pattern 20 [point 5, point 10]) :: Either String (Pattern Int))
         
-        it "sequences pattern containing Either values (one Left)" $ do
-          -- T041: Unit test for sequenceA on pattern containing Either values (one Left)
-          let elem1 = pattern (Right 5 :: Either String Int)
-              elem2 = pattern (Left "error" :: Either String Int)
-              p = patternWith (Right 20 :: Either String Int) [elem1, elem2]
+        it "sequences point containing Either values (one Left)" $ do
+          -- T041: Unit test for sequenceA on point containing Either values (one Left)
+          let elem1 = point (Right 5 :: Either String Int)
+              elem2 = point (Left "error" :: Either String Int)
+              p = pattern (Right 20 :: Either String Int) [elem1, elem2]
               result = sequenceA p
           result `shouldBe` (Left "error" :: Either String (Pattern Int))
       
-      describe "sequenceA on nested pattern structures with Maybe values" $ do
+      describe "sequenceA on nested point structures with Maybe values" $ do
         
-        it "sequences nested pattern structure with Maybe values (all Just)" $ do
-          -- T042: Unit test for sequenceA on nested pattern structure with Maybe values (all Just)
-          let inner = pattern (Just 1)
-              middle = patternWith (Just 2) [inner]
-              outer = patternWith (Just 3) [middle]
-              p = patternWith (Just 4) [outer]
+        it "sequences nested point structure with Maybe values (all Just)" $ do
+          -- T042: Unit test for sequenceA on nested point structure with Maybe values (all Just)
+          let inner = point (Just 1)
+              middle = pattern (Just 2) [inner]
+              outer = pattern (Just 3) [middle]
+              p = pattern (Just 4) [outer]
               result = sequenceA p
-          result `shouldBe` Just (patternWith 4 [patternWith 3 [patternWith 2 [pattern 1]]])
+          result `shouldBe` Just (pattern 4 [pattern 3 [pattern 2 [point 1]]])
         
-        it "sequences nested pattern structure with Maybe values (one Nothing)" $ do
-          -- T043: Unit test for sequenceA on nested pattern structure with Maybe values (one Nothing)
-          let inner = pattern Nothing
-              middle = patternWith (Just 2) [inner]
-              outer = patternWith (Just 3) [middle]
-              p = patternWith (Just 4) [outer]
+        it "sequences nested point structure with Maybe values (one Nothing)" $ do
+          -- T043: Unit test for sequenceA on nested point structure with Maybe values (one Nothing)
+          let inner = point Nothing
+              middle = pattern (Just 2) [inner]
+              outer = pattern (Just 3) [middle]
+              p = pattern (Just 4) [outer]
               result = sequenceA p
           result `shouldBe` Nothing
       
-      describe "sequenceA on nested pattern structures with Either values" $ do
+      describe "sequenceA on nested point structures with Either values" $ do
         
-        it "sequences nested pattern structure with Either values (all Right)" $ do
-          -- T044: Unit test for sequenceA on nested pattern structure with Either values (all Right)
-          let inner = pattern (Right 1 :: Either String Int)
-              middle = patternWith (Right 2 :: Either String Int) [inner]
-              outer = patternWith (Right 3 :: Either String Int) [middle]
-              p = patternWith (Right 4 :: Either String Int) [outer]
+        it "sequences nested point structure with Either values (all Right)" $ do
+          -- T044: Unit test for sequenceA on nested point structure with Either values (all Right)
+          let inner = point (Right 1 :: Either String Int)
+              middle = pattern (Right 2 :: Either String Int) [inner]
+              outer = pattern (Right 3 :: Either String Int) [middle]
+              p = pattern (Right 4 :: Either String Int) [outer]
               result = sequenceA p
-          result `shouldBe` (Right (patternWith 4 [patternWith 3 [patternWith 2 [pattern 1]]]) :: Either String (Pattern Int))
+          result `shouldBe` (Right (pattern 4 [pattern 3 [pattern 2 [point 1]]]) :: Either String (Pattern Int))
         
-        it "sequences nested pattern structure with Either values (one Left)" $ do
-          -- T045: Unit test for sequenceA on nested pattern structure with Either values (one Left)
-          let inner = pattern (Left "error" :: Either String Int)
-              middle = patternWith (Right 2 :: Either String Int) [inner]
-              outer = patternWith (Right 3 :: Either String Int) [middle]
-              p = patternWith (Right 4 :: Either String Int) [outer]
+        it "sequences nested point structure with Either values (one Left)" $ do
+          -- T045: Unit test for sequenceA on nested point structure with Either values (one Left)
+          let inner = point (Left "error" :: Either String Int)
+              middle = pattern (Right 2 :: Either String Int) [inner]
+              outer = pattern (Right 3 :: Either String Int) [middle]
+              p = pattern (Right 4 :: Either String Int) [outer]
               result = sequenceA p
           result `shouldBe` (Left "error" :: Either String (Pattern Int))
       
       describe "Structure preservation in sequenceA" $ do
         
-        it "sequenceA preserves pattern structure" $ do
-          -- T046: Unit test verifying sequenceA preserves pattern structure
-          let elem1 = pattern (Just "a")
-              elem2 = pattern (Just "b")
-              elem3 = pattern (Just "c")
-              p = patternWith (Just "root") [elem1, elem2, elem3]
+        it "sequenceA preserves point structure" $ do
+          -- T046: Unit test verifying sequenceA preserves point structure
+          let elem1 = point (Just "a")
+              elem2 = point (Just "b")
+              elem3 = point (Just "c")
+              p = pattern (Just "root") [elem1, elem2, elem3]
               result = sequenceA p
-              p' = fromJust result
-          length (elements p') `shouldBe` 3
-          value (elements p' !! 0) `shouldBe` "a"
-          value (elements p' !! 1) `shouldBe` "b"
-          value (elements p' !! 2) `shouldBe` "c"
+          case result of
+            Just p' -> do
+              length (elements p') `shouldBe` 3
+              value (elements p' !! 0) `shouldBe` "a"
+              value (elements p' !! 1) `shouldBe` "b"
+              value (elements p' !! 2) `shouldBe` "c"
+            Nothing -> expectationFailure "Expected Just result"
         
         it "sequenceA collects effects from all values" $ do
           -- T047: Unit test verifying sequenceA collects effects from all values
-          let elem1 = pattern (Just 5)
-              elem2 = pattern (Just 10)
-              p = patternWith (Just 20) [elem1, elem2]
+          let elem1 = point (Just 5)
+              elem2 = point (Just 10)
+              p = pattern (Just 20) [elem1, elem2]
               result = sequenceA p
-          result `shouldBe` Just (patternWith 20 [pattern 5, pattern 10])
+          result `shouldBe` Just (pattern 20 [point 5, point 10])
       
       describe "Short-circuiting behavior in sequenceA" $ do
         
         it "sequenceA short-circuits for Maybe (returns Nothing on first Nothing)" $ do
           -- T048: Unit test verifying sequenceA short-circuits for Maybe (returns Nothing on first Nothing)
-          let elem1 = pattern Nothing
-              elem2 = pattern (Just 10)
-              p = patternWith (Just 20) [elem1, elem2]
+          let elem1 = point Nothing
+              elem2 = point (Just 10)
+              p = pattern (Just 20) [elem1, elem2]
               result = sequenceA p
           result `shouldBe` Nothing
         
         it "sequenceA short-circuits for Either (returns Left on first Left)" $ do
           -- T049: Unit test verifying sequenceA short-circuits for Either (returns Left on first Left)
-          let elem1 = pattern (Left "first error" :: Either String Int)
-              elem2 = pattern (Right 10 :: Either String Int)
-              p = patternWith (Right 20 :: Either String Int) [elem1, elem2]
+          let elem1 = point (Left "first error" :: Either String Int)
+              elem2 = point (Right 10 :: Either String Int)
+              p = pattern (Right 20 :: Either String Int) [elem1, elem2]
               result = sequenceA p
           result `shouldBe` (Left "first error" :: Either String (Pattern Int))
     
@@ -2292,85 +2309,85 @@ spec = do
       
       describe "Validation with Maybe" $ do
         
-        it "validates pattern with Maybe (all values valid)" $ do
+        it "validates point with Maybe (all values valid)" $ do
           -- T055: Unit test for validation with Maybe (all values valid)
           let validate x = if x > 0 then Just x else Nothing
-              elem1 = pattern 5
-              elem2 = pattern 10
-              p = patternWith 20 [elem1, elem2]
+              elem1 = point 5
+              elem2 = point 10
+              p = pattern 20 [elem1, elem2]
               result = traverse validate p
           result `shouldBe` Just p
         
-        it "validates pattern with Maybe (some values invalid)" $ do
+        it "validates point with Maybe (some values invalid)" $ do
           -- T056: Unit test for validation with Maybe (some values invalid)
           let validate x = if x > 0 then Just x else Nothing
-              elem1 = pattern 5
-              elem2 = pattern (-3)
-              p = patternWith 20 [elem1, elem2]
+              elem1 = point 5
+              elem2 = point (-3)
+              p = pattern 20 [elem1, elem2]
               result = traverse validate p
           result `shouldBe` Nothing
       
       describe "Validation with Either" $ do
         
-        it "validates pattern with Either (all values valid)" $ do
+        it "validates point with Either (all values valid)" $ do
           -- T057: Unit test for validation with Either (all values valid)
           let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
-              elem1 = pattern 5
-              elem2 = pattern 10
-              p = patternWith 20 [elem1, elem2]
+              elem1 = point 5
+              elem2 = point 10
+              p = pattern 20 [elem1, elem2]
               result = traverse validate p
           result `shouldBe` Right p
         
-        it "validates pattern with Either (some values invalid, first error returned)" $ do
+        it "validates point with Either (some values invalid, first error returned)" $ do
           -- T058: Unit test for validation with Either (some values invalid, first error returned)
           let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
-              elem1 = pattern 5
-              elem2 = pattern (-3)
-              p = patternWith 20 [elem1, elem2]
+              elem1 = point 5
+              elem2 = point (-3)
+              p = pattern 20 [elem1, elem2]
               result = traverse validate p
           result `shouldBe` Left "Invalid: -3"
       
-      describe "Validation on nested pattern structures with Maybe" $ do
+      describe "Validation on nested point structures with Maybe" $ do
         
-        it "validates nested pattern structure with Maybe (all valid)" $ do
-          -- T059: Unit test for validation on nested pattern structure with Maybe (all valid)
+        it "validates nested point structure with Maybe (all valid)" $ do
+          -- T059: Unit test for validation on nested point structure with Maybe (all valid)
           let validate x = if x > 0 then Just x else Nothing
-              inner = pattern 1
-              middle = patternWith 2 [inner]
-              outer = patternWith 3 [middle]
-              p = patternWith 4 [outer]
+              inner = point 1
+              middle = pattern 2 [inner]
+              outer = pattern 3 [middle]
+              p = pattern 4 [outer]
               result = traverse validate p
           result `shouldBe` Just p
         
-        it "validates nested pattern structure with Maybe (one invalid at any level)" $ do
-          -- T060: Unit test for validation on nested pattern structure with Maybe (one invalid at any level)
+        it "validates nested point structure with Maybe (one invalid at any level)" $ do
+          -- T060: Unit test for validation on nested point structure with Maybe (one invalid at any level)
           let validate x = if x > 0 then Just x else Nothing
-              inner = pattern (-1)
-              middle = patternWith 2 [inner]
-              outer = patternWith 3 [middle]
-              p = patternWith 4 [outer]
+              inner = point (-1)
+              middle = pattern 2 [inner]
+              outer = pattern 3 [middle]
+              p = pattern 4 [outer]
               result = traverse validate p
           result `shouldBe` Nothing
       
-      describe "Validation on nested pattern structures with Either" $ do
+      describe "Validation on nested point structures with Either" $ do
         
-        it "validates nested pattern structure with Either (all valid)" $ do
-          -- T061: Unit test for validation on nested pattern structure with Either (all valid)
+        it "validates nested point structure with Either (all valid)" $ do
+          -- T061: Unit test for validation on nested point structure with Either (all valid)
           let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
-              inner = pattern 1
-              middle = patternWith 2 [inner]
-              outer = patternWith 3 [middle]
-              p = patternWith 4 [outer]
+              inner = point 1
+              middle = pattern 2 [inner]
+              outer = pattern 3 [middle]
+              p = pattern 4 [outer]
               result = traverse validate p
           result `shouldBe` Right p
         
-        it "validates nested pattern structure with Either (one invalid at any level)" $ do
-          -- T062: Unit test for validation on nested pattern structure with Either (one invalid at any level)
+        it "validates nested point structure with Either (one invalid at any level)" $ do
+          -- T062: Unit test for validation on nested point structure with Either (one invalid at any level)
           let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
-              inner = pattern (-1)
-              middle = patternWith 2 [inner]
-              outer = patternWith 3 [middle]
-              p = patternWith 4 [outer]
+              inner = point (-1)
+              middle = pattern 2 [inner]
+              outer = pattern 3 [middle]
+              p = pattern 4 [outer]
               result = traverse validate p
           result `shouldBe` Left "Invalid: -1"
       
@@ -2380,15 +2397,15 @@ spec = do
           -- T063: Unit test verifying validation fails if any value at any nesting level is invalid
           let validate x = if x > 0 then Just x else Nothing
               -- Test with invalid value at root level
-              p1 = patternWith (-1) [pattern 5, pattern 10]
+              p1 = pattern (-1) [point 5, point 10]
               result1 = traverse validate p1
               -- Test with invalid value at element level
-              p2 = patternWith 20 [pattern (-3), pattern 10]
+              p2 = pattern 20 [point (-3), point 10]
               result2 = traverse validate p2
               -- Test with invalid value at nested level
-              inner = pattern (-1)
-              middle = patternWith 2 [inner]
-              p3 = patternWith 4 [middle]
+              inner = point (-1)
+              middle = pattern 2 [inner]
+              p3 = pattern 4 [middle]
               result3 = traverse validate p3
           result1 `shouldBe` Nothing
           result2 `shouldBe` Nothing
@@ -2402,7 +2419,7 @@ spec = do
           -- T079: Verify traversable instance works with IO applicative functor
           let readValue :: String -> IO Int
               readValue = readIO
-              p = patternWith "10" [pattern "5", pattern "3"]
+              p = pattern "10" [point "5", point "3"]
               ioResult = traverse readValue p
           -- Execute IO and verify result
           result <- ioResult
@@ -2420,11 +2437,11 @@ spec = do
                 s <- get
                 put (s + x)
                 return (s + x)
-              p = patternWith 10 [pattern 5, pattern 3]
+              p = pattern 10 [point 5, point 3]
               stateResult = traverse addState p
               (result, finalState) = runState stateResult 0
-          -- Verify result pattern structure
-          -- State processes: pattern value (10) first, then elements (5, 3)
+          -- Verify result point structure
+          -- State processes: point value (10) first, then elements (5, 3)
           -- Initial state: 0
           -- Pattern value 10: state 0 -> 10, return 10
           -- Element 5: state 10 -> 15, return 15
@@ -2446,23 +2463,23 @@ spec = do
         
         it "T002: returns 1 for single element pattern" $ do
           let elem = Pattern { value = "elem", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem] }
-          PC.length pattern `shouldBe` 1
+          let p = Pattern { value = "pattern", elements = [elem] }
+          PC.length p `shouldBe` 1
         
-        it "T003: returns correct count for multiple elements pattern" $ do
+        it "T003: returns correct count for multiple elements p" $ do
           let elem1 = Pattern { value = "e1", elements = [] }
           let elem2 = Pattern { value = "e2", elements = [] }
           let elem3 = Pattern { value = "e3", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
-          PC.length pattern `shouldBe` 3
+          let p = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          PC.length p `shouldBe` 3
         
         it "T004: returns only direct children count for nested pattern" $ do
           let inner = Pattern { value = "inner", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner] }
           let outer = Pattern { value = "outer", elements = [middle] }
-          let pattern = Pattern { value = "root", elements = [outer] }
+          let p = Pattern { value = "root", elements = [outer] }
           -- Should return 1 (only direct child), not count nested descendants
-          PC.length pattern `shouldBe` 1
+          PC.length p `shouldBe` 1
           -- Verify nested structure has its own length
           PC.length outer `shouldBe` 1
           PC.length middle `shouldBe` 1
@@ -2476,22 +2493,22 @@ spec = do
           let atom = Pattern { value = "atom", elements = [] }
           size atom `shouldBe` 1
         
-        it "T012: returns 1 + element count for pattern with direct elements" $ do
+        it "T012: returns 1 + element count for point with direct elements" $ do
           let elem1 = Pattern { value = "e1", elements = [] }
           let elem2 = Pattern { value = "e2", elements = [] }
           let elem3 = Pattern { value = "e3", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+          let p = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
           -- Should return 1 (root) + 3 (elements) = 4
-          size pattern `shouldBe` 4
+          size p `shouldBe` 4
         
         it "T013: counts all nodes in deeply nested pattern" $ do
           let level4 = Pattern { value = "level4", elements = [] }
           let level3 = Pattern { value = "level3", elements = [level4] }
           let level2 = Pattern { value = "level2", elements = [level3] }
           let level1 = Pattern { value = "level1", elements = [level2] }
-          let pattern = Pattern { value = "root", elements = [level1] }
+          let p = Pattern { value = "root", elements = [level1] }
           -- Should count all nodes: root(1) + level1(1) + level2(1) + level3(1) + level4(1) = 5
-          size pattern `shouldBe` 5
+          size p `shouldBe` 5
         
         it "T014: counts all nodes across branches with varying depths" $ do
           let branch1Leaf = Pattern { value = "b1leaf", elements = [] }
@@ -2500,9 +2517,9 @@ spec = do
           let branch2Leaf = Pattern { value = "b2leaf", elements = [] }
           let branch2 = Pattern { value = "b2", elements = [branch2Mid, branch2Leaf] }
           let branch3 = Pattern { value = "b3", elements = [] }
-          let pattern = Pattern { value = "root", elements = [branch1, branch2, branch3] }
+          let p = Pattern { value = "root", elements = [branch1, branch2, branch3] }
           -- Should count: root(1) + b1(1) + b1leaf(1) + b2(1) + b2mid(1) + b2leaf(1) + b3(1) = 7
-          size pattern `shouldBe` 7
+          size p `shouldBe` 7
     
     describe "Query Functions (User Story 3 - Depth)" $ do
       
@@ -2510,14 +2527,14 @@ spec = do
         
         it "T022: returns 0 for atomic pattern" $ do
           let atom = Pattern { value = "atom", elements = [] }
-          -- Atomic pattern has no nesting, depth is 0 (root only)
+          -- Atomic point has no nesting, depth is 0 (root only)
           depth atom `shouldBe` 0
         
         it "T023: returns 1 for one level of nesting" $ do
           let elem = Pattern { value = "elem", elements = [] }
-          let pattern = Pattern { value = "pattern", elements = [elem] }
+          let p = Pattern { value = "pattern", elements = [elem] }
           -- One level of nesting: root -> elem, depth is 1
-          depth pattern `shouldBe` 1
+          depth p `shouldBe` 1
         
         it "T024: returns maximum depth across branches with different depths" $ do
           let branch1Leaf = Pattern { value = "b1leaf", elements = [] }
@@ -2530,19 +2547,19 @@ spec = do
           -- branch2 depth: b2 -> b2inner -> b2leaf = 2 (maximum among branches)
           let branch3 = Pattern { value = "b3", elements = [] }
           -- branch3 depth: b3 = 0
-          let pattern = Pattern { value = "root", elements = [branch1, branch2, branch3] }
+          let p = Pattern { value = "root", elements = [branch1, branch2, branch3] }
           -- Should return: root -> branch2 -> branch2Inner -> branch2Leaf = 3
           -- (1 for root -> branch2, plus branch2's depth of 2)
-          depth pattern `shouldBe` 3
+          depth p `shouldBe` 3
         
         it "T025: returns maximum depth for deeply nested pattern" $ do
           let level4 = Pattern { value = "level4", elements = [] }
           let level3 = Pattern { value = "level3", elements = [level4] }
           let level2 = Pattern { value = "level2", elements = [level3] }
           let level1 = Pattern { value = "level1", elements = [level2] }
-          let pattern = Pattern { value = "root", elements = [level1] }
+          let p = Pattern { value = "root", elements = [level1] }
           -- Depth: root -> level1 -> level2 -> level3 -> level4 = 4
-          depth pattern `shouldBe` 4
+          depth p `shouldBe` 4
     
     describe "Query Functions (User Story 4 - Values)" $ do
       
@@ -2552,21 +2569,21 @@ spec = do
           let atom = Pattern { value = "atom", elements = [] }
           values atom `shouldBe` ["atom"]
         
-        it "T033: returns all values for pattern with multiple elements" $ do
+        it "T033: returns all values for point with multiple elements" $ do
           let elem1 = Pattern { value = "e1", elements = [] }
           let elem2 = Pattern { value = "e2", elements = [] }
           let elem3 = Pattern { value = "e3", elements = [] }
-          let pattern = Pattern { value = "root", elements = [elem1, elem2, elem3] }
+          let p = Pattern { value = "root", elements = [elem1, elem2, elem3] }
           -- Should return: root value first, then element values in order
-          values pattern `shouldBe` ["root", "e1", "e2", "e3"]
+          values p `shouldBe` ["root", "e1", "e2", "e3"]
         
         it "T034: returns all values from all levels for nested pattern" $ do
           let inner = Pattern { value = "inner", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner] }
           let outer = Pattern { value = "outer", elements = [middle] }
-          let pattern = Pattern { value = "root", elements = [outer] }
+          let p = Pattern { value = "root", elements = [outer] }
           -- Should return all values: root, outer, middle, inner
-          values pattern `shouldBe` ["root", "outer", "middle", "inner"]
+          values p `shouldBe` ["root", "outer", "middle", "inner"]
         
         it "T035: returns values in consistent order for varying nesting depths" $ do
           let branch1Leaf = Pattern { value = "b1leaf", elements = [] }
@@ -2575,139 +2592,139 @@ spec = do
           let branch2Leaf = Pattern { value = "b2leaf", elements = [] }
           let branch2 = Pattern { value = "b2", elements = [branch2Mid, branch2Leaf] }
           let branch3 = Pattern { value = "b3", elements = [] }
-          let pattern = Pattern { value = "root", elements = [branch1, branch2, branch3] }
+          let p = Pattern { value = "root", elements = [branch1, branch2, branch3] }
           -- Should return: root, then branch values in order, then nested values
           -- Order: root -> b1 -> b1leaf -> b2 -> b2mid -> b2leaf -> b3
-          values pattern `shouldBe` ["root", "b1", "b1leaf", "b2", "b2mid", "b2leaf", "b3"]
+          values p `shouldBe` ["root", "b1", "b1leaf", "b2", "b2mid", "b2leaf", "b3"]
     
     describe "Query Functions (User Story 5 - Value Accessor)" $ do
       
       describe "value field accessor - unit tests" $ do
         
         it "T044: returns correct value for string pattern" $ do
-          let pattern = Pattern { value = "test", elements = [] }
-          value pattern `shouldBe` "test"
+          let p = Pattern { value = "test", elements = [] }
+          value p `shouldBe` "test"
         
         it "T045: returns correct value for integer pattern" $ do
-          let pattern = Pattern { value = 42, elements = [] }
-          value pattern `shouldBe` (42 :: Int)
+          let p = Pattern { value = 42, elements = [] }
+          value p `shouldBe` (42 :: Int)
         
         it "T046: returns correct value for custom type pattern" $ do
           let person = Person "Alice" (Just 30)
-          let pattern = Pattern { value = person, elements = [] }
-          value pattern `shouldBe` person
+          let p = Pattern { value = person, elements = [] }
+          value p `shouldBe` person
         
         it "T047: returns correct value for each level in nested patterns" $ do
           let inner = Pattern { value = "inner", elements = [] }
           let middle = Pattern { value = "middle", elements = [inner] }
           let outer = Pattern { value = "outer", elements = [middle] }
-          let pattern = Pattern { value = "root", elements = [outer] }
+          let p = Pattern { value = "root", elements = [outer] }
           -- Verify each level returns its correct value
-          value pattern `shouldBe` "root"
+          value p `shouldBe` "root"
           value outer `shouldBe` "outer"
           value middle `shouldBe` "middle"
           value inner `shouldBe` "inner"
     
     describe "Query Functions - Integration Tests (Phase 6)" $ do
       
-      describe "Integration with pattern constructors" $ do
+      describe "Integration with point constructors" $ do
         
-        it "T051: query functions work with patterns created using pattern function" $ do
-          let atom = pattern "atom"
-          let elem1 = pattern "e1"
-          let elem2 = pattern "e2"
-          let pattern1 = patternWith "root" [elem1, elem2]
+        it "T051: query functions work with patterns created using point function" $ do
+          let atom = point "atom"
+          let elem1 = point "e1"
+          let elem2 = point "e2"
+          let p1 = pattern "root" [elem1, elem2]
           -- Verify all query functions work
           PC.length atom `shouldBe` 0
           size atom `shouldBe` 1
           depth atom `shouldBe` 0
           values atom `shouldBe` ["atom"]
           value atom `shouldBe` "atom"
-          PC.length pattern1 `shouldBe` 2
-          size pattern1 `shouldBe` 3
-          depth pattern1 `shouldBe` 1
-          values pattern1 `shouldBe` ["root", "e1", "e2"]
-          value pattern1 `shouldBe` "root"
+          PC.length p1 `shouldBe` 2
+          size p1 `shouldBe` 3
+          depth p1 `shouldBe` 1
+          values p1 `shouldBe` ["root", "e1", "e2"]
+          value p1 `shouldBe` "root"
         
-        it "T052: query functions work with patterns created using patternWith function" $ do
-          let elem1 = pattern "e1"
-          let elem2 = pattern "e2"
-          let elem3 = pattern "e3"
-          let pattern1 = patternWith "root" [elem1, elem2, elem3]
+        it "T052: query functions work with patterns created using pattern function" $ do
+          let elem1 = point "e1"
+          let elem2 = point "e2"
+          let elem3 = point "e3"
+          let p1 = pattern "root" [elem1, elem2, elem3]
           -- Verify all query functions work
-          PC.length pattern1 `shouldBe` 3
-          size pattern1 `shouldBe` 4
-          depth pattern1 `shouldBe` 1
-          values pattern1 `shouldBe` ["root", "e1", "e2", "e3"]
-          value pattern1 `shouldBe` "root"
+          PC.length p1 `shouldBe` 3
+          size p1 `shouldBe` 4
+          depth p1 `shouldBe` 1
+          values p1 `shouldBe` ["root", "e1", "e2", "e3"]
+          value p1 `shouldBe` "root"
         
         it "T053: query functions work with patterns created using fromList function" $ do
-          let pattern1 = fromList "root" ["a", "b", "c"]
+          let p1 = fromList "root" ["a", "b", "c"]
           -- Verify all query functions work
-          PC.length pattern1 `shouldBe` 3
-          size pattern1 `shouldBe` 4
-          depth pattern1 `shouldBe` 1
-          values pattern1 `shouldBe` ["root", "a", "b", "c"]
-          value pattern1 `shouldBe` "root"
+          PC.length p1 `shouldBe` 3
+          size p1 `shouldBe` 4
+          depth p1 `shouldBe` 1
+          values p1 `shouldBe` ["root", "a", "b", "c"]
+          value p1 `shouldBe` "root"
       
       describe "Integration with type class instances" $ do
         
         it "T054: query functions work with patterns transformed using fmap (Functor)" $ do
-          let pattern1 = fromList "root" ["a", "b", "c"]
-          let pattern2 = fmap (map toUpper) pattern1
+          let p1 = fromList "root" ["a", "b", "c"]
+          let p2 = fmap (map toUpper) p1
           -- Verify all query functions work on transformed pattern
-          PC.length pattern2 `shouldBe` 3
-          size pattern2 `shouldBe` 4
-          depth pattern2 `shouldBe` 1
-          values pattern2 `shouldBe` ["ROOT", "A", "B", "C"]
-          value pattern2 `shouldBe` "ROOT"
+          PC.length p2 `shouldBe` 3
+          size p2 `shouldBe` 4
+          depth p2 `shouldBe` 1
+          values p2 `shouldBe` ["ROOT", "A", "B", "C"]
+          value p2 `shouldBe` "ROOT"
           -- Verify structure is preserved
-          PC.length pattern1 `shouldBe` PC.length pattern2
-          size pattern1 `shouldBe` size pattern2
-          depth pattern1 `shouldBe` depth pattern2
+          PC.length p1 `shouldBe` PC.length p2
+          size p1 `shouldBe` size p2
+          depth p1 `shouldBe` depth p2
         
         it "T055: query functions work with patterns used in Foldable operations" $ do
-          let pattern1 = fromList (10 :: Int) [1, 2, 3, 4, 5]
+          let p1 = fromList (10 :: Int) [1, 2, 3, 4, 5]
           -- Verify query functions work
-          PC.length pattern1 `shouldBe` 5
-          size pattern1 `shouldBe` 6
-          depth pattern1 `shouldBe` 1
-          values pattern1 `shouldBe` [10, 1, 2, 3, 4, 5]
-          value pattern1 `shouldBe` (10 :: Int)
+          PC.length p1 `shouldBe` 5
+          size p1 `shouldBe` 6
+          depth p1 `shouldBe` 1
+          values p1 `shouldBe` [10, 1, 2, 3, 4, 5]
+          value p1 `shouldBe` (10 :: Int)
           -- Verify integration with Foldable
-          sum pattern1 `shouldBe` 25
-          length (toList pattern1) `shouldBe` 6
+          sum p1 `shouldBe` 25
+          length (toList p1) `shouldBe` 6
           -- Verify values matches toList
-          values pattern1 `shouldBe` toList pattern1
+          values p1 `shouldBe` toList p1
         
         it "T056: query functions work with patterns used in Traversable operations" $ do
-          let pattern1 = fromList 10 [1, 2, 3]
+          let p1 = fromList 10 [1, 2, 3]
           -- Verify query functions work
-          PC.length pattern1 `shouldBe` 3
-          size pattern1 `shouldBe` 4
-          depth pattern1 `shouldBe` 1
-          values pattern1 `shouldBe` [10, 1, 2, 3]
-          value pattern1 `shouldBe` (10 :: Int)
+          PC.length p1 `shouldBe` 3
+          size p1 `shouldBe` 4
+          depth p1 `shouldBe` 1
+          values p1 `shouldBe` [10, 1, 2, 3]
+          value p1 `shouldBe` (10 :: Int)
           -- Verify integration with Traversable
           let validate x = if x > 0 then Just x else Nothing
-          let result = traverse validate pattern1
+          let result = traverse validate p1
           case result of
-            Just pattern2 -> do
+            Just p2 -> do
               -- Verify query functions work on traversed pattern
-              PC.length pattern2 `shouldBe` 3
-              size pattern2 `shouldBe` 4
-              depth pattern2 `shouldBe` 1
-              values pattern2 `shouldBe` [10, 1, 2, 3]
-              value pattern2 `shouldBe` (10 :: Int)
+              PC.length p2 `shouldBe` 3
+              size p2 `shouldBe` 4
+              depth p2 `shouldBe` 1
+              values p2 `shouldBe` [10, 1, 2, 3]
+              value p2 `shouldBe` (10 :: Int)
             Nothing -> fail "Traverse should succeed for positive values"
       
       describe "Edge case tests" $ do
         
         it "T057: query functions work with very deeply nested patterns (100+ levels)" $ do
-          -- Create a deeply nested pattern (100 levels)
+          -- Create a deeply nested point (100 levels)
           let createDeep n = if n <= 0
-                             then pattern "leaf"
-                             else patternWith ("level" ++ show n) [createDeep (n - 1)]
+                             then point "leaf"
+                             else pattern ("level" ++ show n) [createDeep (n - 1)]
           let deepPattern = createDeep 100
           -- Verify all query functions work (should not stack overflow)
           PC.length deepPattern `shouldBe` 1
@@ -2717,72 +2734,72 @@ spec = do
           value deepPattern `shouldBe` "level100"
         
         it "T058: query functions work with patterns having many direct elements (100+)" $ do
-          -- Create a pattern with 100 direct elements
-          let elems = map (\i -> pattern ("elem" ++ show i)) [1..100]
-          let pattern1 = patternWith "root" elems
+          -- Create a point with 100 direct elements
+          let elems = map (\i -> point ("elem" ++ show i)) [1..100]
+          let p1 = pattern "root" elems
           -- Verify all query functions work
-          PC.length pattern1 `shouldBe` 100
-          size pattern1 `shouldBe` 101
-          depth pattern1 `shouldBe` 1
-          length (values pattern1) `shouldBe` 101
-          value pattern1 `shouldBe` "root"
+          PC.length p1 `shouldBe` 100
+          size p1 `shouldBe` 101
+          depth p1 `shouldBe` 1
+          length (values p1) `shouldBe` 101
+          value p1 `shouldBe` "root"
           -- Verify first and last elements
-          head (values pattern1) `shouldBe` "root"
-          last (values pattern1) `shouldBe` "elem100"
+          head (values p1) `shouldBe` "root"
+          last (values p1) `shouldBe` "elem100"
         
         it "T059: query functions work with patterns containing duplicate values" $ do
-          -- Create pattern with duplicate values
-          let pattern1 = fromList "root" ["a", "a", "b", "b", "c", "c"]
+          -- Create point with duplicate values
+          let p1 = fromList "root" ["a", "a", "b", "b", "c", "c"]
           -- Verify all query functions work
-          PC.length pattern1 `shouldBe` 6
-          size pattern1 `shouldBe` 7
-          depth pattern1 `shouldBe` 1
-          values pattern1 `shouldBe` ["root", "a", "a", "b", "b", "c", "c"]
-          value pattern1 `shouldBe` "root"
+          PC.length p1 `shouldBe` 6
+          size p1 `shouldBe` 7
+          depth p1 `shouldBe` 1
+          values p1 `shouldBe` ["root", "a", "a", "b", "b", "c", "c"]
+          value p1 `shouldBe` "root"
           -- Verify duplicates are preserved
-          filter (== "a") (values pattern1) `shouldBe` ["a", "a"]
-          filter (== "b") (values pattern1) `shouldBe` ["b", "b"]
+          filter (== "a") (values p1) `shouldBe` ["a", "a"]
+          filter (== "b") (values p1) `shouldBe` ["b", "b"]
     
     describe "Ord Instance (User Story 1)" $ do
       
       describe "compare function with atomic patterns" $ do
         
         it "T001: compare atomic patterns with different values" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
+          let p1 = point "a"
+              p2 = point "b"
           compare p1 p2 `shouldBe` LT
           compare p2 p1 `shouldBe` GT
           compare p1 p1 `shouldBe` EQ
         
         it "T002: compare atomic patterns with same value" $ do
-          let p1 = pattern "test"
-              p2 = pattern "test"
+          let p1 = point "test"
+              p2 = point "test"
           compare p1 p2 `shouldBe` EQ
           compare p2 p1 `shouldBe` EQ
       
       describe "compare function with patterns having elements" $ do
         
         it "T003: compare patterns with same value but different elements" $ do
-          let p1 = patternWith "root" [pattern "a"]
-              p2 = patternWith "root" [pattern "b"]
+          let p1 = pattern "root" [point "a"]
+              p2 = pattern "root" [point "b"]
           compare p1 p2 `shouldBe` LT
           compare p2 p1 `shouldBe` GT
         
         it "T004: compare patterns with same value and same number of elements" $ do
-          let p1 = patternWith "root" [pattern "a", pattern "b"]
-              p2 = patternWith "root" [pattern "a", pattern "b"]
+          let p1 = pattern "root" [point "a", point "b"]
+              p2 = pattern "root" [point "a", point "b"]
           compare p1 p2 `shouldBe` EQ
           compare p2 p1 `shouldBe` EQ
       
       describe "compare function with nested patterns" $ do
         
         it "T005: compare nested patterns (recursive comparison)" $ do
-          let inner1 = pattern "inner1"
-              inner2 = pattern "inner2"
-              middle1 = patternWith "middle" [inner1]
-              middle2 = patternWith "middle" [inner2]
-              outer1 = patternWith "outer" [middle1]
-              outer2 = patternWith "outer" [middle2]
+          let inner1 = point "inner1"
+              inner2 = point "inner2"
+              middle1 = pattern "middle" [inner1]
+              middle2 = pattern "middle" [inner2]
+              outer1 = pattern "outer" [middle1]
+              outer2 = pattern "outer" [middle2]
           compare outer1 outer2 `shouldBe` LT
     
     describe "Integration & Validation (Phase 4)" $ do
@@ -2790,9 +2807,9 @@ spec = do
       describe "Integration with existing functions" $ do
         
         it "T042: all query functions work with Ord instance" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
-              p3 = patternWith "root" [pattern "a", pattern "b"]
+          let p1 = point "a"
+              p2 = point "b"
+              p3 = pattern "root" [point "a", point "b"]
           -- Verify query functions work with patterns that can be compared
           value p1 `shouldBe` "a"
           PC.length p3 `shouldBe` 2
@@ -2806,14 +2823,14 @@ spec = do
           map value sorted `shouldBe` ["a", "b", "root"]
           map PC.length sorted `shouldBe` [0, 0, 2]
         
-        it "T043: Ord instance works with pattern constructors" $ do
-          -- Test with pattern constructor
-          let p1 = pattern "a"
-              p2 = pattern "b"
+        it "T043: Ord instance works with point constructors" $ do
+          -- Test with point constructor
+          let p1 = point "a"
+              p2 = point "b"
           compare p1 p2 `shouldBe` LT
-          -- Test with patternWith constructor
-          let p3 = patternWith "root" [pattern "a"]
-              p4 = patternWith "root" [pattern "b"]
+          -- Test with pattern constructor
+          let p3 = pattern "root" [point "a"]
+              p4 = pattern "root" [point "b"]
           compare p3 p4 `shouldBe` LT
           -- Test with fromList constructor
           let p5 = fromList "root" ["a", "b"]
@@ -2828,22 +2845,22 @@ spec = do
         
         it "T044: Ord instance works with type class instances" $ do
           -- Test with Functor
-          let p1 = pattern "a"
-              p2 = pattern "b"
-          fmap (map toUpper) p1 `shouldBe` pattern "A"
+          let p1 = point "a"
+              p2 = point "b"
+          fmap (map toUpper) p1 `shouldBe` point "A"
           -- Functor preserves ordering
           compare (fmap (map toUpper) p1) (fmap (map toUpper) p2) `shouldBe` LT
           -- Test with Foldable
-          let p3 = patternWith "root" [pattern "a", pattern "b"]
-              p4 = patternWith "root" [pattern "a", pattern "c"]
+          let p3 = pattern "root" [point "a", point "b"]
+              p4 = pattern "root" [point "a", point "c"]
           -- Foldable operations work, and we can still compare
           toList p3 `shouldBe` ["root", "a", "b"]
           compare p3 p4 `shouldBe` LT
           -- Test with Traversable
-          let p5 = pattern (Just "a")
-              p6 = pattern (Just "b")
+          let p5 = point (Just "a")
+              p6 = point (Just "b")
           -- Traversable operations work, and we can still compare
-          traverse Just p5 `shouldBe` Just (pattern (Just "a"))
+          traverse Just p5 `shouldBe` Just (point (Just "a"))
           compare p5 p6 `shouldBe` LT
           -- Verify type class operations preserve comparability
           let patterns = [p4, p3]
@@ -2852,9 +2869,9 @@ spec = do
           sorted `shouldBe` [p3, p4]
         
         it "T006: comparison operators (<, <=, >, >=) with patterns" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
-              p3 = pattern "a"
+          let p1 = point "a"
+              p2 = point "b"
+              p3 = point "a"
           (p1 < p2) `shouldBe` True
           (p1 <= p2) `shouldBe` True
           (p2 > p1) `shouldBe` True
@@ -2867,9 +2884,9 @@ spec = do
       describe "min and max functions" $ do
         
         it "T007: min and max functions with patterns" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
-              p3 = pattern "c"
+          let p1 = point "a"
+              p2 = point "b"
+              p3 = point "c"
           min p1 p2 `shouldBe` p1
           max p1 p2 `shouldBe` p2
           min p1 p3 `shouldBe` p1
@@ -2882,30 +2899,30 @@ spec = do
       describe "Data.Set integration" $ do
         
         it "T016: Data.Set with patterns (insertion and ordering)" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
-              p3 = pattern "c"
+          let p1 = point "a"
+              p2 = point "b"
+              p3 = point "c"
               s = Set.insert p3 $ Set.insert p1 $ Set.insert p2 Set.empty
           -- Set should maintain sorted order
           Set.toList s `shouldBe` [p1, p2, p3]
           Set.member p2 s `shouldBe` True
-          Set.member (pattern "d") s `shouldBe` False
+          Set.member (point "d") s `shouldBe` False
         
         it "T017: Data.Set membership lookup with patterns" $ do
-          let p1 = pattern "a"
-              p2 = patternWith "root" [pattern "b"]
-              p3 = patternWith "root" [pattern "c"]
+          let p1 = point "a"
+              p2 = pattern "root" [point "b"]
+              p3 = pattern "root" [point "c"]
               s = Set.fromList [p1, p2, p3]
           Set.member p1 s `shouldBe` True
           Set.member p2 s `shouldBe` True
           Set.member p3 s `shouldBe` True
-          Set.member (pattern "d") s `shouldBe` False
-          Set.member (patternWith "root" [pattern "d"]) s `shouldBe` False
+          Set.member (point "d") s `shouldBe` False
+          Set.member (pattern "root" [point "d"]) s `shouldBe` False
         
         it "T018: Data.Set with patterns having duplicate values but different structures" $ do
-          let p1 = patternWith "root" [pattern "a"]
-              p2 = patternWith "root" [pattern "b"]
-              p3 = patternWith "root" [pattern "a", pattern "b"]
+          let p1 = pattern "root" [point "a"]
+              p2 = pattern "root" [point "b"]
+              p3 = pattern "root" [point "a", point "b"]
               s = Set.fromList [p1, p2, p3]
           -- All three should be distinct (different structures)
           Set.size s `shouldBe` 3
@@ -2916,19 +2933,19 @@ spec = do
       describe "Data.Map integration" $ do
         
         it "T019: Data.Map with patterns as keys (insertion and lookup)" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
-              p3 = pattern "c"
+          let p1 = point "a"
+              p2 = point "b"
+              p3 = point "c"
               m = Map.insert p3 "value3" $ Map.insert p1 "value1" $ Map.insert p2 "value2" Map.empty
           Map.lookup p1 m `shouldBe` Just "value1"
           Map.lookup p2 m `shouldBe` Just "value2"
           Map.lookup p3 m `shouldBe` Just "value3"
-          Map.lookup (pattern "d") m `shouldBe` Nothing
+          Map.lookup (point "d") m `shouldBe` Nothing
         
         it "T020: Data.Map key matching with patterns" $ do
-          let p1 = patternWith "root" [pattern "a"]
-              p2 = patternWith "root" [pattern "b"]
-              p3 = patternWith "root" [pattern "a", pattern "b"]
+          let p1 = pattern "root" [point "a"]
+              p2 = pattern "root" [point "b"]
+              p3 = pattern "root" [point "a", point "b"]
               m = Map.fromList [(p1, "val1"), (p2, "val2"), (p3, "val3")]
           Map.member p1 m `shouldBe` True
           Map.member p2 m `shouldBe` True
@@ -2936,30 +2953,30 @@ spec = do
           Map.lookup p1 m `shouldBe` Just "val1"
           Map.lookup p2 m `shouldBe` Just "val2"
           Map.lookup p3 m `shouldBe` Just "val3"
-          Map.member (patternWith "root" [pattern "d"]) m `shouldBe` False
+          Map.member (pattern "root" [point "d"]) m `shouldBe` False
       
       describe "Sorting and min/max functions" $ do
         
         it "T021: sorting patterns using sort function" $ do
-          let p1 = pattern "c"
-              p2 = pattern "a"
-              p3 = pattern "b"
+          let p1 = point "c"
+              p2 = point "a"
+              p3 = point "b"
               sorted = sort [p1, p2, p3]
           sorted `shouldBe` [p2, p3, p1]
           -- Verify sorted order
           and (zipWith (<=) sorted (tail sorted)) `shouldBe` True
         
-        it "T022: minimum and maximum functions with pattern lists" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
-              p3 = pattern "c"
+        it "T022: minimum and maximum functions with point lists" $ do
+          let p1 = point "a"
+              p2 = point "b"
+              p3 = point "c"
               patterns = [p3, p1, p2]
           minimum patterns `shouldBe` p1
           maximum patterns `shouldBe` p3
           -- Test with nested patterns
-          let nested1 = patternWith "root" [pattern "a"]
-              nested2 = patternWith "root" [pattern "b"]
-              nested3 = patternWith "root" [pattern "c"]
+          let nested1 = pattern "root" [point "a"]
+              nested2 = pattern "root" [point "b"]
+              nested3 = pattern "root" [point "c"]
               nestedPatterns = [nested3, nested1, nested2]
           minimum nestedPatterns `shouldBe` nested1
           maximum nestedPatterns `shouldBe` nested3
@@ -2969,43 +2986,43 @@ spec = do
       describe "consistency between Ord and Eq" $ do
         
         it "T028: patterns equal by Eq compare as EQ" $ do
-          let p1 = pattern "test"
-              p2 = pattern "test"
+          let p1 = point "test"
+              p2 = point "test"
           p1 == p2 `shouldBe` True
           compare p1 p2 `shouldBe` EQ
           -- Test with patterns having elements
-          let p3 = patternWith "root" [pattern "a", pattern "b"]
-              p4 = patternWith "root" [pattern "a", pattern "b"]
+          let p3 = pattern "root" [point "a", point "b"]
+              p4 = pattern "root" [point "a", point "b"]
           p3 == p4 `shouldBe` True
           compare p3 p4 `shouldBe` EQ
           -- Test with nested patterns
-          let inner1 = pattern "inner"
-              inner2 = pattern "inner"
-              outer1 = patternWith "outer" [inner1]
-              outer2 = patternWith "outer" [inner2]
+          let inner1 = point "inner"
+              inner2 = point "inner"
+              outer1 = pattern "outer" [inner1]
+              outer2 = pattern "outer" [inner2]
           outer1 == outer2 `shouldBe` True
           compare outer1 outer2 `shouldBe` EQ
         
         it "T029: patterns not equal by Eq don't compare as EQ" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
+          let p1 = point "a"
+              p2 = point "b"
           p1 == p2 `shouldBe` False
           compare p1 p2 `shouldNotBe` EQ
           compare p2 p1 `shouldNotBe` EQ
           -- Test with patterns having same value but different elements
-          let p3 = patternWith "root" [pattern "a"]
-              p4 = patternWith "root" [pattern "b"]
+          let p3 = pattern "root" [point "a"]
+              p4 = pattern "root" [point "b"]
           p3 == p4 `shouldBe` False
           compare p3 p4 `shouldNotBe` EQ
           -- Test with patterns having different values
-          let p5 = patternWith "root1" [pattern "a"]
-              p6 = patternWith "root2" [pattern "a"]
+          let p5 = pattern "root1" [point "a"]
+              p6 = pattern "root2" [point "a"]
           p5 == p6 `shouldBe` False
           compare p5 p6 `shouldNotBe` EQ
         
         it "T030: patterns with same structure but different values compare by value" $ do
-          let p1 = patternWith "a" [pattern "x"]
-              p2 = patternWith "b" [pattern "x"]
+          let p1 = pattern "a" [point "x"]
+              p2 = pattern "b" [point "x"]
           -- Same structure (one element with same value), different root values
           p1 == p2 `shouldBe` False
           compare p1 p2 `shouldBe` LT  -- "a" < "b"
@@ -3015,20 +3032,20 @@ spec = do
           (p2 > p1) `shouldBe` True
         
         it "T031: patterns with same value but different element structures compare by elements" $ do
-          let p1 = patternWith "root" [pattern "a"]
-              p2 = patternWith "root" [pattern "b"]
+          let p1 = pattern "root" [point "a"]
+              p2 = pattern "root" [point "b"]
           -- Same root value, different element values
           p1 == p2 `shouldBe` False
           compare p1 p2 `shouldBe` LT  -- "a" < "b" in elements
           compare p2 p1 `shouldBe` GT
           -- Test with multiple elements
-          let p3 = patternWith "root" [pattern "a", pattern "b"]
-              p4 = patternWith "root" [pattern "a", pattern "c"]
+          let p3 = pattern "root" [point "a", point "b"]
+              p4 = pattern "root" [point "a", point "c"]
           p3 == p4 `shouldBe` False
           compare p3 p4 `shouldBe` LT  -- "b" < "c" in second element
           -- Test with different number of elements
-          let p5 = patternWith "root" [pattern "a"]
-              p6 = patternWith "root" [pattern "a", pattern "b"]
+          let p5 = pattern "root" [point "a"]
+              p6 = pattern "root" [point "a", point "b"]
           p5 == p6 `shouldBe` False
           compare p5 p6 `shouldBe` LT  -- shorter list comes first
           compare p6 p5 `shouldBe` GT
@@ -3038,23 +3055,23 @@ spec = do
       describe "Edge case tests for Ord instance" $ do
         
         it "T037: comparing atomic patterns (no elements)" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
-              p3 = pattern "a"
+          let p1 = point "a"
+              p2 = point "b"
+              p3 = point "a"
           -- Atomic patterns compare by value only
           compare p1 p2 `shouldBe` LT
           compare p2 p1 `shouldBe` GT
           compare p1 p3 `shouldBe` EQ
           -- Verify with different value types
-          let p4 = pattern (1 :: Int)
-              p5 = pattern (2 :: Int)
+          let p4 = point (1 :: Int)
+              p5 = point (2 :: Int)
           compare p4 p5 `shouldBe` LT
           compare p5 p4 `shouldBe` GT
         
         it "T038: comparing patterns with different numbers of elements" $ do
-          let p1 = patternWith "root" []  -- 0 elements
-              p2 = patternWith "root" [pattern "a"]  -- 1 element
-              p3 = patternWith "root" [pattern "a", pattern "b"]  -- 2 elements
+          let p1 = pattern "root" []  -- 0 elements
+              p2 = pattern "root" [point "a"]  -- 1 element
+              p3 = pattern "root" [point "a", point "b"]  -- 2 elements
           -- Patterns with fewer elements come first when values are equal
           compare p1 p2 `shouldBe` LT
           compare p2 p3 `shouldBe` LT
@@ -3062,16 +3079,16 @@ spec = do
           compare p3 p2 `shouldBe` GT
           compare p2 p1 `shouldBe` GT
           -- Test with different values
-          let p4 = patternWith "a" [pattern "x"]
-              p5 = patternWith "b" []  -- Different value, fewer elements
+          let p4 = pattern "a" [point "x"]
+              p5 = pattern "b" []  -- Different value, fewer elements
           -- Value comparison takes precedence
           compare p4 p5 `shouldBe` LT  -- "a" < "b"
         
         it "T039: comparing deeply nested patterns (100+ levels)" $ do
           -- Create deeply nested patterns
           let createDeep n = if n == 0
-                             then pattern "leaf"
-                             else patternWith ("level" ++ show n) [createDeep (n - 1)]
+                             then point "leaf"
+                             else pattern ("level" ++ show n) [createDeep (n - 1)]
           let deep1 = createDeep 100
           let deep2 = createDeep 100
           let deep3 = createDeep 101
@@ -3086,19 +3103,19 @@ spec = do
         
         it "T040: comparing patterns with same flattened values but different structures" $ do
           -- Patterns with same flattened values but different structures should be distinct
-          let p1 = patternWith "root" [pattern "a", pattern "b"]
-              p2 = patternWith "root" [patternWith "a" [pattern "b"]]
+          let p1 = pattern "root" [point "a", point "b"]
+              p2 = pattern "root" [pattern "a" [point "b"]]
           -- These have different structures even though flattened values might be similar
           p1 == p2 `shouldBe` False
           compare p1 p2 `shouldNotBe` EQ
           -- Test with more complex structures
-          let p3 = patternWith "x" [pattern "y", pattern "z"]
-              p4 = patternWith "x" [patternWith "y" [pattern "z"]]
+          let p3 = pattern "x" [point "y", point "z"]
+              p4 = pattern "x" [pattern "y" [point "z"]]
           p3 == p4 `shouldBe` False
           compare p3 p4 `shouldNotBe` EQ
           -- Verify structure is preserved in comparison
-          let p5 = patternWith "root" [pattern "a"]
-              p6 = patternWith "root" [pattern "a", pattern "b"]
+          let p5 = pattern "root" [point "a"]
+              p6 = pattern "root" [point "a", point "b"]
           -- Even if first element is same, different structures
           p5 == p6 `shouldBe` False
           compare p5 p6 `shouldBe` LT  -- shorter list first
@@ -3106,22 +3123,22 @@ spec = do
         it "T041: type constraint: Ord v requirement" $ do
           -- This test verifies that Ord instance requires Ord v constraint
           -- We test with types that have Ord instances
-          let p1 = pattern ("a" :: String)
-              p2 = pattern ("b" :: String)
+          let p1 = point ("a" :: String)
+              p2 = point ("b" :: String)
           compare p1 p2 `shouldBe` LT
           -- Test with Int (has Ord instance)
-          let p3 = pattern (1 :: Int)
-              p4 = pattern (2 :: Int)
+          let p3 = point (1 :: Int)
+              p4 = point (2 :: Int)
           compare p3 p4 `shouldBe` LT
           -- Test with patterns containing Int values
-          let p5 = patternWith (10 :: Int) [pattern (1 :: Int), pattern (2 :: Int)]
-              p6 = patternWith (10 :: Int) [pattern (1 :: Int), pattern (3 :: Int)]
+          let p5 = pattern (10 :: Int) [point (1 :: Int), point (2 :: Int)]
+              p6 = pattern (10 :: Int) [point (1 :: Int), point (3 :: Int)]
           compare p5 p6 `shouldBe` LT
           -- Verify that comparison works with nested patterns of orderable types
-          let inner1 = pattern (5 :: Int)
-              inner2 = pattern (6 :: Int)
-              outer1 = patternWith (100 :: Int) [inner1]
-              outer2 = patternWith (100 :: Int) [inner2]
+          let inner1 = point (5 :: Int)
+              inner2 = point (6 :: Int)
+              outer1 = pattern (100 :: Int) [inner1]
+              outer2 = pattern (100 :: Int) [inner2]
           compare outer1 outer2 `shouldBe` LT
     
     describe "Semigroup Instance (User Story 3)" $ do
@@ -3129,17 +3146,17 @@ spec = do
       describe "Combining atomic patterns" $ do
         
         it "T001: combining two atomic patterns" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
+          let p1 = point "a"
+              p2 = point "b"
               result = p1 <> p2
           value result `shouldBe` "ab"
           elements result `shouldBe` ([] :: [Pattern String])
         
-        it "T002: combining atomic pattern with pattern having elements" $ do
-          let p1 = pattern "a"
-              elem1 = pattern "elem1"
-              elem2 = pattern "elem2"
-              p2 = patternWith "b" [elem1, elem2]
+        it "T002: combining atomic point with point having elements" $ do
+          let p1 = point "a"
+              elem1 = point "elem1"
+              elem2 = point "elem2"
+              p2 = pattern "b" [elem1, elem2]
               result = p1 <> p2
           value result `shouldBe` "ab"
           length (elements result) `shouldBe` 2
@@ -3149,24 +3166,24 @@ spec = do
       describe "Combining patterns with elements" $ do
         
         it "T003: combining two patterns with elements" $ do
-          let elem1 = pattern "e1"
-              elem2 = pattern "e2"
-              p1 = patternWith "a" [elem1, elem2]
-              elem3 = pattern "e3"
-              elem4 = pattern "e4"
-              p2 = patternWith "b" [elem3, elem4]
+          let elem1 = point "e1"
+              elem2 = point "e2"
+              p1 = pattern "a" [elem1, elem2]
+              elem3 = point "e3"
+              elem4 = point "e4"
+              p2 = pattern "b" [elem3, elem4]
               result = p1 <> p2
           value result `shouldBe` "ab"
           length (elements result) `shouldBe` 4
           map value (elements result) `shouldBe` ["e1", "e2", "e3", "e4"]
         
         it "T004: combining patterns with different element counts" $ do
-          let elem1 = pattern "e1"
-              p1 = patternWith "a" [elem1]
-              elem2 = pattern "e2"
-              elem3 = pattern "e3"
-              elem4 = pattern "e4"
-              p2 = patternWith "b" [elem2, elem3, elem4]
+          let elem1 = point "e1"
+              p1 = pattern "a" [elem1]
+              elem2 = point "e2"
+              elem3 = point "e3"
+              elem4 = point "e4"
+              p2 = pattern "b" [elem2, elem3, elem4]
               result = p1 <> p2
           value result `shouldBe` "ab"
           length (elements result) `shouldBe` 4
@@ -3175,31 +3192,31 @@ spec = do
       describe "Value combination with different Semigroup types" $ do
         
         it "T005: combining patterns with String values (concatenation)" $ do
-          let p1 = pattern "hello"
-              p2 = pattern "world"
+          let p1 = point "hello"
+              p2 = point "world"
               result = p1 <> p2
           value result `shouldBe` "helloworld"
         
         it "T006: combining patterns with Sum Int values (addition)" $ do
-          let p1 = pattern (Sum 5)
-              p2 = pattern (Sum 3)
+          let p1 = point (Sum 5)
+              p2 = point (Sum 3)
               result = p1 <> p2
           getSum (value result) `shouldBe` 8
         
         it "T007: combining patterns with Product Int values (multiplication)" $ do
-          let p1 = pattern (Product 5)
-              p2 = pattern (Product 3)
+          let p1 = point (Product 5)
+              p2 = point (Product 3)
               result = p1 <> p2
           getProduct (value result) `shouldBe` 15
       
       describe "Element order preservation" $ do
         
         it "T008: element order preservation" $ do
-          let elem1 = pattern "first"
-              elem2 = pattern "second"
-              elem3 = pattern "third"
-              p1 = patternWith "a" [elem1, elem2]
-              p2 = patternWith "b" [elem3]
+          let elem1 = point "first"
+              elem2 = point "second"
+              elem3 = point "third"
+              p1 = pattern "a" [elem1, elem2]
+              p2 = pattern "b" [elem3]
               result = p1 <> p2
           map value (elements result) `shouldBe` ["first", "second", "third"]
           -- Verify order: p1 elements first, then p2 elements
@@ -3210,8 +3227,8 @@ spec = do
       describe "Value combination semantics" $ do
         
         it "T009: value combination using value type's Semigroup" $ do
-          let p1 = patternWith "prefix" [pattern "elem1"]
-              p2 = patternWith "suffix" [pattern "elem2"]
+          let p1 = pattern "prefix" [point "elem1"]
+              p2 = pattern "suffix" [point "elem2"]
               result = p1 <> p2
           -- Value should combine using String's Semigroup (concatenation)
           value result `shouldBe` "prefixsuffix"
@@ -3223,16 +3240,16 @@ spec = do
         it "T010: type constraint: Semigroup v requirement" $ do
           -- This test verifies that Semigroup instance requires Semigroup v constraint
           -- We test with types that have Semigroup instances
-          let p1 = pattern ("a" :: String)
-              p2 = pattern ("b" :: String)
+          let p1 = point ("a" :: String)
+              p2 = point ("b" :: String)
           value (p1 <> p2) `shouldBe` "ab"
           -- Test with Sum Int (has Semigroup instance)
-          let p3 = pattern (Sum 1 :: Sum Int)
-              p4 = pattern (Sum 2 :: Sum Int)
+          let p3 = point (Sum 1 :: Sum Int)
+              p4 = point (Sum 2 :: Sum Int)
           getSum (value (p3 <> p4)) `shouldBe` 3
           -- Test with Product Int (has Semigroup instance)
-          let p5 = pattern (Product 2 :: Product Int)
-              p6 = pattern (Product 3 :: Product Int)
+          let p5 = point (Product 2 :: Product Int)
+              p6 = point (Product 3 :: Product Int)
           getProduct (value (p5 <> p6)) `shouldBe` 6
     
     describe "Semigroup Instance - Edge Cases (User Story 4)" $ do
@@ -3240,12 +3257,12 @@ spec = do
       describe "Nested patterns" $ do
         
         it "T020: combining nested patterns (preserving nested structure)" $ do
-          let inner1 = pattern "inner1"
-              inner2 = pattern "inner2"
-              middle1 = patternWith "middle1" [inner1]
-              middle2 = patternWith "middle2" [inner2]
-              p1 = patternWith "root1" [middle1]
-              p2 = patternWith "root2" [middle2]
+          let inner1 = point "inner1"
+              inner2 = point "inner2"
+              middle1 = pattern "middle1" [inner1]
+              middle2 = pattern "middle2" [inner2]
+              p1 = pattern "root1" [middle1]
+              p2 = pattern "root2" [middle2]
               result = p1 <> p2
           value result `shouldBe` "root1root2"
           length (elements result) `shouldBe` 2
@@ -3260,10 +3277,10 @@ spec = do
           value (head (elements secondElem)) `shouldBe` "inner2"
         
         it "T021: combining patterns with different nesting depths" $ do
-          let p1 = patternWith "a" [pattern "leaf"]
-              inner = pattern "inner"
-              middle = patternWith "middle" [inner]
-              p2 = patternWith "b" [middle]
+          let p1 = pattern "a" [point "leaf"]
+              inner = point "inner"
+              middle = pattern "middle" [inner]
+              p2 = pattern "b" [middle]
               result = p1 <> p2
           value result `shouldBe` "ab"
           length (elements result) `shouldBe` 2
@@ -3276,12 +3293,12 @@ spec = do
           length (elements secondElem) `shouldBe` 1
         
         it "T022: combining patterns with deeply nested structures (10+ levels)" $ do
-          -- Create a deeply nested pattern (10 levels)
+          -- Create a deeply nested point (10 levels)
           let createDeep n = if n <= 0
-                            then pattern "leaf"
-                            else patternWith ("level" ++ show n) [createDeep (n - 1)]
+                            then point "leaf"
+                            else pattern ("level" ++ show n) [createDeep (n - 1)]
               p1 = createDeep 10
-              p2 = patternWith "simple" [pattern "elem"]
+              p2 = pattern "simple" [point "elem"]
               result = p1 <> p2
           value result `shouldBe` ("level10" ++ "simple")
           length (elements result) `shouldBe` 2
@@ -3297,10 +3314,10 @@ spec = do
           value simpleElem `shouldBe` "elem"
         
         it "T023: combining patterns with many elements (100+ elements)" $ do
-          let elems1 = map (\i -> pattern ("e1_" ++ show i)) [1..50]
-              elems2 = map (\i -> pattern ("e2_" ++ show i)) [1..50]
-              p1 = patternWith "prefix" elems1
-              p2 = patternWith "suffix" elems2
+          let elems1 = map (\i -> point ("e1_" ++ show i)) [1..50]
+              elems2 = map (\i -> point ("e2_" ++ show i)) [1..50]
+              p1 = pattern "prefix" elems1
+              p2 = pattern "suffix" elems2
               result = p1 <> p2
           value result `shouldBe` "prefixsuffix"
           length (elements result) `shouldBe` 100
@@ -3315,18 +3332,18 @@ spec = do
       describe "Standard Semigroup combinators" $ do
         
         it "T026: integration test for sconcat with list of patterns" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
-              p3 = pattern "c"
+          let p1 = point "a"
+              p2 = point "b"
+              p3 = point "c"
               patterns = p1 :| [p2, p3]
               result = sconcat patterns
           value result `shouldBe` "abc"
           elements result `shouldBe` ([] :: [Pattern String])
         
         it "T027: integration test for stimes to repeat a pattern" $ do
-          let elem1 = pattern "e1"
-              elem2 = pattern "e2"
-              p = patternWith "root" [elem1, elem2]
+          let elem1 = point "e1"
+              elem2 = point "e2"
+              p = pattern "root" [elem1, elem2]
               result = stimes 3 p
           value result `shouldBe` "rootrootroot"
           length (elements result) `shouldBe` 6
@@ -3335,19 +3352,19 @@ spec = do
           map value (drop 2 (take 4 (elements result))) `shouldBe` ["e1", "e2"]
           map value (drop 4 (elements result)) `shouldBe` ["e1", "e2"]
       
-      describe "Integration with pattern constructors" $ do
+      describe "Integration with point constructors" $ do
         
-        it "T028: Semigroup instance with pattern constructors" $ do
-          -- Test with pattern function
-          let p1 = pattern "a"
-              p2 = pattern "b"
+        it "T028: Semigroup instance with point constructors" $ do
+          -- Test with point function
+          let p1 = point "a"
+              p2 = point "b"
               result1 = p1 <> p2
           value result1 `shouldBe` "ab"
-          -- Test with patternWith function
-          let elem1 = pattern "e1"
-              elem2 = pattern "e2"
-              p3 = patternWith "c" [elem1, elem2]
-              p4 = patternWith "d" [pattern "e3"]
+          -- Test with pattern function
+          let elem1 = point "e1"
+              elem2 = point "e2"
+              p3 = pattern "c" [elem1, elem2]
+              p4 = pattern "d" [point "e3"]
               result2 = p3 <> p4
           value result2 `shouldBe` "cd"
           length (elements result2) `shouldBe` 3
@@ -3362,10 +3379,10 @@ spec = do
       describe "Integration with type class instances" $ do
         
         it "T029: Semigroup instance with type class instances" $ do
-          let elem1 = pattern "e1"
-              elem2 = pattern "e2"
-              p1 = patternWith "a" [elem1, elem2]
-              p2 = patternWith "b" [pattern "e3"]
+          let elem1 = point "e1"
+              elem2 = point "e2"
+              p1 = pattern "a" [elem1, elem2]
+              p2 = pattern "b" [point "e3"]
               result = p1 <> p2
           -- Test with Functor
           let fmapResult = fmap (map toUpper) result
@@ -3385,8 +3402,8 @@ spec = do
           -- Endo f <> Endo g = Endo (f . g) (composition is non-commutative)
           let f = Endo ((+1) :: Int -> Int)
               g = Endo ((*2) :: Int -> Int)
-              p1 = pattern f
-              p2 = pattern g
+              p1 = point f
+              p2 = point g
               result = p1 <> p2
           -- Verify composition order: (f . g) x = f (g x) = (x * 2) + 1
           let composed = appEndo (value result) 5
@@ -3420,33 +3437,33 @@ spec = do
       describe "Left Identity Law" $ do
         
         it "T008: mempty <> p = p for atomic patterns" $ do
-          let p = pattern "test"
+          let p = point "test"
           (mempty <> p) `shouldBe` p
         
         it "T008: mempty <> p = p for patterns with elements" $ do
-          let p = patternWith "root" [pattern "a", pattern "b"]
+          let p = pattern "root" [point "a", point "b"]
           (mempty <> p) `shouldBe` p
         
         it "T008: mempty <> p = p for nested patterns" $ do
-          let inner = pattern "inner"
-              middle = patternWith "middle" [inner]
-              p = patternWith "outer" [middle]
+          let inner = point "inner"
+              middle = pattern "middle" [inner]
+              p = pattern "outer" [middle]
           (mempty <> p) `shouldBe` p
       
       describe "Right Identity Law" $ do
         
         it "T009: p <> mempty = p for atomic patterns" $ do
-          let p = pattern "test"
+          let p = point "test"
           (p <> mempty) `shouldBe` p
         
         it "T009: p <> mempty = p for patterns with elements" $ do
-          let p = patternWith "root" [pattern "a", pattern "b"]
+          let p = pattern "root" [point "a", point "b"]
           (p <> mempty) `shouldBe` p
         
         it "T009: p <> mempty = p for nested patterns" $ do
-          let inner = pattern "inner"
-              middle = patternWith "middle" [inner]
-              p = patternWith "outer" [middle]
+          let inner = point "inner"
+              middle = pattern "middle" [inner]
+              p = pattern "outer" [middle]
           (p <> mempty) `shouldBe` p
       
       describe "Standard Monoid Combinators" $ do
@@ -3457,14 +3474,14 @@ spec = do
           elements result `shouldBe` ([] :: [Pattern String])
         
         it "T011: mconcat with list of patterns combines them correctly" $ do
-          let patterns = [pattern "a", pattern "b", pattern "c"]
+          let patterns = [point "a", point "b", point "c"]
               result = mconcat patterns
           value result `shouldBe` "abc"
           elements result `shouldBe` ([] :: [Pattern String])
         
         it "T011: mconcat preserves element order" $ do
-          let p1 = patternWith "root" [pattern "x"]
-              p2 = patternWith "root" [pattern "y"]
+          let p1 = pattern "root" [point "x"]
+              p2 = pattern "root" [point "y"]
               patterns = [p1, p2]
               result = mconcat patterns
           value result `shouldBe` "rootroot"
@@ -3473,54 +3490,54 @@ spec = do
 
     describe "Monoid Instance - Edge Cases and Consistency (User Story 4)" $ do
       
-      describe "Identity with different pattern structures" $ do
+      describe "Identity with different point structures" $ do
         
         it "T021: identity with atomic patterns" $ do
-          let p = pattern "a"
+          let p = point "a"
           (mempty <> p) `shouldBe` p
           (p <> mempty) `shouldBe` p
         
         it "T022: identity with patterns having elements" $ do
-          let p = patternWith "root" [pattern "a", pattern "b", pattern "c"]
+          let p = pattern "root" [point "a", point "b", point "c"]
           (mempty <> p) `shouldBe` p
           (p <> mempty) `shouldBe` p
         
         it "T023: identity with nested patterns" $ do
-          let level3 = pattern "level3"
-              level2 = patternWith "level2" [level3]
-              level1 = patternWith "level1" [level2]
-              p = patternWith "root" [level1]
+          let level3 = point "level3"
+              level2 = pattern "level2" [level3]
+              level1 = pattern "level1" [level2]
+              p = pattern "root" [level1]
           (mempty <> p) `shouldBe` p
           (p <> mempty) `shouldBe` p
       
       describe "Identity with different value types" $ do
         
         it "T024: identity with String values" $ do
-          let p = pattern "test" :: Pattern String
+          let p = point "test" :: Pattern String
           value (mempty :: Pattern String) `shouldBe` ""
           (mempty <> p) `shouldBe` p
           (p <> mempty) `shouldBe` p
         
         it "T024: identity with Sum Int values" $ do
-          let p = pattern (Sum 5) :: Pattern (Sum Int)
+          let p = point (Sum 5) :: Pattern (Sum Int)
           value (mempty :: Pattern (Sum Int)) `shouldBe` Sum 0
           (mempty <> p) `shouldBe` p
           (p <> mempty) `shouldBe` p
         
         it "T024: identity with Product Int values" $ do
-          let p = pattern (Product 5) :: Pattern (Product Int)
+          let p = point (Product 5) :: Pattern (Product Int)
           value (mempty :: Pattern (Product Int)) `shouldBe` Product 1
           (mempty <> p) `shouldBe` p
           (p <> mempty) `shouldBe` p
         
         it "T024: identity with All values" $ do
-          let p = pattern (All False) :: Pattern All
+          let p = point (All False) :: Pattern All
           value (mempty :: Pattern All) `shouldBe` All True
           (mempty <> p) `shouldBe` p
           (p <> mempty) `shouldBe` p
         
         it "T024: identity with Any values" $ do
-          let p = pattern (Any True) :: Pattern Any
+          let p = point (Any True) :: Pattern Any
           value (mempty :: Pattern Any) `shouldBe` Any False
           (mempty <> p) `shouldBe` p
           (p <> mempty) `shouldBe` p
@@ -3536,8 +3553,8 @@ spec = do
       describe "Consistency with Semigroup" $ do
         
         it "T026: p1 <> p2 produces same result using Semigroup or Monoid" $ do
-          let p1 = pattern "a"
-              p2 = pattern "b"
+          let p1 = point "a"
+              p2 = point "b"
               semigroupResult = p1 <> p2
               monoidResult = p1 <> p2
           semigroupResult `shouldBe` monoidResult
@@ -3545,7 +3562,7 @@ spec = do
           elements semigroupResult `shouldBe` elements monoidResult
         
         it "T026: integration test for standard Monoid combinators" $ do
-          let patterns = [pattern "a", pattern "b", pattern "c"]
+          let patterns = [point "a", point "b", point "c"]
               mconcatResult = mconcat patterns
               foldrResult = foldr (<>) mempty patterns
           mconcatResult `shouldBe` foldrResult
@@ -3557,54 +3574,54 @@ spec = do
       describe "Basic Hashing" $ do
         
         it "T001: hash atomic pattern" $ do
-          let p = pattern "a" :: Pattern String
+          let p = point "a" :: Pattern String
           hash p `shouldSatisfy` (\h -> h == h)  -- Valid hash (any Int)
         
-        it "T002: hash pattern with elements" $ do
-          let p = patternWith "root" [pattern "a", pattern "b"] :: Pattern String
+        it "T002: hash point with elements" $ do
+          let p = pattern "root" [point "a", point "b"] :: Pattern String
           hash p `shouldSatisfy` (\h -> h == h)  -- Valid hash (any Int)
         
         it "T003: hash nested pattern" $ do
-          let p = patternWith "outer" [patternWith "inner" [pattern "value"]] :: Pattern String
+          let p = pattern "outer" [pattern "inner" [point "value"]] :: Pattern String
           hash p `shouldSatisfy` (\h -> h == h)  -- Valid hash (any Int)
         
         it "T004: hash consistency with Eq - equal patterns have same hash" $ do
-          let p1 = pattern "a" :: Pattern String
-              p2 = pattern "a" :: Pattern String
+          let p1 = point "a" :: Pattern String
+              p2 = point "a" :: Pattern String
           p1 `shouldBe` p2
           hash p1 `shouldBe` hash p2
         
-        it "T005: hash pattern with String values" $ do
-          let p1 = pattern "hello" :: Pattern String
-              p2 = pattern "world" :: Pattern String
+        it "T005: hash point with String values" $ do
+          let p1 = point "hello" :: Pattern String
+              p2 = point "world" :: Pattern String
           hash p1 `shouldSatisfy` (\h -> h == h)  -- Valid hash (any Int)
           hash p2 `shouldSatisfy` (\h -> h == h)  -- Valid hash (any Int)
         
-        it "T006: hash pattern with Int values" $ do
-          let p1 = pattern (42 :: Int) :: Pattern Int
-              p2 = pattern (100 :: Int) :: Pattern Int
+        it "T006: hash point with Int values" $ do
+          let p1 = point (42 :: Int) :: Pattern Int
+              p2 = point (100 :: Int) :: Pattern Int
           hash p1 `shouldSatisfy` (\h -> h == h)  -- Valid hash (any Int)
           hash p2 `shouldSatisfy` (\h -> h == h)  -- Valid hash (any Int)
         
         it "T007: structure-preserving hashing - different structures produce different hashes" $ do
-          let p1 = patternWith "a" [pattern "b", pattern "c"] :: Pattern String
-              p2 = patternWith "a" [patternWith "b" [pattern "c"]] :: Pattern String
+          let p1 = pattern "a" [point "b", point "c"] :: Pattern String
+              p2 = pattern "a" [pattern "b" [point "c"]] :: Pattern String
           -- Different structures should produce different hashes
           hash p1 `shouldNotBe` hash p2
         
         it "T008: recursive hashing - nested structures contribute to hash" $ do
-          let p1 = patternWith "root" [pattern "a"] :: Pattern String
-              p2 = patternWith "root" [patternWith "a" [pattern "b"]] :: Pattern String
+          let p1 = pattern "root" [point "a"] :: Pattern String
+              p2 = pattern "root" [pattern "a" [point "b"]] :: Pattern String
           -- Different nesting should produce different hashes
           hash p1 `shouldNotBe` hash p2
         
         it "T009: type constraint - Hashable v requirement" $ do
-          let p = pattern "test" :: Pattern String
+          let p = point "test" :: Pattern String
           -- Should compile and execute (String has Hashable instance)
           hash p `shouldSatisfy` (\h -> h == h)  -- Valid hash (any Int)
         
         it "T010: hashWithSalt function" $ do
-          let p = pattern "test" :: Pattern String
+          let p = point "test" :: Pattern String
               salt1 = 42
               salt2 = 100
           hashWithSalt salt1 p `shouldSatisfy` (\h -> h == h)  -- Valid hash (any Int)
@@ -3615,33 +3632,33 @@ spec = do
       describe "Edge Cases" $ do
         
         it "T022: hash atomic patterns (edge case)" $ do
-          let p1 = pattern "a" :: Pattern String
-              p2 = pattern "b" :: Pattern String
+          let p1 = point "a" :: Pattern String
+              p2 = point "b" :: Pattern String
           hash p1 `shouldSatisfy` (\h -> h == h)  -- Valid hash
           hash p2 `shouldSatisfy` (\h -> h == h)  -- Valid hash
           -- Different atomic patterns should usually have different hashes
           -- (collisions possible but rare)
         
         it "T023: hash patterns with many elements (100+ elements)" $ do
-          let elems = map (\i -> pattern (show i)) [1..100]
-              p = patternWith "root" elems :: Pattern String
+          let elems = map (\i -> point (show i)) [1..100]
+              p = pattern "root" elems :: Pattern String
           hash p `shouldSatisfy` (\h -> h == h)  -- Valid hash
           -- All elements should contribute to hash
         
         it "T024: hash deeply nested patterns (10+ levels)" $ do
-          let deep = foldl (\acc _ -> patternWith "level" [acc]) (pattern "base" :: Pattern String) [1..10]
+          let deep = foldl (\acc _ -> pattern "level" [acc]) (point "base" :: Pattern String) [1..10]
           hash deep `shouldSatisfy` (\h -> h == h)  -- Valid hash
           -- Deep nesting should contribute to hash
         
         it "T025: hash patterns with same flattened values but different structures" $ do
-          let p1 = patternWith "a" [pattern "b", pattern "c"] :: Pattern String
-              p2 = patternWith "a" [patternWith "b" [pattern "c"]] :: Pattern String
+          let p1 = pattern "a" [point "b", point "c"] :: Pattern String
+              p2 = pattern "a" [pattern "b" [point "c"]] :: Pattern String
           -- Different structures should produce different hashes
           hash p1 `shouldNotBe` hash p2
         
         it "T026: hash patterns with duplicate values" $ do
-          let p1 = patternWith "a" [pattern "b", pattern "b"] :: Pattern String
-              p2 = patternWith "a" [pattern "b"] :: Pattern String
+          let p1 = pattern "a" [point "b", point "b"] :: Pattern String
+              p2 = pattern "a" [point "b"] :: Pattern String
           -- Different structures (even with duplicate values) should produce different hashes
           hash p1 `shouldNotBe` hash p2
     
@@ -3650,23 +3667,23 @@ spec = do
       describe "HashMap Integration" $ do
         
         it "T029: HashMap with patterns as keys: create HashMap and perform lookups" $ do
-          let m = HashMap.fromList [(pattern "a", 1), (pattern "b", 2), (patternWith "root" [pattern "c"], 3)] :: HashMap.HashMap (Pattern String) Int
-          HashMap.lookup (pattern "a") m `shouldBe` Just 1
-          HashMap.lookup (pattern "b") m `shouldBe` Just 2
-          HashMap.lookup (pattern "x") m `shouldBe` Nothing
+          let m = HashMap.fromList [(point "a", 1), (point "b", 2), (pattern "root" [point "c"], 3)] :: HashMap.HashMap (Pattern String) Int
+          HashMap.lookup (point "a") m `shouldBe` Just 1
+          HashMap.lookup (point "b") m `shouldBe` Just 2
+          HashMap.lookup (point "x") m `shouldBe` Nothing
         
         it "T030: HashMap with patterns as keys: insert patterns and verify lookups work correctly" $ do
-          let m1 = HashMap.fromList [(pattern "a", 1)] :: HashMap.HashMap (Pattern String) Int
-              m2 = HashMap.insert (pattern "b") 2 m1
-              m3 = HashMap.insert (patternWith "root" [pattern "c"]) 3 m2
-          HashMap.lookup (pattern "a") m3 `shouldBe` Just 1
-          HashMap.lookup (pattern "b") m3 `shouldBe` Just 2
-          HashMap.lookup (patternWith "root" [pattern "c"]) m3 `shouldBe` Just 3
+          let m1 = HashMap.fromList [(point "a", 1)] :: HashMap.HashMap (Pattern String) Int
+              m2 = HashMap.insert (point "b") 2 m1
+              m3 = HashMap.insert (pattern "root" [point "c"]) 3 m2
+          HashMap.lookup (point "a") m3 `shouldBe` Just 1
+          HashMap.lookup (point "b") m3 `shouldBe` Just 2
+          HashMap.lookup (pattern "root" [point "c"]) m3 `shouldBe` Just 3
         
         it "T031: HashMap with patterns as keys: handle hash collisions correctly (patterns with same hash but different values)" $ do
           -- Even if two patterns have the same hash (collision), HashMap handles it correctly through Eq
-          let p1 = pattern "a" :: Pattern String
-              p2 = pattern "b" :: Pattern String
+          let p1 = point "a" :: Pattern String
+              p2 = point "b" :: Pattern String
               m = HashMap.fromList [(p1, 1), (p2, 2)] :: HashMap.HashMap (Pattern String) Int
           -- Both patterns should be retrievable (collisions handled through equality)
           HashMap.lookup p1 m `shouldBe` Just 1
@@ -3674,15 +3691,15 @@ spec = do
         
         it "T035: HashMap performance: O(1) average-case lookups" $ do
           -- Create HashMap with many patterns
-          let patterns = map (\i -> (pattern (show i), i)) [1..100]
+          let patterns = map (\i -> (point (show i), i)) [1..100]
               m = HashMap.fromList patterns :: HashMap.HashMap (Pattern String) Int
           -- Lookup should be fast (O(1) average-case)
-          HashMap.lookup (pattern "50") m `shouldBe` Just 50
-          HashMap.lookup (pattern "99") m `shouldBe` Just 99
+          HashMap.lookup (point "50") m `shouldBe` Just 50
+          HashMap.lookup (point "99") m `shouldBe` Just 99
         
         it "T037: HashMap with nested patterns as keys" $ do
-          let p1 = patternWith "outer" [pattern "inner"] :: Pattern String
-              p2 = patternWith "outer" [patternWith "inner" [pattern "value"]] :: Pattern String
+          let p1 = pattern "outer" [point "inner"] :: Pattern String
+              p2 = pattern "outer" [pattern "inner" [point "value"]] :: Pattern String
               m = HashMap.fromList [(p1, 1), (p2, 2)] :: HashMap.HashMap (Pattern String) Int
           HashMap.lookup p1 m `shouldBe` Just 1
           HashMap.lookup p2 m `shouldBe` Just 2
@@ -3690,23 +3707,23 @@ spec = do
       describe "HashSet Integration" $ do
         
         it "T032: HashSet with patterns as elements: create HashSet and test membership" $ do
-          let s = HashSet.fromList [pattern "a", pattern "b", patternWith "root" [pattern "c"]] :: HashSet.HashSet (Pattern String)
-          HashSet.member (pattern "a") s `shouldBe` True
-          HashSet.member (pattern "b") s `shouldBe` True
-          HashSet.member (pattern "x") s `shouldBe` False
+          let s = HashSet.fromList [point "a", point "b", pattern "root" [point "c"]] :: HashSet.HashSet (Pattern String)
+          HashSet.member (point "a") s `shouldBe` True
+          HashSet.member (point "b") s `shouldBe` True
+          HashSet.member (point "x") s `shouldBe` False
         
         it "T033: HashSet with patterns as elements: insert patterns and verify deduplication works correctly" $ do
-          let s1 = HashSet.fromList [pattern "a"] :: HashSet.HashSet (Pattern String)
-              s2 = HashSet.insert (pattern "b") s1
-              s3 = HashSet.insert (pattern "a") s2  -- Duplicate
-          HashSet.member (pattern "a") s3 `shouldBe` True
-          HashSet.member (pattern "b") s3 `shouldBe` True
+          let s1 = HashSet.fromList [point "a"] :: HashSet.HashSet (Pattern String)
+              s2 = HashSet.insert (point "b") s1
+              s3 = HashSet.insert (point "a") s2  -- Duplicate
+          HashSet.member (point "a") s3 `shouldBe` True
+          HashSet.member (point "b") s3 `shouldBe` True
           HashSet.size s3 `shouldBe` 2  -- Duplicate removed
         
         it "T034: HashSet with patterns as elements: handle hash collisions correctly (patterns with same hash but different values)" $ do
           -- Even if two patterns have the same hash (collision), HashSet handles it correctly through Eq
-          let p1 = pattern "a" :: Pattern String
-              p2 = pattern "b" :: Pattern String
+          let p1 = point "a" :: Pattern String
+              p2 = point "b" :: Pattern String
               s = HashSet.fromList [p1, p2] :: HashSet.HashSet (Pattern String)
           -- Both patterns should be in set (collisions handled through equality)
           HashSet.member p1 s `shouldBe` True
@@ -3715,16 +3732,16 @@ spec = do
         
         it "T036: HashSet performance: O(1) average-case membership testing" $ do
           -- Create HashSet with many patterns
-          let patterns = map pattern (map show [1..100])
+          let patterns = map point (map show [1..100])
               s = HashSet.fromList patterns :: HashSet.HashSet (Pattern String)
           -- Membership testing should be fast (O(1) average-case)
-          HashSet.member (pattern "50") s `shouldBe` True
-          HashSet.member (pattern "99") s `shouldBe` True
-          HashSet.member (pattern "200") s `shouldBe` False
+          HashSet.member (point "50") s `shouldBe` True
+          HashSet.member (point "99") s `shouldBe` True
+          HashSet.member (point "200") s `shouldBe` False
         
         it "T038: HashSet with nested patterns as elements" $ do
-          let p1 = patternWith "outer" [pattern "inner"] :: Pattern String
-              p2 = patternWith "outer" [patternWith "inner" [pattern "value"]] :: Pattern String
+          let p1 = pattern "outer" [point "inner"] :: Pattern String
+              p2 = pattern "outer" [pattern "inner" [point "value"]] :: Pattern String
               s = HashSet.fromList [p1, p2] :: HashSet.HashSet (Pattern String)
           HashSet.member p1 s `shouldBe` True
           HashSet.member p2 s `shouldBe` True
@@ -3734,15 +3751,15 @@ spec = do
       
       describe "Hashable with Pattern Constructors" $ do
         
-        it "T045: Hashable instance with pattern constructor" $ do
-          let p1 = pattern "test" :: Pattern String
-              p2 = pattern "test" :: Pattern String
+        it "T045: Hashable instance with point constructor" $ do
+          let p1 = point "test" :: Pattern String
+              p2 = point "test" :: Pattern String
           p1 `shouldBe` p2
           hash p1 `shouldBe` hash p2
         
-        it "T045: Hashable instance with patternWith constructor" $ do
-          let p1 = patternWith "root" [pattern "a", pattern "b"] :: Pattern String
-              p2 = patternWith "root" [pattern "a", pattern "b"] :: Pattern String
+        it "T045: Hashable instance with pattern constructor" $ do
+          let p1 = pattern "root" [point "a", point "b"] :: Pattern String
+              p2 = pattern "root" [point "a", point "b"] :: Pattern String
           p1 `shouldBe` p2
           hash p1 `shouldBe` hash p2
         
@@ -3755,32 +3772,32 @@ spec = do
       describe "Hashable with Type Class Instances" $ do
         
         it "T046: Hashable instance with Functor (fmap preserves hash consistency)" $ do
-          let p1 = pattern "test" :: Pattern String
+          let p1 = point "test" :: Pattern String
               p2 = fmap id p1
           p1 `shouldBe` p2
           hash p1 `shouldBe` hash p2
         
         it "T046: Hashable instance with Foldable (toList doesn't affect hash)" $ do
-          let p = patternWith "root" [pattern "a", pattern "b"] :: Pattern String
+          let p = pattern "root" [point "a", point "b"] :: Pattern String
           -- Hash is based on structure, not flattened values
           hash p `shouldSatisfy` (\h -> h == h)
           toList p `shouldBe` ["root", "a", "b"]
         
         it "T046: Hashable instance with Traversable (traverse preserves hash consistency)" $ do
-          let p1 = pattern "test" :: Pattern String
+          let p1 = point "test" :: Pattern String
               p2 = runIdentity (traverse Identity p1)
           p1 `shouldBe` p2
           hash p1 `shouldBe` hash p2
         
         it "T046: Hashable instance with Eq (hash consistency verified)" $ do
-          let p1 = pattern "test" :: Pattern String
-              p2 = pattern "test" :: Pattern String
+          let p1 = point "test" :: Pattern String
+              p2 = point "test" :: Pattern String
           p1 == p2 `shouldBe` True
           hash p1 == hash p2 `shouldBe` True
         
         it "T046: Hashable instance with Ord (can use both ordered and hash-based containers)" $ do
-          let p1 = pattern "a" :: Pattern String
-              p2 = pattern "b" :: Pattern String
+          let p1 = point "a" :: Pattern String
+              p2 = point "b" :: Pattern String
           -- Can use in both Data.Set (Ord) and HashSet (Hashable)
           let orderedSet = Set.fromList [p1, p2]
               hashSet = HashSet.fromList [p1, p2]
@@ -3790,18 +3807,18 @@ spec = do
       describe "Hashable with Semigroup and Monoid" $ do
         
         it "T047: Hashable instance with Semigroup (combined patterns hash correctly)" $ do
-          let p1 = pattern "a" :: Pattern String
-              p2 = pattern "b" :: Pattern String
+          let p1 = point "a" :: Pattern String
+              p2 = point "b" :: Pattern String
               combined = p1 <> p2
           hash combined `shouldSatisfy` (\h -> h == h)
-          -- Combined pattern should have different hash from individual patterns
+          -- Combined point should have different hash from individual patterns
           hash combined `shouldNotBe` hash p1
         
         it "T047: Hashable instance with Monoid (mempty hashes correctly)" $ do
           let empty = mempty :: Pattern String
           hash empty `shouldSatisfy` (\h -> h == h)
           -- mempty <> p should have same hash as p (identity)
-          let p = pattern "test" :: Pattern String
+          let p = point "test" :: Pattern String
           hash (mempty <> p) `shouldBe` hash p
     
     describe "Applicative Instance (User Story 1)" $ do
@@ -3835,47 +3852,50 @@ spec = do
           elements result `shouldBe` ([] :: [Pattern Int])
         
         it "T009: <*> with patterns having multiple elements" $ do
-          let fs = patternWith (id :: Int -> Int) [pure (*2), pure (+10)]
-              xs = patternWith 5 [pure 3, pure 7]
+          let fs = pattern (id :: Int -> Int) [pure (*2), pure (+10)]
+              xs = pattern 5 [pure 3, pure 7]
               result = fs <*> xs
           value result `shouldBe` 5
-          length (elements result) `shouldBe` 2
-          value (head (elements result)) `shouldBe` 6
-          value (last (elements result)) `shouldBe` 17
+          -- Law-abiding: each f in fs applies to xs, and each x gets id applied
+          -- Result: [(*2) <*> xs, (+10) <*> xs, id <*> 3, id <*> 7]
+          length (elements result) `shouldBe` 4
+          value (elements result !! 0) `shouldBe` 10  -- (*2) applied to 5
+          value (elements result !! 1) `shouldBe` 15  -- (+10) applied to 5
         
         it "T010: <*> with nested patterns" $ do
-          let fs = patternWith (id :: Int -> Int) 
-                [ patternWith (*2) [pure (*3)]
-                , patternWith (+1) []
+          let fs = pattern (id :: Int -> Int) 
+                [ pattern (*2) [pure (*3)]
+                , pattern (+1) []
                 ]
-              xs = patternWith 1
-                [ patternWith 2 [pure 3]
-                , patternWith 4 []
+              xs = pattern 1
+                [ pattern 2 [pure 3]
+                , pattern 4 []
                 ]
               result = fs <*> xs
           value result `shouldBe` 1
-          length (elements result) `shouldBe` 2
-          -- First nested element: (*2) applied to 2 = 4, (*3) applied to 3 = 9
+          -- Law-abiding: fs elements apply to xs, and xs elements get id applied
+          -- Result has 4 elements: [pattern (*2) <*> xs, pattern (+1) <*> xs, id <*> pattern 2, id <*> pattern 4]
+          length (elements result) `shouldBe` 4
+          -- First element: pattern (*2) [pure (*3)] <*> pattern 1 [pattern 2 [pure 3], pattern 4 []]
           let firstElem = head (elements result)
-          value firstElem `shouldBe` 4
-          length (elements firstElem) `shouldBe` 1
-          value (head (elements firstElem)) `shouldBe` 9
-          -- Second nested element: (+1) applied to 4 = 5
-          let secondElem = last (elements result)
-          value secondElem `shouldBe` 5
-          elements secondElem `shouldBe` ([] :: [Pattern Int])
+          value firstElem `shouldBe` 2  -- (*2) applied to 1
+          -- Last element: id <*> pattern 4 [] = pattern 4 []
+          let lastElem = last (elements result)
+          value lastElem `shouldBe` 4  -- id applied to 4
+          -- The last element will have nested structure from the recursive application
+          length (elements lastElem) `shouldBe` 2
         
-        it "T011: <*> with pure function and pattern value" $ do
+        it "T011: <*> with pure function and point value" $ do
           let f = pure ((+1) :: Int -> Int)
-              x = patternWith 5 [pure 3, pure 7]
+              x = pattern 5 [pure 3, pure 7]
               result = f <*> x
           value result `shouldBe` 6
           length (elements result) `shouldBe` 2
           value (head (elements result)) `shouldBe` 4
           value (last (elements result)) `shouldBe` 8
         
-        it "T012: <*> with pattern function and pure value" $ do
-          let f = patternWith ((+1) :: Int -> Int) [pure (*2), pure (+10)]
+        it "T012: <*> with point function and pure value" $ do
+          let f = pattern ((+1) :: Int -> Int) [pure (*2), pure (+10)]
               x = pure 5 :: Pattern Int
               result = f <*> x
           value result `shouldBe` 6
@@ -3896,21 +3916,21 @@ spec = do
         
         it "T038: consistency with patterns having elements" $ do
           let f = (*2) :: Int -> Int
-              p = patternWith 5 [pure 3, pure 7]
+              p = pattern 5 [pure 3, pure 7]
               functorResult = fmap f p
               applicativeResult = pure f <*> p
           functorResult `shouldBe` applicativeResult
         
         it "T039: consistency with nested patterns" $ do
           let f = (+10) :: Int -> Int
-              p = patternWith 1 [patternWith 2 [pure 3]]
+              p = pattern 1 [pattern 2 [pure 3]]
               functorResult = fmap f p
               applicativeResult = pure f <*> p
           functorResult `shouldBe` applicativeResult
         
         it "T040: consistency with type transformations (String -> Int)" $ do
           let f = length :: String -> Int
-              p = patternWith "hello" [pure "world", pure "test"]
+              p = pattern "hello" [pure "world", pure "test"]
               functorResult = fmap f p
               applicativeResult = pure f <*> p
           functorResult `shouldBe` applicativeResult
@@ -3928,21 +3948,25 @@ spec = do
       
       describe "Mismatched element counts" $ do
         
-        it "T050: <*> with mismatched element counts (function pattern has fewer elements)" $ do
-          let fs = patternWith (id :: Int -> Int) [pure (*2)]  -- 1 element
-              xs = patternWith 5 [pure 3, pure 7]              -- 2 elements
+        it "T050: <*> with mismatched element counts (function point has fewer elements)" $ do
+          let fs = pattern (id :: Int -> Int) [pure (*2)]  -- 1 element
+              xs = pattern 5 [pure 3, pure 7]              -- 2 elements
               result = fs <*> xs
           value result `shouldBe` 5
-          length (elements result) `shouldBe` 1  -- Truncated to minimum
-          value (head (elements result)) `shouldBe` 6
+          -- With law-abiding Applicative: fs applies to all xs elements, and xs elements get id applied
+          length (elements result) `shouldBe` 3  -- [(*2) <*> xs, id <*> 3, id <*> 7]
+          -- First element: (*2) applied to entire xs pattern
+          value (head (elements result)) `shouldBe` 10  -- (*2) applied to 5
         
-        it "T051: <*> with mismatched element counts (value pattern has fewer elements)" $ do
-          let fs = patternWith (id :: Int -> Int) [pure (*2), pure (+10)]  -- 2 elements
-              xs = patternWith 5 [pure 3]                                   -- 1 element
+        it "T051: <*> with mismatched element counts (value p has fewer elements)" $ do
+          let fs = pattern (id :: Int -> Int) [pure (*2), pure (+10)]  -- 2 elements
+              xs = pattern 5 [pure 3]                                   -- 1 element
               result = fs <*> xs
           value result `shouldBe` 5
-          length (elements result) `shouldBe` 1  -- Truncated to minimum
-          value (head (elements result)) `shouldBe` 6
+          -- With law-abiding Applicative: each f in fs applies to xs, and each x gets id applied
+          length (elements result) `shouldBe` 3  -- [(*2) <*> xs, (+10) <*> xs, id <*> 3]
+          -- First element: (*2) applied to entire xs pattern  
+          value (head (elements result)) `shouldBe` 10  -- (*2) applied to 5
       
       describe "Deeply nested patterns" $ do
         
@@ -3950,30 +3974,30 @@ spec = do
           -- Create deeply nested patterns with matching structures
           let buildDeepValue n = if n <= 0 
                                  then pure 1
-                                 else patternWith n [buildDeepValue (n - 1)]
+                                 else pattern n [buildDeepValue (n - 1)]
               buildDeepFunc n = if n <= 0
                                 then pure (id :: Int -> Int)
-                                else patternWith (id :: Int -> Int) [buildDeepFunc (n - 1)]
+                                else pattern (id :: Int -> Int) [buildDeepFunc (n - 1)]
               xs = buildDeepValue 10 :: Pattern Int
               fs = buildDeepFunc 10 :: Pattern (Int -> Int)
               result = fs <*> xs
-          -- Result should have same structure
-          depth result `shouldBe` 10
+          -- With law-abiding Applicative, depth doubles due to applying fs elements to xs and xs elements to fs
+          depth result `shouldBe` 20  -- Depth increases due to both branches
           value result `shouldBe` 10
       
       describe "Atomic patterns with multi-element patterns" $ do
         
-        it "T053: <*> with atomic function pattern and pattern with multiple elements" $ do
+        it "T053: <*> with atomic function point and point with multiple elements" $ do
           let f = pure ((+1) :: Int -> Int)
-              x = patternWith 5 [pure 3, pure 7]
+              x = pattern 5 [pure 3, pure 7]
               result = f <*> x
           value result `shouldBe` 6
           length (elements result) `shouldBe` 2
           value (head (elements result)) `shouldBe` 4
           value (last (elements result)) `shouldBe` 8
         
-        it "T054: <*> with pattern with multiple function elements and atomic value pattern" $ do
-          let f = patternWith ((+1) :: Int -> Int) [pure (*2), pure (+10)]
+        it "T054: <*> with point with multiple function elements and atomic value p" $ do
+          let f = pattern ((+1) :: Int -> Int) [pure (*2), pure (+10)]
               x = pure 5 :: Pattern Int
               result = f <*> x
           value result `shouldBe` 6
@@ -3998,39 +4022,39 @@ spec = do
       
       describe "anyValue function - unit tests" $ do
         
-        it "T001: anyValue with atomic pattern containing matching value" $ do
-          let pat = pattern 5
+        it "T001: anyValue with atomic point containing matching value" $ do
+          let pat = point 5
           anyValue (> 0) pat `shouldBe` True
           anyValue (> 10) pat `shouldBe` False
         
-        it "T002: anyValue with nested pattern containing matching value" $ do
-          let pat = patternWith 0 [pattern 1, pattern 2]
+        it "T002: anyValue with nested point containing matching value" $ do
+          let pat = pattern 0 [point 1, point 2]
           anyValue (> 0) pat `shouldBe` True
           anyValue (< 0) pat `shouldBe` False
         
-        it "T003: anyValue with pattern containing no matching values" $ do
-          let pat = patternWith 0 [pattern 1, pattern 2]
+        it "T003: anyValue with point containing no matching values" $ do
+          let pat = pattern 0 [point 1, point 2]
           anyValue (< 0) pat `shouldBe` False
           anyValue (> 10) pat `shouldBe` False
       
       describe "allValues function - unit tests" $ do
         
         it "T004: allValues with atomic pattern" $ do
-          let pat = pattern 5
+          let pat = point 5
           allValues (> 0) pat `shouldBe` True
           allValues (> 10) pat `shouldBe` False
         
-        it "T007: allValues with empty pattern (vacuous truth)" $ do
-          let pat = pattern 0
+        it "T007: allValues with empty point (vacuous truth)" $ do
+          let pat = point 0
           -- For atomic pattern, predicate is evaluated on the value
           allValues (> 0) pat `shouldBe` False
           allValues (>= 0) pat `shouldBe` True
         
         it "T008: anyValue and allValues with deeply nested patterns" $ do
-          let level3 = pattern 1
-          let level2 = patternWith 2 [level3]
-          let level1 = patternWith 3 [level2]
-          let pat = patternWith 4 [level1]
+          let level3 = point 1
+          let level2 = pattern 2 [level3]
+          let level1 = pattern 3 [level2]
+          let pat = pattern 4 [level1]
           anyValue (> 0) pat `shouldBe` True
           allValues (> 0) pat `shouldBe` True
           anyValue (> 10) pat `shouldBe` False
@@ -4041,54 +4065,54 @@ spec = do
       describe "filterPatterns function - unit tests" $ do
         
         it "T019: filterPatterns with predicate matching some subpatterns" $ do
-          let pat = patternWith "root" [pattern "a", pattern "b", patternWith "c" [pattern "d"]]
-          filterPatterns (\p -> length (elements p) == 0) pat `shouldBe` [pattern "a", pattern "b", pattern "d"]
+          let pat = pattern "root" [point "a", point "b", pattern "c" [point "d"]]
+          filterPatterns (\p -> length (elements p) == 0) pat `shouldBe` [point "a", point "b", point "d"]
         
         it "T020: filterPatterns with predicate matching root pattern" $ do
-          let pat = patternWith "root" [pattern "a", pattern "b"]
+          let pat = pattern "root" [point "a", point "b"]
           filterPatterns (\p -> value p == "root") pat `shouldBe` [pat]
         
         it "T021: filterPatterns with predicate matching no subpatterns" $ do
-          let pat = patternWith "root" [pattern "a", pattern "b"]
+          let pat = pattern "root" [point "a", point "b"]
           filterPatterns (\p -> value p == "x") pat `shouldBe` []
       
       describe "findPattern function - unit tests" $ do
         
         it "T022: findPattern with predicate matching first subpattern" $ do
-          let pat = patternWith "root" [pattern "a", pattern "b"]
-          findPattern (\p -> value p == "a") pat `shouldBe` Just (pattern "a")
+          let pat = pattern "root" [point "a", point "b"]
+          findPattern (\p -> value p == "a") pat `shouldBe` Just (point "a")
         
         it "T023: findPattern with predicate matching root pattern" $ do
-          let pat = patternWith "root" [pattern "a", pattern "b"]
+          let pat = pattern "root" [point "a", point "b"]
           findPattern (\p -> value p == "root") pat `shouldBe` Just pat
         
         it "T024: findPattern with predicate matching no subpatterns" $ do
-          let pat = patternWith "root" [pattern "a", pattern "b"]
+          let pat = pattern "root" [point "a", point "b"]
           findPattern (\p -> value p == "x") pat `shouldBe` Nothing
       
       describe "findAllPatterns function - unit tests" $ do
         
         it "T025: findAllPatterns with predicate matching multiple subpatterns" $ do
-          let pat = patternWith "root" [pattern "a", pattern "b"]
-          findAllPatterns (\p -> length (elements p) == 0) pat `shouldBe` [pattern "a", pattern "b"]
+          let pat = pattern "root" [point "a", point "b"]
+          findAllPatterns (\p -> length (elements p) == 0) pat `shouldBe` [point "a", point "b"]
       
       describe "Pattern predicates on various structures" $ do
         
-        it "T026: pattern predicates on deeply nested patterns" $ do
-          let level3 = pattern "leaf"
-          let level2 = patternWith "level2" [level3]
-          let level1 = patternWith "level1" [level2]
-          let pat = patternWith "root" [level1]
+        it "T026: point predicates on deeply nested patterns" $ do
+          let level3 = point "leaf"
+          let level2 = pattern "level2" [level3]
+          let level1 = pattern "level1" [level2]
+          let pat = pattern "root" [level1]
           filterPatterns (\p -> value p == "leaf") pat `shouldBe` [level3]
           findPattern (\p -> value p == "level2") pat `shouldBe` Just level2
         
-        it "T027: pattern predicates on atomic patterns" $ do
-          let pat = pattern "a"
+        it "T027: point predicates on atomic patterns" $ do
+          let pat = point "a"
           filterPatterns (\p -> value p == "a") pat `shouldBe` [pat]
           findPattern (\p -> value p == "a") pat `shouldBe` Just pat
         
-        it "T028: pattern predicates matching element sequence structure (a, b, b, a)" $ do
-          let pat = patternWith "root" [pattern "a", pattern "b", pattern "b", pattern "a"]
+        it "T028: point predicates matching element sequence structure (a, b, b, a)" $ do
+          let pat = pattern "root" [point "a", point "b", point "b", point "a"]
           filterPatterns (\p -> length (elements p) == 4 && 
                                value (elements p !! 0) == value (elements p !! 3) &&
                                value (elements p !! 1) == value (elements p !! 2)) pat `shouldBe` [pat]
@@ -4098,75 +4122,75 @@ spec = do
       describe "matches function - unit tests" $ do
         
         it "T041: matches with identical patterns" $ do
-          let pat1 = patternWith "root" [pattern "a", pattern "b"]
-          let pat2 = patternWith "root" [pattern "a", pattern "b"]
+          let pat1 = pattern "root" [point "a", point "b"]
+          let pat2 = pattern "root" [point "a", point "b"]
           matches pat1 pat2 `shouldBe` True
         
         it "T042: matches with patterns having different values" $ do
-          let pat1 = patternWith "root1" [pattern "a", pattern "b"]
-          let pat2 = patternWith "root2" [pattern "a", pattern "b"]
+          let pat1 = pattern "root1" [point "a", point "b"]
+          let pat2 = pattern "root2" [point "a", point "b"]
           matches pat1 pat2 `shouldBe` False
         
         it "T043: matches with patterns having different element counts" $ do
-          let pat1 = patternWith "root" [pattern "a", pattern "b"]
-          let pat2 = patternWith "root" [pattern "a"]
+          let pat1 = pattern "root" [point "a", point "b"]
+          let pat2 = pattern "root" [point "a"]
           matches pat1 pat2 `shouldBe` False
         
         it "T044: matches with patterns having same flattened values but different structures" $ do
-          let pat1 = patternWith "root" [pattern "a", pattern "b"]
-          let pat2 = patternWith "a" [patternWith "b" [pattern "root"]]
+          let pat1 = pattern "root" [point "a", point "b"]
+          let pat2 = pattern "a" [pattern "b" [point "root"]]
           -- Same flattened values but different structure
           matches pat1 pat2 `shouldBe` False
         
         it "T045: matches with atomic patterns" $ do
-          let pat1 = pattern "a"
-          let pat2 = pattern "a"
-          let pat3 = pattern "b"
+          let pat1 = point "a"
+          let pat2 = point "a"
+          let pat3 = point "b"
           matches pat1 pat2 `shouldBe` True
           matches pat1 pat3 `shouldBe` False
       
       describe "contains function - unit tests" $ do
         
-        it "T046: contains with pattern containing subpattern" $ do
-          let subpat = pattern "a"
-          let pat = patternWith "root" [subpat, pattern "b"]
+        it "T046: contains with point containing subpattern" $ do
+          let subpat = point "a"
+          let pat = pattern "root" [subpat, point "b"]
           contains pat subpat `shouldBe` True
         
-        it "T047: contains with pattern not containing subpattern" $ do
-          let subpat = pattern "x"
-          let pat = patternWith "root" [pattern "a", pattern "b"]
+        it "T047: contains with point not containing subpattern" $ do
+          let subpat = point "x"
+          let pat = pattern "root" [point "a", point "b"]
           contains pat subpat `shouldBe` False
         
-        it "T048: contains with pattern containing itself (self-containment)" $ do
-          let pat = patternWith "root" [pattern "a", pattern "b"]
+        it "T048: contains with point containing itself (self-containment)" $ do
+          let pat = pattern "root" [point "a", point "b"]
           contains pat pat `shouldBe` True
         
         it "T049: contains with atomic patterns" $ do
-          let pat1 = pattern "a"
-          let pat2 = pattern "b"
+          let pat1 = point "a"
+          let pat2 = point "b"
           contains pat1 pat1 `shouldBe` True
           contains pat1 pat2 `shouldBe` False
       
       describe "Structural matching on various structures" $ do
         
         it "T050: structural matching on deeply nested patterns" $ do
-          let level3 = pattern "leaf"
-          let level2 = patternWith "level2" [level3]
-          let level1 = patternWith "level1" [level2]
-          let pat1 = patternWith "root" [level1]
-          let pat2 = patternWith "root" [level1]
-          let pat3 = patternWith "root" [patternWith "level1" [pattern "leaf"]]
+          let level3 = point "leaf"
+          let level2 = pattern "level2" [level3]
+          let level1 = pattern "level1" [level2]
+          let pat1 = pattern "root" [level1]
+          let pat2 = pattern "root" [level1]
+          let pat3 = pattern "root" [pattern "level1" [point "leaf"]]
           matches pat1 pat2 `shouldBe` True
           matches pat1 pat3 `shouldBe` False
           contains pat1 level3 `shouldBe` True
-          contains pat1 (pattern "x") `shouldBe` False
+          contains pat1 (point "x") `shouldBe` False
     
     describe "Integration Tests - Predicate Functions with Existing Operations" $ do
       
       describe "Predicate functions with Functor operations" $ do
         
         it "T063: anyValue and allValues work with fmap" $ do
-          let pat = patternWith 1 [pattern 2, pattern 3]
+          let pat = pattern 1 [point 2, point 3]
           let pat' = fmap (+1) pat
           anyValue (> 0) pat' `shouldBe` True
           allValues (> 0) pat' `shouldBe` True
@@ -4175,7 +4199,7 @@ spec = do
       describe "Predicate functions with Foldable operations" $ do
         
         it "T064: anyValue and allValues are consistent with toList" $ do
-          let pat = patternWith 1 [pattern 2, pattern 3]
+          let pat = pattern 1 [point 2, point 3]
           let valuesList = toList pat
           anyValue (> 0) pat `shouldBe` any (> 0) valuesList
           allValues (> 0) pat `shouldBe` all (> 0) valuesList
@@ -4183,7 +4207,7 @@ spec = do
       describe "Pattern predicates with existing query functions" $ do
         
         it "T064: filterPatterns works with size and depth" $ do
-          let pat = patternWith "root" [pattern "a", pattern "b"]
+          let pat = pattern "root" [point "a", point "b"]
           let largePatterns = filterPatterns (\p -> size p >= 2) pat
           length largePatterns `shouldBe` 1  -- only root has size >= 2 (size 3)
           let deepPatterns = filterPatterns (\p -> depth p == 0) pat
@@ -4195,19 +4219,19 @@ spec = do
         
         it "T065: predicate functions work with 100+ nesting levels" $ do
           let createDeep n = if n <= 0
-                             then pattern 1
-                             else patternWith n [createDeep (n - 1)]
+                             then point 1
+                             else pattern n [createDeep (n - 1)]
           let deepPat = createDeep 100
           anyValue (> 0) deepPat `shouldBe` True
           allValues (> 0) deepPat `shouldBe` True
-          filterPatterns (\p -> depth p == 0) deepPat `shouldBe` [pattern 1]
-          contains deepPat (pattern 1) `shouldBe` True
+          filterPatterns (\p -> depth p == 0) deepPat `shouldBe` [point 1]
+          contains deepPat (point 1) `shouldBe` True
       
       describe "Patterns with many nodes (1000+)" $ do
         
         it "T065: predicate functions work with 1000+ nodes" $ do
-          let manyElems = map pattern [1..1000]
-          let pat = patternWith 0 manyElems
+          let manyElems = map point [1..1000]
+          let pat = pattern 0 manyElems
           anyValue (> 500) pat `shouldBe` True
           allValues (>= 0) pat `shouldBe` True
           allValues (> 0) pat `shouldBe` False  -- root value is 0
@@ -4217,26 +4241,26 @@ spec = do
       
       describe "extract function (User Story 1)" $ do
         
-        it "T009: extract with atomic pattern (integer value)" $ do
-          let p = pattern 5
+        it "T009: extract with atomic point (integer value)" $ do
+          let p = point 5
           extract p `shouldBe` (5 :: Int)
         
-        it "T010: extract with atomic pattern (string value)" $ do
-          let p = pattern "test"
+        it "T010: extract with atomic point (string value)" $ do
+          let p = point "test"
           extract p `shouldBe` "test"
         
-        it "T011: extract with pattern with elements" $ do
-          let p = patternWith "root" [pattern "a", pattern "b"]
+        it "T011: extract with point with elements" $ do
+          let p = pattern "root" [point "a", point "b"]
           extract p `shouldBe` "root"
         
-        it "T012: extract with nested pattern structure" $ do
-          let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
+        it "T012: extract with nested point structure" $ do
+          let p = pattern "root" [pattern "a" [point "x"], point "b"]
           extract p `shouldBe` "root"
         
         it "T013: extract with different value types" $ do
-          let pInt = pattern 42
-          let pString = pattern "hello"
-          let pCustom = pattern (Person "Alice" (Just 30))
+          let pInt = point 42
+          let pString = point "hello"
+          let pCustom = point (Person "Alice" (Just 30))
           extract pInt `shouldBe` (42 :: Int)
           extract pString `shouldBe` "hello"
           extract pCustom `shouldBe` Person "Alice" (Just 30)
@@ -4245,13 +4269,13 @@ spec = do
         
         it "T021: extend with depth computation function on atomic pattern" $ do
           let depthFunc p = depth p
-          let p = pattern 5
+          let p = point 5
           let result = extend depthFunc p
           extract result `shouldBe` (0 :: Int)
         
-        it "T022: extend with depth computation function on pattern with elements" $ do
+        it "T022: extend with depth computation function on point with elements" $ do
           let depthFunc p = depth p
-          let p = patternWith "root" [pattern "a", pattern "b"]
+          let p = pattern "root" [point "a", point "b"]
           let result = extend depthFunc p
           extract result `shouldBe` (1 :: Int)  -- Root has depth 1 (has elements)
           length (elements result) `shouldBe` 2
@@ -4260,7 +4284,7 @@ spec = do
         
         it "T023: extend with size computation function on nested pattern" $ do
           let sizeFunc p = size p
-          let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
+          let p = pattern "root" [pattern "a" [point "x"], point "b"]
           let result = extend sizeFunc p
           extract result `shouldBe` (4 :: Int)  -- Root (1) + "a" (1) + "x" (1) + "b" (1) = 4
           length (elements result) `shouldBe` 2
@@ -4269,7 +4293,7 @@ spec = do
         
         it "T024: extend with custom context-aware function (length of values)" $ do
           let customFunc p = length (values p)
-          let p = patternWith "root" [pattern "a", pattern "b"]
+          let p = pattern "root" [point "a", point "b"]
           let result = extend customFunc p
           extract result `shouldBe` (3 :: Int)
           extract (elements result !! 0) `shouldBe` (1 :: Int)
@@ -4277,15 +4301,15 @@ spec = do
         
         it "T025: extend with function that transforms value types (Pattern Int -> String)" $ do
           let transformFunc p = show (size p)
-          let p = patternWith 10 [pattern 20, pattern 30]
+          let p = pattern 10 [point 20, point 30]
           let result = extend transformFunc p
           extract result `shouldBe` "3"
           extract (elements result !! 0) `shouldBe` "1"
           extract (elements result !! 1) `shouldBe` "1"
         
-        it "T026: extend with nested pattern structure (verify recursive application)" $ do
+        it "T026: extend with nested point structure (verify recursive application)" $ do
           let depthFunc p = depth p
-          let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
+          let p = pattern "root" [pattern "a" [point "x"], point "b"]
           let result = extend depthFunc p
           extract result `shouldBe` (2 :: Int)  -- Root has depth 2 (nested structure)
           extract (elements result !! 0) `shouldBe` (1 :: Int)  -- "a" has depth 1 (has "x")
@@ -4295,36 +4319,36 @@ spec = do
       describe "duplicate function (User Story 3)" $ do
         
         it "T034: duplicate with atomic pattern" $ do
-          let p = pattern 5
+          let p = point 5
           let result = duplicate p
           extract result `shouldBe` p
           elements result `shouldBe` ([] :: [Pattern (Pattern Int)])
         
-        it "T035: duplicate with pattern with elements" $ do
-          let p = patternWith "root" [pattern "a", pattern "b"]
+        it "T035: duplicate with point with elements" $ do
+          let p = pattern "root" [point "a", point "b"]
           let result = duplicate p
           extract result `shouldBe` p
           length (elements result) `shouldBe` 2
-          extract (elements result !! 0) `shouldBe` pattern "a"
-          extract (elements result !! 1) `shouldBe` pattern "b"
+          extract (elements result !! 0) `shouldBe` point "a"
+          extract (elements result !! 1) `shouldBe` point "b"
         
-        it "T036: duplicate with nested pattern structure" $ do
-          let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
+        it "T036: duplicate with nested point structure" $ do
+          let p = pattern "root" [pattern "a" [point "x"], point "b"]
           let result = duplicate p
           extract result `shouldBe` p
           length (elements result) `shouldBe` 2
-          extract (elements result !! 0) `shouldBe` patternWith "a" [pattern "x"]
-          extract (elements result !! 1) `shouldBe` pattern "b"
+          extract (elements result !! 0) `shouldBe` pattern "a" [point "x"]
+          extract (elements result !! 1) `shouldBe` point "b"
           length (elements (elements result !! 0)) `shouldBe` 1
-          extract (elements (elements result !! 0) !! 0) `shouldBe` pattern "x"
+          extract (elements (elements result !! 0) !! 0) `shouldBe` point "x"
         
         it "T037: extract . duplicate = id (verifying context structure)" $ do
-          let p = patternWith "root" [pattern "a", pattern "b"]
+          let p = pattern "root" [point "a", point "b"]
           let result = duplicate p
           extract result `shouldBe` p
         
         it "T038: duplicate with deeply nested patterns (10+ levels)" $ do
-          let deepPat = foldl (\acc _ -> patternWith "level" [acc]) (pattern "leaf") [1..10]
+          let deepPat = foldl (\acc _ -> pattern "level" [acc]) (point "leaf") [1..10]
           let result = duplicate deepPat
           extract result `shouldBe` deepPat
           depth result `shouldBe` depth deepPat
@@ -4332,43 +4356,43 @@ spec = do
       describe "context-aware helper functions (User Story 5)" $ do
         
         it "T058: depthAt with atomic pattern" $ do
-          let p = pattern 5
+          let p = point 5
           let result = depthAt p
           extract result `shouldBe` (0 :: Int)
           elements result `shouldBe` ([] :: [Pattern Int])
         
-        it "T059: depthAt with nested pattern structure" $ do
-          let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
+        it "T059: depthAt with nested point structure" $ do
+          let p = pattern "root" [pattern "a" [point "x"], point "b"]
           let result = depthAt p
           extract result `shouldBe` (2 :: Int)  -- Root has depth 2
           extract (elements result !! 0) `shouldBe` (1 :: Int)  -- "a" has depth 1
           extract (elements result !! 1) `shouldBe` (0 :: Int)  -- "b" has depth 0
           extract (elements (elements result !! 0) !! 0) `shouldBe` (0 :: Int)  -- "x" has depth 0
         
-        it "T060: sizeAt with pattern with elements" $ do
-          let p = patternWith "root" [pattern "a", pattern "b"]
+        it "T060: sizeAt with point with elements" $ do
+          let p = pattern "root" [point "a", point "b"]
           let result = sizeAt p
           extract result `shouldBe` (3 :: Int)  -- Root: 3 nodes (root + a + b)
           extract (elements result !! 0) `shouldBe` (1 :: Int)  -- "a": 1 node
           extract (elements result !! 1) `shouldBe` (1 :: Int)  -- "b": 1 node
         
-        it "T061: sizeAt with nested pattern structure" $ do
-          let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
+        it "T061: sizeAt with nested point structure" $ do
+          let p = pattern "root" [pattern "a" [point "x"], point "b"]
           let result = sizeAt p
           extract result `shouldBe` (4 :: Int)  -- Root: 4 nodes (root + a + x + b)
           extract (elements result !! 0) `shouldBe` (2 :: Int)  -- "a": 2 nodes (a + x)
           extract (elements result !! 1) `shouldBe` (1 :: Int)  -- "b": 1 node
           extract (elements (elements result !! 0) !! 0) `shouldBe` (1 :: Int)  -- "x": 1 node
         
-        it "T062: indicesAt with pattern with elements" $ do
-          let p = patternWith "root" [pattern "a", pattern "b"]
+        it "T062: indicesAt with point with elements" $ do
+          let p = pattern "root" [point "a", point "b"]
           let result = indicesAt p
           extract result `shouldBe` ([] :: [Int])  -- Root: empty indices
           extract (elements result !! 0) `shouldBe` ([0] :: [Int])  -- "a": [0]
           extract (elements result !! 1) `shouldBe` ([1] :: [Int])  -- "b": [1]
         
-        it "T063: indicesAt with nested pattern structure" $ do
-          let p = patternWith "root" [patternWith "a" [pattern "x"], pattern "b"]
+        it "T063: indicesAt with nested point structure" $ do
+          let p = pattern "root" [pattern "a" [point "x"], point "b"]
           let result = indicesAt p
           extract result `shouldBe` ([] :: [Int])  -- Root: empty indices
           extract (elements result !! 0) `shouldBe` ([0] :: [Int])  -- "a": [0]

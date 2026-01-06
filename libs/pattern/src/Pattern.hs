@@ -18,7 +18,7 @@
 -- Import the main Pattern module to access all functionality:
 --
 -- >>> import Pattern
--- >>> let p = pattern "test"
+-- >>> let p = point "test"
 -- >>> value p
 -- "test"
 --

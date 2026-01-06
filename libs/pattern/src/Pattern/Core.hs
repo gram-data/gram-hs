@@ -4,7 +4,7 @@ module Pattern.Core
     Pattern(..)
     -- * Construction Functions
   , pattern
-  , patternWith
+  , point
   , fromList
     -- * Query Functions
   , length
@@ -31,16 +31,14 @@ module Pattern.Core
   , indicesAt
   ) where
 
-import Prelude hiding (length, pattern)
+import Prelude hiding (length)
 import qualified Prelude
 import Data.Foldable (toList)
-import Data.Traversable (foldMapDefault, fmapDefault)
 import Data.Semigroup (Semigroup(..), sconcat, stimes)
-import Data.Monoid (Monoid(..), mconcat)
+import Data.Monoid ()
 import Data.Hashable (Hashable(..))
 import Control.Comonad (Comonad(..))
 import Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.List.NonEmpty as NE
 
 -- | Core Pattern data type and basic operations.
 --
@@ -236,7 +234,7 @@ import qualified Data.List.NonEmpty as NE
 --
 -- Atomic pattern:
 --
--- >>> atom = pattern "atom1"
+-- >>> atom = point "atom1"
 -- >>> value atom
 -- "atom1"
 -- >>> elements atom
@@ -244,22 +242,22 @@ import qualified Data.List.NonEmpty as NE
 --
 -- Pattern with elements:
 --
--- >>> elem1 = pattern "elem1"
--- >>> elem2 = pattern "elem2"
--- >>> pattern = patternWith "pattern" [elem1, elem2]
--- >>> value pattern
+-- >>> elem1 = point "elem1"
+-- >>> elem2 = point "elem2"
+-- >>> p = pattern "pattern" [elem1, elem2]
+-- >>> value p
 -- "pattern"
--- >>> length (elements pattern)
+-- >>> length (elements p)
 -- 2
--- >>> map value (elements pattern)
+-- >>> map value (elements p)
 -- ["elem1","elem2"]
 --
 -- Nested pattern:
 --
--- >>> level3 = pattern "level3"
--- >>> level2 = patternWith "level2" [level3]
--- >>> level1 = patternWith "level1" [level2]
--- >>> nested = patternWith "root" [level1]
+-- >>> level3 = point "level3"
+-- >>> level2 = pattern "level2" [level3]
+-- >>> level1 = pattern "level1" [level2]
+-- >>> nested = pattern "root" [level1]
 -- >>> value nested
 -- "root"
 -- >>> value (head (elements nested))
@@ -268,23 +266,8 @@ data Pattern v = Pattern
   { value    :: v          -- ^ Decoration about what kind of pattern it is
   , elements :: [Pattern v] -- ^ The pattern itself, represented as a sequence of elements
   }
-  deriving (Eq)
+  deriving (Eq, Show)
 
--- | 'Show' instance for 'Pattern'.
---
--- Displays the pattern in a readable format: @Pattern "value" [elements]@.
--- Requires the value type @v@ to be an instance of 'Show'.
---
--- === Examples
---
--- >>> show (pattern "test")
--- "Pattern \"test\" []"
---
--- >>> show (pattern 42)
--- "Pattern 42 []"
-instance Show v => Show (Pattern v) where
-  show (Pattern v []) = "Pattern " ++ show v ++ " []"
-  show (Pattern v es) = "Pattern " ++ show v ++ " " ++ show es
 
 -- | 'Ord' instance for 'Pattern'.
 --
@@ -306,48 +289,48 @@ instance Show v => Show (Pattern v) where
 --
 -- Comparing atomic patterns:
 --
--- >>> compare (pattern "a") (pattern "b")
+-- >>> compare (point "a") (point "b")
 -- LT
--- >>> compare (pattern "b") (pattern "a")
+-- >>> compare (point "b") (point "a")
 -- GT
 --
 -- Comparing patterns with elements (value takes precedence):
 --
--- >>> p1 = patternWith "root" [pattern "a"]
--- >>> p2 = patternWith "root" [pattern "b"]
+-- >>> p1 = pattern "root" [point "a"]
+-- >>> p2 = pattern "root" [point "b"]
 -- >>> compare p1 p2
 -- LT
 --
 -- Comparing identical patterns:
 --
--- >>> p1 = patternWith "root" [pattern "a", pattern "b"]
--- >>> p2 = patternWith "root" [pattern "a", pattern "b"]
+-- >>> p1 = pattern "root" [point "a", point "b"]
+-- >>> p2 = pattern "root" [point "a", point "b"]
 -- >>> compare p1 p2
 -- EQ
 --
 -- Deep structural comparison:
 --
--- >>> inner1 = pattern "inner1"
--- >>> inner2 = pattern "inner2"
--- >>> outer1 = patternWith "outer" [patternWith "middle" [inner1]]
--- >>> outer2 = patternWith "outer" [patternWith "middle" [inner2]]
+-- >>> inner1 = point "inner1"
+-- >>> inner2 = point "inner2"
+-- >>> outer1 = pattern "outer" [pattern "middle" [inner1]]
+-- >>> outer2 = pattern "outer" [pattern "middle" [inner2]]
 -- >>> compare outer1 outer2
 -- LT
 --
 -- Using standard operators:
 --
--- >>> (pattern "a") < (pattern "b")
+-- >>> (point "a") < (point "b")
 -- True
--- >>> (pattern "a") <= (pattern "b")
+-- >>> (point "a") <= (point "b")
 -- True
--- >>> (pattern "b") > (pattern "a")
+-- >>> (point "b") > (point "a")
 -- True
 --
 -- Min and Max:
 --
--- >>> min (pattern "a") (pattern "b")
+-- >>> min (point "a") (point "b")
 -- Pattern "a" []
--- >>> max (pattern "a") (pattern "b")
+-- >>> max (point "a") (point "b")
 -- Pattern "b" []
 instance Ord v => Ord (Pattern v) where
   compare (Pattern v1 es1) (Pattern v2 es2) =
@@ -373,17 +356,17 @@ instance Ord v => Ord (Pattern v) where
 --
 -- Combining atomic patterns:
 --
--- >>> p1 = pattern "hello"
--- >>> p2 = pattern "world"
+-- >>> p1 = point "hello"
+-- >>> p2 = point "world"
 -- >>> p1 <> p2
 -- Pattern "helloworld" []
 --
 -- Combining patterns with elements:
 --
--- >>> elem1 = pattern "a"
--- >>> elem2 = pattern "b"
--- >>> p1 = patternWith "prefix" [elem1, elem2]
--- >>> p2 = patternWith "suffix" [pattern "c"]
+-- >>> elem1 = point "a"
+-- >>> elem2 = point "b"
+-- >>> p1 = pattern "prefix" [elem1, elem2]
+-- >>> p2 = pattern "suffix" [point "c"]
 -- >>> p1 <> p2
 -- Pattern "prefixsuffix" [Pattern "a" [],Pattern "b" [],Pattern "c" []]
 --
@@ -405,22 +388,22 @@ instance Ord v => Ord (Pattern v) where
 --
 -- Using sconcat for list of non-empty patterns:
 --
--- >>> sconcat (pattern "a" :| [pattern "b", pattern "c"])
+-- >>> sconcat (point "a" :| [point "b", point "c"])
 -- Pattern "abc" []
 --
 -- Using stimes for repetition:
 --
--- >>> stimes 3 (patternWith "x" [pattern "y"])
+-- >>> stimes 3 (pattern "x" [point "y"])
 -- Pattern "xxx" [Pattern "y" [],Pattern "y" [],Pattern "y" []]
 --
 -- Complex combination:
 --
--- >>> inner1 = pattern "inner1"
--- >>> inner2 = pattern "inner2"
--- >>> middle1 = patternWith "middle1" [inner1]
--- >>> middle2 = patternWith "middle2" [inner2]
--- >>> p1 = patternWith "root1" [middle1]
--- >>> p2 = patternWith "root2" [middle2]
+-- >>> inner1 = point "inner1"
+-- >>> inner2 = point "inner2"
+-- >>> middle1 = pattern "middle1" [inner1]
+-- >>> middle2 = pattern "middle2" [inner2]
+-- >>> p1 = pattern "root1" [middle1]
+-- >>> p2 = pattern "root2" [middle2]
 -- >>> result = p1 <> p2
 -- >>> value result
 -- "root1root2"
@@ -467,14 +450,14 @@ instance Semigroup v => Semigroup (Pattern v) where
 --
 -- Identity laws:
 --
--- >>> mempty <> pattern "test"
+-- >>> mempty <> point "test"
 -- Pattern "test" []
--- >>> pattern "test" <> mempty
+-- >>> point "test" <> mempty
 -- Pattern "test" []
 --
 -- Combining list of patterns:
 --
--- >>> mconcat [pattern "a", pattern "b", pattern "c"]
+-- >>> mconcat [point "a", point "b", point "c"]
 -- Pattern "abc" []
 --
 -- Empty list returns mempty:
@@ -507,20 +490,20 @@ instance Monoid v => Monoid (Pattern v) where
 --
 -- Hashing atomic patterns:
 --
--- >>> hash (pattern "a" :: Pattern String)
+-- >>> hash (point "a" :: Pattern String)
 -- ...
--- >>> hash (pattern "b" :: Pattern String)
+-- >>> hash (point "b" :: Pattern String)
 -- ...
 --
 -- Hashing patterns with elements:
 --
--- >>> hash (patternWith "root" [pattern "a", pattern "b"] :: Pattern String)
+-- >>> hash (pattern "root" [point "a", point "b"] :: Pattern String)
 -- ...
 --
 -- Hash consistency with equality:
 --
--- >>> let p1 = pattern "test" :: Pattern String
--- >>> let p2 = pattern "test" :: Pattern String
+-- >>> let p1 = point "test" :: Pattern String
+-- >>> let p2 = point "test" :: Pattern String
 -- >>> p1 == p2
 -- True
 -- >>> hash p1 == hash p2
@@ -528,23 +511,23 @@ instance Monoid v => Monoid (Pattern v) where
 --
 -- Structure distinguishes hash:
 --
--- >>> let p1 = patternWith "a" [pattern "b", pattern "c"] :: Pattern String
--- >>> let p2 = patternWith "a" [patternWith "b" [pattern "c"]] :: Pattern String
+-- >>> let p1 = pattern "a" [point "b", point "c"] :: Pattern String
+-- >>> let p2 = pattern "a" [pattern "b" [point "c"]] :: Pattern String
 -- >>> hash p1 /= hash p2
 -- True
 --
 -- Using in HashMap:
 --
 -- >>> import qualified Data.HashMap.Strict as HashMap
--- >>> let m = HashMap.fromList [(pattern "a", 1), (pattern "b", 2)] :: HashMap (Pattern String) Int
--- >>> HashMap.lookup (pattern "a") m
+-- >>> let m = HashMap.fromList [(point "a", 1), (point "b", 2)] :: HashMap (Pattern String) Int
+-- >>> HashMap.lookup (point "a") m
 -- Just 1
 --
 -- Using in HashSet:
 --
 -- >>> import qualified Data.HashSet as HashSet
--- >>> let s = HashSet.fromList [pattern "a", pattern "b", pattern "c"] :: HashSet (Pattern String)
--- >>> HashSet.member (pattern "a") s
+-- >>> let s = HashSet.fromList [point "a", point "b", point "c"] :: HashSet (Pattern String)
+-- >>> HashSet.member (point "a") s
 -- True
 instance Hashable v => Hashable (Pattern v) where
   hashWithSalt salt (Pattern v es) = 
@@ -561,48 +544,48 @@ instance Hashable v => Hashable (Pattern v) where
 --
 -- === Examples
 --
--- >>> atom = pattern "test"
+-- >>> atom = point "test"
 -- >>> fmap (map toUpper) atom
 -- Pattern "TEST" []
 --
--- >>> elem1 = pattern "hello"
--- >>> elem2 = pattern "world"
--- >>> pattern = patternWith "greeting" [elem1, elem2]
--- >>> fmap (map toUpper) pattern
+-- >>> elem1 = point "hello"
+-- >>> elem2 = point "world"
+-- >>> p = pattern "greeting" [elem1, elem2]
+-- >>> fmap (map toUpper) p
 -- Pattern "GREETING" [Pattern "HELLO" [],Pattern "WORLD" []]
 --
--- >>> elem1 = pattern 5
--- >>> elem2 = pattern 10
--- >>> pattern = patternWith 20 [elem1, elem2]
--- >>> fmap (* 2) pattern
+-- >>> elem1 = point 5
+-- >>> elem2 = point 10
+-- >>> p = pattern 20 [elem1, elem2]
+-- >>> fmap (* 2) p
 -- Pattern 40 [Pattern 10 [],Pattern 20 []]
 --
--- >>> inner = pattern "inner"
--- >>> middle = patternWith "middle" [inner]
--- >>> outer = patternWith "outer" [middle]
--- >>> pattern = patternWith "root" [outer]
--- >>> fmap (map toUpper) pattern
+-- >>> inner = point "inner"
+-- >>> middle = pattern "middle" [inner]
+-- >>> outer = pattern "outer" [middle]
+-- >>> p = pattern "root" [outer]
+-- >>> fmap (map toUpper) p
 -- Pattern "ROOT" [Pattern "OUTER" [Pattern "MIDDLE" [Pattern "INNER" []]]]
 --
--- >>> level4 = pattern "level4"
--- >>> level3 = patternWith "level3" [level4]
--- >>> level2 = patternWith "level2" [level3]
--- >>> level1 = patternWith "level1" [level2]
--- >>> pattern = patternWith "root" [level1]
--- >>> fmap (map toUpper) pattern
+-- >>> level4 = point "level4"
+-- >>> level3 = pattern "level3" [level4]
+-- >>> level2 = pattern "level2" [level3]
+-- >>> level1 = pattern "level1" [level2]
+-- >>> p = pattern "root" [level1]
+-- >>> fmap (map toUpper) p
 -- Pattern "ROOT" [Pattern "LEVEL1" [Pattern "LEVEL2" [Pattern "LEVEL3" [Pattern "LEVEL4" []]]]]
 --
--- >>> branch1 = patternWith "b1" [pattern "b1leaf"]
--- >>> branch2 = patternWith "b2" [patternWith "b2mid" [pattern "b2leaf"]]
--- >>> branch3 = pattern "b3"
--- >>> pattern = patternWith "root" [branch1, branch2, branch3]
--- >>> fmap (map toUpper) pattern
+-- >>> branch1 = pattern "b1" [point "b1leaf"]
+-- >>> branch2 = pattern "b2" [pattern "b2mid" [point "b2leaf"]]
+-- >>> branch3 = point "b3"
+-- >>> p = pattern "root" [branch1, branch2, branch3]
+-- >>> fmap (map toUpper) p
 -- Pattern "ROOT" [Pattern "B1" [Pattern "B1LEAF" []],Pattern "B2" [Pattern "B2MID" [Pattern "B2LEAF" []]],Pattern "B3" []]
 --
--- >>> elem1 = pattern "5"
--- >>> elem2 = pattern "10"
--- >>> pattern = patternWith "20" [elem1, elem2]
--- >>> fmap (read :: String -> Int) pattern
+-- >>> elem1 = point "5"
+-- >>> elem2 = point "10"
+-- >>> p = pattern "20" [elem1, elem2]
+-- >>> fmap (read :: String -> Int) p
 -- Pattern 20 [Pattern 5 [],Pattern 10 []]
 --
 -- >>> atom = Pattern { value = "atom", elements = [] }
@@ -639,21 +622,18 @@ instance Functor Pattern where
 --
 -- Semantics:
 -- * 'pure' creates an atomic pattern with the given value (empty elements list).
--- * '<*>' applies the function pattern to the value pattern using structure-preserving semantics:
+-- * '<*>' applies the function pattern to the value pattern:
 --   - The root function is applied to the root value.
---   - Element functions are applied to corresponding element values (zip-like).
---   - If element counts differ, the result has the minimum number of elements (truncation).
+--   - Each function element is applied to the entire value pattern.
+--   - The root function is applied to each value element.
+--   - This ensures all Applicative laws hold, particularly: `pure f <*> x == fmap f x`
 --
--- Note on Semantics:
--- The Applicative instance uses "zip-like" semantics for elements, similar to 'ZipList'.
--- This means structure is preserved where it overlaps. This is distinct from the
--- Cartesian product semantics of standard List Applicative.
---
--- Laws:
+-- Laws (all satisfied):
 -- * Identity: `pure id <*> v == v`
 -- * Composition: `pure (.) <*> u <*> v <*> w == u <*> (v <*> w)`
 -- * Homomorphism: `pure f <*> pure x == pure (f x)`
 -- * Interchange: `u <*> pure y == pure ($ y) <*> u`
+-- * Functor Consistency: `fmap f x == pure f <*> x`
 --
 -- === Examples
 --
@@ -669,32 +649,31 @@ instance Functor Pattern where
 -- >>> f <*> x
 -- Pattern 6 []
 --
--- Zip-like application for elements:
+-- Functor consistency (pure f <*> x == fmap f x):
 --
--- >>> let fs = patternWith id [pure (*2), pure (+10)]
--- >>> let xs = patternWith 5 [pure 3, pure 7]
--- >>> fs <*> xs
--- Pattern 5 [Pattern 6 [],Pattern 17 []]
+-- >>> let f = (+1)
+-- >>> let x = pattern 5 [pure 3, pure 7]
+-- >>> pure f <*> x
+-- Pattern 6 [Pattern 4 [],Pattern 8 []]
 --
--- Nested application:
+-- >>> fmap f x
+-- Pattern 6 [Pattern 4 [],Pattern 8 []]
 --
--- >>> let fs = patternWith id [patternWith (*2) [pure (*3)], patternWith (+1) []]
--- >>> let xs = patternWith 1 [patternWith 2 [pure 3], patternWith 4 []]
--- >>> fs <*> xs
--- Pattern 1 [Pattern 4 [Pattern 9 []],Pattern 5 []]
+-- Identity law (pure id <*> v == v):
 --
--- Truncation (mismatched element counts):
+-- >>> let v = pattern 5 [pure 3]
+-- >>> pure id <*> v
+-- Pattern 5 [Pattern 3 []]
 --
--- >>> let fs = patternWith id [pure (*2)]  -- 1 element
--- >>> let xs = patternWith 5 [pure 3, pure 7]   -- 2 elements
--- >>> fs <*> xs
--- Pattern 5 [Pattern 6 []]
+-- >>> v
+-- Pattern 5 [Pattern 3 []]
 instance Applicative Pattern where
   pure :: a -> Pattern a
   pure x = Pattern x []
 
   (<*>) :: Pattern (a -> b) -> Pattern a -> Pattern b
-  (Pattern f fs) <*> (Pattern x xs) = Pattern (f x) (zipWith (<*>) fs xs)
+  (Pattern f fs) <*> (Pattern x xs) = 
+    Pattern (f x) (map (<*> Pattern x xs) fs ++ map (Pattern f fs <*>) xs)
 
 -- | 'Comonad' instance for 'Pattern'.
 --
@@ -717,13 +696,13 @@ instance Applicative Pattern where
 --
 -- Extract returns the root value:
 --
--- >>> p = pattern 5
+-- >>> p = point 5
 -- >>> extract p
 -- 5
 --
 -- Duplicate creates context structure:
 --
--- >>> p = patternWith "root" [pattern "child"]
+-- >>> p = pattern "root" [point "child"]
 -- >>> d = duplicate p
 -- >>> value d
 -- Pattern "root" [Pattern "child" []]
@@ -732,7 +711,7 @@ instance Applicative Pattern where
 --
 -- Extend applies context-aware function:
 --
--- >>> p = patternWith 1 [pattern 2, pattern 3]
+-- >>> p = pattern 1 [point 2, point 3]
 -- >>> -- Calculate sum of subtree at each position
 -- >>> sumSubtree (Pattern v es) = v + sum (map (extract . fmap sumSubtree) es)
 -- >>> -- Note: proper implementation would use sizeAt or similar helper
@@ -758,15 +737,15 @@ instance Comonad Pattern where
 --
 -- === Examples
 --
--- >>> atom = pattern "test"
+-- >>> atom = point "test"
 -- >>> toList atom
 -- ["test"]
 --
--- >>> pattern = patternWith "root" [pattern "a", pattern "b"]
+-- >>> p = pattern "root" [point "a", point "b"]
 -- >>> toList pattern
 -- ["root","a","b"]
 --
--- >>> sum (patternWith 1 [pattern 2, pattern 3])
+-- >>> sum (pattern 1 [point 2, point 3])
 -- 6
 instance Foldable Pattern where
   foldMap f (Pattern v es) = f v <> foldMap (foldMap f) es
@@ -790,58 +769,58 @@ instance Foldable Pattern where
 -- Basic traversal with Identity (equivalent to fmap):
 --
 -- >>> import Data.Functor.Identity
--- >>> pattern = patternWith 1 [pattern 2]
--- >>> runIdentity $ traverse (Identity . (*2)) pattern
+-- >>> p = pattern 1 [point 2]
+-- >>> runIdentity $ traverse (Identity . (*2)) p
 -- Pattern 2 [Pattern 4 []]
 --
 -- Traversal with Maybe (validation):
 --
 -- >>> let validate x = if x > 0 then Just x else Nothing
--- >>> pattern = patternWith 1 [pattern 2]
--- >>> traverse validate pattern
+-- >>> p = pattern 1 [point 2]
+-- >>> traverse validate p
 -- Just (Pattern 1 [Pattern 2 []])
 --
--- >>> invalid = patternWith 1 [pattern (-1)]
+-- >>> invalid = pattern 1 [point (-1)]
 -- >>> traverse validate invalid
 -- Nothing
 --
 -- Sequencing effects:
 --
--- >>> pattern = patternWith (Just 1) [pattern (Just 2)]
--- >>> sequenceA pattern
+-- >>> p = pattern (Just 1) [point (Just 2)]
+-- >>> sequenceA p
 -- Just (Pattern 1 [Pattern 2 []])
 --
 -- Atomic pattern:
 --
--- >>> atom = pattern 5
+-- >>> atom = point 5
 -- >>> traverse (Just . (*2)) atom
 -- Just (Pattern 10 [])
 --
 -- Pattern with multiple elements:
 --
 -- >>> let validate x = if x > 0 then Just x else Nothing
--- >>> elem1 = pattern 5
--- >>> elem2 = pattern 10
--- >>> pattern = patternWith 20 [elem1, elem2]
--- >>> traverse validate pattern
+-- >>> elem1 = point 5
+-- >>> elem2 = point 10
+-- >>> p = pattern 20 [elem1, elem2]
+-- >>> traverse validate p
 -- Just (Pattern 20 [Pattern 5 [],Pattern 10 []])
 --
 -- Nested pattern structure:
 --
 -- >>> let validate x = if x > 0 then Just x else Nothing
--- >>> inner = pattern 1
--- >>> middle = patternWith 2 [inner]
--- >>> pattern = patternWith 3 [middle]
--- >>> traverse validate pattern
+-- >>> inner = point 1
+-- >>> middle = pattern 2 [inner]
+-- >>> p = pattern 3 [middle]
+-- >>> traverse validate p
 -- Just (Pattern 3 [Pattern 2 [Pattern 1 []]])
 --
 -- Effect failure propagation:
 --
 -- >>> let validate x = if x > 0 then Just x else Nothing
--- >>> inner = pattern (-1) -- Invalid value
--- >>> middle = patternWith 2 [inner]
--- >>> pattern = patternWith 3 [middle]
--- >>> traverse validate pattern
+-- >>> inner = point (-1) -- Invalid value
+-- >>> middle = pattern 2 [inner]
+-- >>> p = pattern 3 [middle]
+-- >>> traverse validate p
 -- Nothing
 instance Traversable Pattern where
   traverse f (Pattern v es) = Pattern <$> f v <*> traverse (traverse f) es
@@ -850,31 +829,34 @@ instance Traversable Pattern where
 
 -- | Create an atomic pattern (a pattern with no elements) from a value.
 --
--- This is a convenience constructor for creating simple patterns.
+-- This uses category-theory terminology (pointed functor). Functionally
+-- equivalent to 'pattern v []' and 'pure v'.
 --
 -- === Examples
 --
--- >>> pattern "atom"
+-- >>> point "atom"
 -- Pattern "atom" []
 --
--- >>> pattern 42
+-- >>> point 42
 -- Pattern 42 []
-pattern :: v -> Pattern v
-pattern v = Pattern v []
+point :: v -> Pattern v
+point v = Pattern v []
 
--- | Create a pattern with explicit elements.
+-- | Create a pattern with a value and elements.
 --
--- This is a convenience constructor for creating complex patterns.
+-- This is the primary constructor for creating patterns. Takes a decoration value
+-- and a list of pattern elements. The elements form the pattern itself; the value
+-- provides decoration about that pattern.
 --
 -- === Examples
 --
--- >>> patternWith "root" [pattern "child"]
+-- >>> pattern "root" [point "child"]
 -- Pattern "root" [Pattern "child" []]
 --
--- >>> patternWith "pair" [pattern 1, pattern 2]
+-- >>> pattern "pair" [point 1, point 2]
 -- Pattern "pair" [Pattern 1 [],Pattern 2 []]
-patternWith :: v -> [Pattern v] -> Pattern v
-patternWith v es = Pattern v es
+pattern :: v -> [Pattern v] -> Pattern v
+pattern v es = Pattern v es
 
 -- | Create a pattern from a list of values.
 --
@@ -886,7 +868,7 @@ patternWith v es = Pattern v es
 -- >>> fromList "root" ["a", "b", "c"]
 -- Pattern "root" [Pattern "a" [],Pattern "b" [],Pattern "c" []]
 fromList :: v -> [v] -> Pattern v
-fromList v vs = patternWith v (map pattern vs)
+fromList v vs = pattern v (map point vs)
 
 -- * Query Functions
 
@@ -896,10 +878,10 @@ fromList v vs = patternWith v (map pattern vs)
 --
 -- === Examples
 --
--- >>> length (pattern "atom")
+-- >>> length (point "atom")
 -- 0
 --
--- >>> length (patternWith "pair" [pattern 1, pattern 2])
+-- >>> length (pattern "pair" [point 1, point 2])
 -- 2
 length :: Pattern v -> Int
 length (Pattern _ es) = Prelude.length es
@@ -911,35 +893,35 @@ length (Pattern _ es) = Prelude.length es
 --
 -- === Examples
 --
--- >>> size (pattern "atom")
+-- >>> size (point "atom")
 -- 1
 --
--- >>> size (patternWith "root" [pattern "child"])
+-- >>> size (pattern "root" [point "child"])
 -- 2
 --
--- >>> size (patternWith "root" [pattern "a", pattern "b"])
+-- >>> size (pattern "root" [point "a", point "b"])
 -- 3
 size :: Pattern v -> Int
 size (Pattern _ es) = 1 + sum (map size es)
 
 -- | Returns the maximum nesting depth of a pattern structure.
 --
--- An atomic pattern has depth 1.
+-- An atomic pattern has depth 0 (root only, no nesting).
 -- A pattern with elements has depth 1 + max depth of elements.
 -- This operation is O(n) where n is the total number of nodes.
 --
 -- === Examples
 --
--- >>> depth (pattern "atom")
+-- >>> depth (point "atom")
+-- 0
+--
+-- >>> depth (pattern "root" [point "child"])
 -- 1
 --
--- >>> depth (patternWith "root" [pattern "child"])
+-- >>> depth (pattern "root" [pattern "middle" [point "inner"]])
 -- 2
---
--- >>> depth (patternWith "root" [patternWith "middle" [pattern "inner"]])
--- 3
 depth :: Pattern v -> Int
-depth (Pattern _ []) = 1
+depth (Pattern _ []) = 0
 depth (Pattern _ es) = 1 + maximum (map depth es)
 
 -- | Extracts all values from a pattern structure as a flat list.
@@ -950,10 +932,10 @@ depth (Pattern _ es) = 1 + maximum (map depth es)
 --
 -- === Examples
 --
--- >>> values (pattern "atom")
+-- >>> values (point "atom")
 -- ["atom"]
 --
--- >>> values (patternWith "root" [pattern "a", pattern "b"])
+-- >>> values (pattern "root" [point "a", point "b"])
 -- ["root","a","b"]
 values :: Pattern v -> [v]
 values = toList
@@ -968,10 +950,10 @@ values = toList
 --
 -- === Examples
 --
--- >>> anyValue (> 5) (patternWith 3 [pattern 6, pattern 2])
+-- >>> anyValue (> 5) (pattern 3 [point 6, point 2])
 -- True
 --
--- >>> anyValue (> 10) (patternWith 3 [pattern 6, pattern 2])
+-- >>> anyValue (> 10) (pattern 3 [point 6, point 2])
 -- False
 anyValue :: (v -> Bool) -> Pattern v -> Bool
 anyValue p = foldr (\v acc -> p v || acc) False
@@ -984,10 +966,10 @@ anyValue p = foldr (\v acc -> p v || acc) False
 --
 -- === Examples
 --
--- >>> allValues (> 0) (patternWith 3 [pattern 6, pattern 2])
+-- >>> allValues (> 0) (pattern 3 [point 6, point 2])
 -- True
 --
--- >>> allValues (> 5) (patternWith 3 [pattern 6, pattern 2])
+-- >>> allValues (> 5) (pattern 3 [point 6, point 2])
 -- False
 allValues :: (v -> Bool) -> Pattern v -> Bool
 allValues p = foldr (\v acc -> p v && acc) True
@@ -1000,7 +982,7 @@ allValues p = foldr (\v acc -> p v && acc) True
 --
 -- === Examples
 --
--- >>> p = patternWith 3 [pattern 6, pattern 2]
+-- >>> p = pattern 3 [point 6, point 2]
 -- >>> map value $ filterPatterns (\x -> value x > 5) p
 -- [6]
 --
@@ -1018,7 +1000,7 @@ filterPatterns p pat@(Pattern _ es) =
 --
 -- === Examples
 --
--- >>> p = patternWith 3 [pattern 6, pattern 2]
+-- >>> p = pattern 3 [point 6, point 2]
 -- >>> fmap value $ findPattern (\x -> value x > 5) p
 -- Just 6
 --
@@ -1039,7 +1021,7 @@ findPattern p pat@(Pattern _ es)
 --
 -- === Examples
 --
--- >>> p = patternWith 3 [pattern 6, pattern 2]
+-- >>> p = pattern 3 [point 6, point 2]
 -- >>> map value $ findAllPatterns (\x -> value x > 1) p
 -- [3,6,2]
 findAllPatterns :: (Pattern v -> Bool) -> Pattern v -> [Pattern v]
@@ -1053,10 +1035,10 @@ findAllPatterns = filterPatterns
 --
 -- === Examples
 --
--- >>> matches (pattern "a") (pattern "a")
+-- >>> matches (point "a") (point "a")
 -- True
 --
--- >>> matches (pattern "a") (pattern "b")
+-- >>> matches (point "a") (point "b")
 -- False
 matches :: Eq v => Pattern v -> Pattern v -> Bool
 matches = (==)
@@ -1069,11 +1051,11 @@ matches = (==)
 --
 -- === Examples
 --
--- >>> p = patternWith "root" [pattern "child"]
--- >>> contains p (pattern "child")
+-- >>> p = pattern "root" [point "child"]
+-- >>> contains p (point "child")
 -- True
 --
--- >>> contains p (pattern "missing")
+-- >>> contains p (point "missing")
 -- False
 contains :: Eq v => Pattern v -> Pattern v -> Bool
 contains haystack needle =
@@ -1087,7 +1069,7 @@ contains haystack needle =
 --
 -- === Examples
 --
--- >>> flatten (pattern "atom")
+-- >>> flatten (point "atom")
 -- ["atom"]
 flatten :: Pattern v -> [v]
 flatten = toList
@@ -1099,10 +1081,10 @@ flatten = toList
 --
 -- === Examples
 --
--- >>> toTuple (pattern "atom")
+-- >>> toTuple (point "atom")
 -- ("atom",[])
 --
--- >>> toTuple (patternWith "root" [pattern "child"])
+-- >>> toTuple (pattern "root" [point "child"])
 -- ("root",[Pattern "child" []])
 toTuple :: Pattern v -> (v, [Pattern v])
 toTuple (Pattern v es) = (v, es)
@@ -1112,17 +1094,15 @@ toTuple (Pattern v es) = (v, es)
 -- | Computes the nesting depth at each position in the pattern.
 --
 -- Returns a new pattern with the same structure where each value is replaced
--- by its depth (distance from root + 1).
+-- by its depth (maximum nesting depth of the subtree at that position).
 --
 -- === Examples
 --
--- >>> p = patternWith "root" [pattern "child"]
+-- >>> p = pattern "root" [point "child"]
 -- >>> depthAt p
--- Pattern 1 [Pattern 2 []]
+-- Pattern 1 [Pattern 0 []]
 depthAt :: Pattern v -> Pattern Int
-depthAt = go 1
-  where
-    go d (Pattern _ es) = Pattern d (map (go (d + 1)) es)
+depthAt = extend depth
 
 -- | Computes the size of the subtree at each position in the pattern.
 --
@@ -1131,7 +1111,7 @@ depthAt = go 1
 --
 -- === Examples
 --
--- >>> p = patternWith "root" [pattern "a", pattern "b"]
+-- >>> p = pattern "root" [point "a", point "b"]
 -- >>> sizeAt p
 -- Pattern 3 [Pattern 1 [],Pattern 1 []]
 sizeAt :: Pattern v -> Pattern Int
@@ -1147,7 +1127,7 @@ sizeAt (Pattern _ es) =
 --
 -- === Examples
 --
--- >>> p = patternWith "root" [pattern "a", pattern "b"]
+-- >>> p = pattern "root" [point "a", point "b"]
 -- >>> indicesAt p
 -- Pattern [] [Pattern [0] [],Pattern [1] []]
 indicesAt :: Eq v => Pattern v -> Pattern [Int]

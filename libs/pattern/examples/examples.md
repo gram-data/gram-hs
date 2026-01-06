@@ -130,49 +130,49 @@ intPattern = Pattern { value = 123, elements = [] }
 
 The Pattern library provides convenient constructor functions that make it easier to create patterns without verbose record syntax.
 
-### Using `pattern` for Atomic Patterns
+### Using `point` for Atomic Patterns
 
 ```haskell
-import Pattern.Core (pattern)
+import Pattern.Core (point)
 
--- Create atomic patterns using the pattern function
+-- Create atomic patterns using the point function
 atom1 :: Pattern String
-atom1 = pattern "atom1"
+atom1 = point "atom1"
 
 atom2 :: Pattern Int
-atom2 = pattern 42
+atom2 = point 42
 
 -- Custom types
 data Person = Person { name :: String, age :: Maybe Int }
   deriving (Eq, Show)
 
 personAtom :: Pattern Person
-personAtom = pattern (Person "Alice" (Just 30))
+personAtom = point (Person "Alice" (Just 30))
 
 -- Equivalent to: Pattern { value = "atom1", elements = [] }
 -- Equivalent to: Pattern { value = 42, elements = [] }
 -- Equivalent to: Pattern { value = Person "Alice" (Just 30), elements = [] }
 ```
 
-### Using `patternWith` for Patterns with Elements
+### Using `pattern` for Patterns with Elements
 
 ```haskell
-import Pattern.Core (pattern, patternWith)
+import Pattern.Core (pattern, point)
 
 -- Create singular pattern (one element)
 singular :: Pattern String
-singular = patternWith "soccer" [pattern "a team sport involving kicking a ball"]
+singular = pattern "soccer" [point "a team sport involving kicking a ball"]
 
 -- Create pair pattern (two elements)
 pair :: Pattern String
-pair = patternWith "knows" [pattern "Alice", pattern "Bob"]
+pair = pattern "knows" [point "Alice", point "Bob"]
 
 -- Create extended pattern (many elements)
 extended :: Pattern String
-extended = patternWith "graph" 
-  [ pattern "elem1"
-  , pattern "elem2"
-  , pattern "elem3"
+extended = pattern "graph" 
+  [ point "elem1"
+  , point "elem2"
+  , point "elem3"
   ]
 
 -- Role-based singular pattern with custom type
@@ -181,13 +181,13 @@ data Person = Person { name :: String, age :: Maybe Int }
 
 -- "The goalie" is "Hans"
 goalie :: Pattern Person
-goalie = patternWith (Person "Goalie" Nothing) 
-  [ pattern (Person "Hans" (Just 25)) ]
+goalie = pattern (Person "Goalie" Nothing) 
+  [ point (Person "Hans" (Just 25)) ]
 
 -- "The bus driver" is "Alice"
 busDriver :: Pattern Person
-busDriver = patternWith (Person "Bus Driver" Nothing) 
-  [ pattern (Person "Alice" (Just 30)) ]
+busDriver = pattern (Person "Bus Driver" Nothing) 
+  [ point (Person "Alice" (Just 30)) ]
 ```
 
 ### Using `fromList` for Patterns from Lists
@@ -214,7 +214,7 @@ teamPattern = fromList (Person "Team" Nothing)
   , Person "Charlie" (Just 35)
   ]
 
--- Equivalent to: patternWith "words" (map pattern ["hello", "world", "haskell"])
+-- Equivalent to: pattern "words" (map point ["hello", "world", "haskell"])
 ```
 
 ---
@@ -258,12 +258,12 @@ elem3 :: Pattern String
 elem3 = Pattern { value = "elem3", elements = [] }
 
 -- Create a pattern containing multiple elements
-patternWithMany :: Pattern String
-patternWithMany = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
+patternMany :: Pattern String
+patternMany = Pattern { value = "pattern", elements = [elem1, elem2, elem3] }
 
-value patternWithMany  -- "pattern"
-length (elements patternWithMany)  -- 3
-elements patternWithMany  -- [elem1, elem2, elem3]
+value patternMany  -- "pattern"
+length (elements patternMany)  -- 3
+elements patternMany  -- [elem1, elem2, elem3]
 ```
 
 **Gram notation:**
@@ -344,13 +344,13 @@ atomicPattern = Pattern { value = "test", elements = [] }
 value atomicPattern  -- "test"
 
 -- Access value from pattern with elements
-patternWithElems :: Pattern String
-patternWithElems = Pattern 
+patternWithElements :: Pattern String
+patternWithElements = Pattern 
   { value = "pattern"
   , elements = [Pattern { value = "elem1", elements = [] }]
   }
 
-value patternWithElems  -- "pattern"
+value patternWithElements  -- "pattern"
 ```
 
 **Gram notation:**
@@ -369,16 +369,16 @@ atomicPattern = Pattern { value = "atom", elements = [] }
 elements atomicPattern  -- []
 
 -- Access elements from pattern with elements
-patternWithElems :: Pattern String
-patternWithElems = Pattern 
+patternWithElements :: Pattern String
+patternWithElements = Pattern 
   { value = "pattern"
   , elements = [ Pattern { value = "elem1", elements = [] }
                , Pattern { value = "elem2", elements = [] }
                ]
   }
 
-elements patternWithElems  -- [Pattern {value = "elem1", elements = []}, ...]
-length (elements patternWithElems)  -- 2
+elements patternWithElements  -- [Pattern {value = "elem1", elements = []}, ...]
+length (elements patternWithElements)  -- 2
 ```
 
 **Gram notation:**
@@ -787,10 +787,10 @@ import Pattern
 import Data.Functor.Identity (Identity(..))
 
 -- Traverse with Identity (no effects, preserves structure)
-let p = patternWith "root" [pattern "a", pattern "b"]
+let p = pattern "root" [point "a", point "b"]
     result = traverse Identity p
     p' = runIdentity result
--- p' = patternWith "root" [pattern "a", pattern "b"]
+-- p' = pattern "root" [point "a", point "b"]
 -- Structure is preserved exactly
 ```
 
@@ -802,12 +802,12 @@ import Data.Maybe (Maybe(..))
 
 -- Validate all values are positive
 let validate x = if x > 0 then Just x else Nothing
-    p = patternWith 10 [pattern 5, pattern 3]
+    p = pattern 10 [point 5, point 3]
     result = traverse validate p
--- result = Just (patternWith 10 [pattern 5, pattern 3])
+-- result = Just (pattern 10 [point 5, point 3])
 
 -- If any value is invalid, returns Nothing
-let p = patternWith 10 [pattern 5, pattern (-3)]
+let p = pattern 10 [point 5, point (-3)]
     result = traverse validate p
 -- result = Nothing
 ```
@@ -820,12 +820,12 @@ import Data.Either (Either(..))
 
 -- Validate with error messages
 let validate x = if x > 0 then Right x else Left ("Invalid: " ++ show x)
-    p = patternWith 10 [pattern 5, pattern 3]
+    p = pattern 10 [point 5, point 3]
     result = traverse validate p
--- result = Right (patternWith 10 [pattern 5, pattern 3])
+-- result = Right (pattern 10 [point 5, point 3])
 
 -- Returns first error encountered
-let p = patternWith 10 [pattern 5, pattern (-3)]
+let p = pattern 10 [point 5, point (-3)]
     result = traverse validate p
 -- result = Left "Invalid: -3"
 ```
@@ -837,12 +837,12 @@ import Pattern
 import Data.Maybe (Maybe(..))
 
 -- Sequence Maybe values
-let p = patternWith (Just 10) [Just 5, Just 3]
+let p = pattern (Just 10) [Just 5, Just 3]
     result = sequenceA p
--- result = Just (patternWith 10 [pattern 5, pattern 3])
+-- result = Just (pattern 10 [point 5, point 3])
 
 -- Short-circuits on first Nothing
-let p = patternWith (Just 10) [Just 5, Nothing]
+let p = pattern (Just 10) [Just 5, Nothing]
     result = sequenceA p
 -- result = Nothing
 ```
@@ -854,17 +854,17 @@ import Pattern
 
 -- Validation works recursively on nested structures
 let validate x = if x > 0 then Just x else Nothing
-    inner = pattern 1
-    middle = patternWith 2 [inner]
-    outer = patternWith 3 [middle]
-    p = patternWith 4 [outer]
+    inner = point 1
+    middle = pattern 2 [inner]
+    outer = pattern 3 [middle]
+    p = pattern 4 [outer]
     result = traverse validate p
--- result = Just (patternWith 4 [patternWith 3 [patternWith 2 [pattern 1]]])
+-- result = Just (pattern 4 [pattern 3 [pattern 2 [point 1]]])
 
 -- Fails if any value at any level is invalid
-let inner = pattern (-1)
-    middle = patternWith 2 [inner]
-    p = patternWith 4 [middle]
+let inner = point (-1)
+    middle = pattern 2 [inner]
+    p = pattern 4 [middle]
     result = traverse validate p
 -- result = Nothing
 ```

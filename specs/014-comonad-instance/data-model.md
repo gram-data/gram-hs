@@ -178,7 +178,8 @@ depthAt = extend (\p -> depth p)
 **Example**:
 ```haskell
 let p = patternWith "root" [pattern "a", pattern "b"]
-in depthAt p == pattern 0 [pattern 1, pattern 1]  -- True
+in depthAt p == pattern 1 [pattern 0, pattern 0]  -- True
+-- Root has depth 1 (one level of nesting), atomic children have depth 0
 ```
 
 ### Size at Each Position
