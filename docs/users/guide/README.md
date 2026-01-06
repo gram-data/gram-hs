@@ -24,6 +24,8 @@ This guide is organized as a progressive learning path, building from basic conc
 
 7. **[Use Cases](07-use-cases.md)** - Real-world applications. Explore how the Pattern data structure solves problems in knowledge graphs (Route 66 example), agentic systems (workflows and reasoning traces), and design patterns. Learn when the Pattern data structure is appropriate vs. other data structures.
 
+8. **[Gram Notation Reference](08-gram-notation-reference.md)** - Reference guide for gram notation special cases. Learn about nodes, annotations, relationships, and references—the syntactic sugar that gram notation provides for common Pattern structures.
+
 ## Quick Start
 
 If you're new to Patterns, start with the [Introduction](01-introduction.md) and work through each section sequentially. Each section builds on previous knowledge.

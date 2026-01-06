@@ -43,6 +43,13 @@ Completed robust identity handling and round-trip capabilities.
 - **Implicit Root**: Distinguishes between empty nodes `()` and implicit root containers `{}`.
 - **Round-Trip Verification**: Validated structural equality after serialization/deserialization cycles against the full test corpus.
 
+### Pattern Documentation (Feature 26)
+Completed comprehensive user guide documentation.
+
+- **User Guide**: Created progressive learning path from basic concepts through advanced morphisms
+- **Gram Notation Reference**: Added appendix documenting special cases (nodes, annotations, relationships, references)
+- **Use Cases**: Documented real-world applications including knowledge graphs, agentic systems, and design patterns
+
 ---
 
 ## 🗺️ Roadmap
@@ -248,3 +255,52 @@ Completed robust identity handling and round-trip capabilities.
 - [ ] Write tests: verify all combinators work correctly
 - [ ] Write tests: verify infix operators have correct precedence
 - [ ] Write documentation: comprehensive examples using combinator library
+
+---
+
+### 6. Gram Notation and Parsed Pattern Gap Analysis
+**Priority**: Medium / Evaluate Need
+**Goal**: Investigate and address gaps between gram notation syntactic sugar and parsed Pattern structures.
+
+**Rationale**: Gram notation provides syntactic sugar for special cases (nodes `(n:Person)`, annotations `@k("v") [:Target]`, relationships `(a)-[r:KNOWS]->(b)`, references). These map to standard Pattern structures, but there may be gaps in:
+- How parsed gram notation constructs map to Pattern structures
+- Whether all gram notation features are correctly parsed
+- Whether round-trip serialization preserves syntactic sugar preferences
+- Whether explicit construction functions exist for all gram notation constructs
+
+**Status**: Documentation added (Feature 26) explaining gram notation special cases. Need to investigate implementation gaps.
+
+#### 15.1 Gap Analysis
+- [ ] **STOP and REVIEW**: Review gram notation specification and current parsing implementation
+- [ ] Document all gram notation syntactic sugar constructs (nodes, annotations, relationships, references)
+- [ ] Verify parsing correctly handles all syntactic sugar constructs
+- [ ] Identify which constructs have explicit construction functions vs. requiring `pattern` function
+- [ ] Test round-trip: parse gram → Pattern → serialize → verify structure preservation
+- [ ] Document any parsing limitations or unsupported constructs
+- [ ] Create gap analysis report: what works, what's missing, what needs improvement
+
+#### 15.2 Construction Function Gaps
+- [ ] Evaluate need for explicit node construction (currently: `point` covers this)
+- [ ] Evaluate need for explicit annotation construction functions
+- [ ] Evaluate need for explicit relationship construction functions (with direction support)
+- [ ] Evaluate need for reference resolution utilities
+- [ ] Design function signatures for any needed construction functions
+- [ ] Implement construction functions if needed
+- [ ] Write tests: verify construction functions match gram notation semantics
+- [ ] Write documentation: update user guide with new construction functions
+
+#### 15.3 Parsing Completeness
+- [ ] Verify parser handles all gram notation constructs correctly
+- [ ] Test edge cases: nested annotations, complex relationships, reference chains
+- [ ] Verify parser preserves metadata (direction, properties) when available
+- [ ] Test error handling for malformed gram notation
+- [ ] Write tests: comprehensive parsing test suite for all syntactic sugar constructs
+- [ ] Document parsing limitations and known issues
+
+#### 15.4 Serialization Completeness
+- [ ] Verify serializer can output gram notation syntactic sugar when appropriate
+- [ ] Test round-trip: Pattern → gram → parse → Pattern (structure preservation)
+- [ ] Evaluate whether serializer should prefer syntactic sugar vs. canonical form
+- [ ] Implement serializer improvements if needed
+- [ ] Write tests: verify serialization preserves structure and uses appropriate notation
+- [ ] Write documentation: explain serialization behavior and notation choices
