@@ -39,7 +39,7 @@ relationship = patternWith "knows" [atomA, atomB]
 
 ## Documentation
 
-- **[User Documentation](docs/users/README.md)** - Complete user guide with examples
+- **[User Documentation](docs/guide/01-introduction.md)** - Complete user guide with examples
 - **[Reference Documentation](docs/reference/PORTING-GUIDE.md)** - For language porters
 - **User Documentation**: `docs/` - User-facing guides and API documentation
   - [Pattern Construction Functions](docs/users/api/pattern-construction.md) - Guide to `point`, `pattern`, and `pure` with porting guidance
