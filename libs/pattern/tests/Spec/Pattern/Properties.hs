@@ -1357,16 +1357,19 @@ spec = do
         -- Property: Depth-weighted sum using para produces correct results
         -- Note: This verifies the aggregation logic, not the exact values
         quickProperty $ \(p :: Pattern Int) -> 
-          let result = para (\pat rs -> value pat * depth pat + sum rs) p
-          -- Verify result is non-negative if all values are non-negative
-          all (>= 0) (toList p) ==> result >= 0
+          all (>= 0) (toList p) ==>
+            let result = para (\pat rs -> value pat * depth pat + sum rs) p
+            in result >= 0
       
       it "T028: element-count aggregation produces correct results" $ do
         -- Property: Element-count-aware aggregation produces correct results
-        quickProperty $ \(p :: Pattern Int) -> 
+        -- Verify result equals expected formula: value * length elements + sum of child results
+        quickProperty $ \(p :: Pattern Int) ->
           let result = para (\pat rs -> value pat * length (elements pat) + sum rs) p
-          -- Verify result includes pattern's own value contribution
-          result >= value p || length (elements p) == 0
+              -- Manually compute expected result to verify correctness
+              expected = value p * length (elements p) + 
+                         sum (map (\child -> para (\pat' rs' -> value pat' * length (elements pat') + sum rs') child) (elements p))
+          in result == expected
     
     describe "Order preservation properties" $ do
       

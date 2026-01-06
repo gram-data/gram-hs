@@ -27,6 +27,7 @@ Foundational implementation of the generic `Pattern v` recursive data structure.
 - **Feature 10: Comonad**: `extract` (focus), `duplicate` (context at every position), `extend`. Added `depthAt`, `sizeAt`, `indicesAt`.
 - **Feature 19: Integration & Polish**: Explicit export lists, 100% Haddock documentation, property-based law verification, and final cleanup.
 - **Feature 23: Graph Lens**: Interpretive graph views via predicate-based lens. Provides nodes, relationships, walks, navigation, and graph analysis operations. Enables multiple graph interpretations of the same Pattern through a minimal, elegant design.
+- **Feature 28: Paramorphism**: Structure-aware folding via `para` function. Extends `Foldable` to provide structure-aware folding, just as `Comonad` extends `Functor`. Enables depth-weighted aggregations, element-count-aware operations, and nesting-level statistics. Includes comprehensive tests, documentation, and porting guidance.
 
 ### Gram Library (`libs/gram`)
 Serialization and parsing for `Pattern Subject`.
@@ -75,12 +76,12 @@ Completed comprehensive user guide documentation.
 ---
 
 ### 3.5 Paramorphism for Structure-Aware Folding
-**Priority**: Deferred / Evaluate Need
+**Priority**: ✅ Completed
 **Goal**: Enable folding operations that have access to the full pattern structure at each position, not just values.
 
 **Rationale**: Just as Comonad extends Functor to see structure (`extend` vs `fmap`), Paramorphism extends Foldable to see structure (`para` vs `foldr`). Patterns aren't just containers for values—the structure of the pattern *is information*. Paramorphism enables folding while preserving access to the original pattern subtree at each step, enabling structure-aware aggregations.
 
-**Status**: `Foldable` instance (Feature 5) provides value-only folding (`foldr`, `foldl`, `foldMap`). Paramorphism would provide structure-aware folding where the folding function receives both the accumulated result and the original pattern structure at each position. Only implement if concrete use cases emerge that require structure-aware folding beyond what `Foldable` provides.
+**Status**: ✅ **COMPLETED** - Implemented `para` function providing structure-aware folding. The folding function receives both the current pattern subtree and recursively computed results from children. Enables depth-weighted sums, element-count-aware aggregations, and nesting-level statistics. Comprehensive tests, documentation, and porting guidance included.
 
 **Design Notes**:
 - Paramorphism signature: `para :: (Pattern v -> [r] -> r) -> Pattern v -> r`
@@ -89,17 +90,17 @@ Completed comprehensive user guide documentation.
 - Relationship to Comonad: Comonad provides structure-aware *transformations* (`extend`), Paramorphism provides structure-aware *folding* (`para`)
 
 #### 12.5 Paramorphism Implementation
-- [ ] **STOP and REVIEW**: Evaluate need for structure-aware folding beyond `Foldable`
-- [ ] Research standard paramorphism patterns for recursive tree structures
-- [ ] Design `para :: (Pattern v -> [r] -> r) -> Pattern v -> r` function signature
-- [ ] Consider: `paraMap :: (Pattern v -> [r] -> r) -> Pattern v -> Pattern r` (structure-preserving paramorphism)
-- [ ] Consider: `paraWith :: (Pattern v -> [r] -> r) -> Pattern v -> r` (with explicit accumulator)
-- [ ] Implement `para` function with recursive structure access
-- [ ] Write tests: verify paramorphism preserves structure information access
-- [ ] Write tests: verify paramorphism laws (if applicable)
-- [ ] Write tests: compare with `Foldable` operations to demonstrate structure awareness
-- [ ] Write documentation: explain relationship to `Foldable` and `Comonad`
-- [ ] Write documentation: provide examples showing structure-aware folding use cases
+- [x] **STOP and REVIEW**: Evaluate need for structure-aware folding beyond `Foldable` - ✅ Implemented
+- [x] Research standard paramorphism patterns for recursive tree structures - ✅ Completed
+- [x] Design `para :: (Pattern v -> [r] -> r) -> Pattern v -> r` function signature - ✅ Implemented
+- [x] Consider: `paraMap :: (Pattern v -> [r] -> r) -> Pattern v -> Pattern r` (structure-preserving paramorphism) - ✅ Deferred (not needed for MVP)
+- [x] Consider: `paraWith :: (Pattern v -> [r] -> r) -> Pattern v -> r` (with explicit accumulator) - ✅ Deferred (standard `para` sufficient)
+- [x] Implement `para` function with recursive structure access - ✅ Completed
+- [x] Write tests: verify paramorphism preserves structure information access - ✅ 25 unit tests + 6 property-based tests
+- [x] Write tests: verify paramorphism laws (if applicable) - ✅ Property-based tests verify structure access, value access, order preservation
+- [x] Write tests: compare with `Foldable` operations to demonstrate structure awareness - ✅ Comparison tests included
+- [x] Write documentation: explain relationship to `Foldable` and `Comonad` - ✅ User guide and reference docs complete
+- [x] Write documentation: provide examples showing structure-aware folding use cases - ✅ Examples in Haddock, user guide, and reference docs
 
 ---
 

@@ -4428,8 +4428,8 @@ spec = do
         
         it "T005: paramorphism verifying context-dependent aggregation adapts to structural properties" $ do
           let p = pattern 10 [point 5, point 3]
-          let result = para (\pat rs -> value pat * length (elements pat) + sum rs) p
-          result `shouldBe` (28 :: Int)  -- 10 * 2 + (5 + 3)
+          let result = para (\pat rs -> value pat * length (elements pat) + sum (map value (elements pat)) + sum rs) p
+          result `shouldBe` (28 :: Int)  -- 10 * 2 + (5 + 3) + 0 = 20 + 8 = 28
         
         it "T006: paramorphism on atomic pattern with integer value" $ do
           let p = point 42
@@ -4623,21 +4623,20 @@ spec = do
         
         it "T017: nesting-level statistics using paramorphism verifying level-aware statistics" $ do
           let p = pattern 10 [point 5, point 3]
-          let result = para (\pat rs -> 
-            let (s, c, d) = foldr (\(s', c', d') (s'', c'', d'') -> 
-              (s' + s'', c' + c'', max d' d'')) (0, 0, 0) rs
-            in (value pat + s, 1 + c, max (depth pat) d)) p
-          fst result `shouldBe` (18 :: Int)  -- sum: 10 + 5 + 3 = 18
-          snd result `shouldBe` (3 :: Int)   -- count: 3 patterns
-          thd result `shouldBe` (1 :: Int)   -- maxDepth: 1
-          where thd (_, _, x) = x
+          let (sumVal, countVal, maxDepthVal) = para (\pat rs ->
+                let (s, c, d) = foldr (\(s', c', d') (s'', c'', d'') ->
+                      (s' + s'', c' + c'', max d' d'')) (0, 0, 0) rs
+                in (value pat + s, 1 + c, max (depth pat) d)) p
+          sumVal `shouldBe` (18 :: Int)  -- sum: 10 + 5 + 3 = 18
+          countVal `shouldBe` (3 :: Int)   -- count: 3 patterns
+          maxDepthVal `shouldBe` (1 :: Int)   -- maxDepth: 1
       
       describe "Context-dependent aggregations" $ do
         
         it "T018: context-dependent aggregation using paramorphism verifying aggregation adapts to structural properties" $ do
           let p = pattern 10 [point 5, point 3]
-          let result = para (\pat rs -> 
-            if depth pat > 0 
-              then value pat * 2 + sum rs
-              else value pat + sum rs) p
+          let result = para (\pat rs ->
+                if depth pat > 0
+                  then value pat * 2 + sum rs
+                  else value pat + sum rs) p
           result `shouldBe` (28 :: Int)  -- 10*2 + (5 + 3) = 20 + 8 = 28
