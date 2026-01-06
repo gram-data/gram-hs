@@ -67,6 +67,35 @@ Completed robust identity handling and round-trip capabilities.
 
 ---
 
+### 3.5 Paramorphism for Structure-Aware Folding
+**Priority**: Deferred / Evaluate Need
+**Goal**: Enable folding operations that have access to the full pattern structure at each position, not just values.
+
+**Rationale**: Just as Comonad extends Functor to see structure (`extend` vs `fmap`), Paramorphism extends Foldable to see structure (`para` vs `foldr`). Patterns aren't just containers for values—the structure of the pattern *is information*. Paramorphism enables folding while preserving access to the original pattern subtree at each step, enabling structure-aware aggregations.
+
+**Status**: `Foldable` instance (Feature 5) provides value-only folding (`foldr`, `foldl`, `foldMap`). Paramorphism would provide structure-aware folding where the folding function receives both the accumulated result and the original pattern structure at each position. Only implement if concrete use cases emerge that require structure-aware folding beyond what `Foldable` provides.
+
+**Design Notes**:
+- Paramorphism signature: `para :: (Pattern v -> [r] -> r) -> Pattern v -> r`
+- The folding function receives: (1) the current pattern subtree, (2) the list of recursively computed results from children
+- Enables structure-aware operations like: computing depth-aware sums, structure-preserving transformations during fold, context-dependent aggregations
+- Relationship to Comonad: Comonad provides structure-aware *transformations* (`extend`), Paramorphism provides structure-aware *folding* (`para`)
+
+#### 12.5 Paramorphism Implementation
+- [ ] **STOP and REVIEW**: Evaluate need for structure-aware folding beyond `Foldable`
+- [ ] Research standard paramorphism patterns for recursive tree structures
+- [ ] Design `para :: (Pattern v -> [r] -> r) -> Pattern v -> r` function signature
+- [ ] Consider: `paraMap :: (Pattern v -> [r] -> r) -> Pattern v -> Pattern r` (structure-preserving paramorphism)
+- [ ] Consider: `paraWith :: (Pattern v -> [r] -> r) -> Pattern v -> r` (with explicit accumulator)
+- [ ] Implement `para` function with recursive structure access
+- [ ] Write tests: verify paramorphism preserves structure information access
+- [ ] Write tests: verify paramorphism laws (if applicable)
+- [ ] Write tests: compare with `Foldable` operations to demonstrate structure awareness
+- [ ] Write documentation: explain relationship to `Foldable` and `Comonad`
+- [ ] Write documentation: provide examples showing structure-aware folding use cases
+
+---
+
 ### 4. Zipper for Interactive Navigation and Editing
 **Priority**: Deferred / Evaluate Need
 **Goal**: Efficient interactive navigation and editing (Up/Down/Left/Right).
