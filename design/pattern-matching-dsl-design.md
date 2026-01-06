@@ -1,5 +1,9 @@
 # Pattern Matching DSL - Design Reference
 
+**Status**: ❌ Deferred  
+**Reason**: Predicate matching (Feature 9) provides similar functionality. Full DSL is extensive (3 layers, 6 phases). Only implement if predicate matching proves insufficient for real use cases.  
+**Reference**: See `TODO.md` for detailed analysis
+
 ## Overview
 
 This document specifies a pattern matching DSL for the `Pattern` data structure, conceptualized as "regex for recursive patterns." The design follows a layered architecture, progressing from simple structural matching to complex graph patterns with quantification and predicates.

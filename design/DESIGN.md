@@ -1,5 +1,8 @@
 # Patterns as Graph Views: A Categorical Framework
 
+**Status**: ✅ Implemented  
+**Implementation**: Core Pattern type and typeclass instances are implemented. Graph Lens (Feature 23) is implemented. Some planned features (Zipper, Pattern Morphisms) are deferred.
+
 ## Core Data Structure
 
 Patterns form a recursive data structure representing decorated sequences that can be interpreted as graphs through different views:
@@ -12,7 +15,7 @@ data Pattern v = Pattern
   deriving (Eq)
 ```
 
-**Note**: `Show` is implemented as a manual instance. `Functor`, `Foldable`, and `Traversable` are ⏳ Planned but not yet implemented.
+**Note**: All typeclass instances are ✅ Implemented. See `docs/reference/SPECIFICATION.md` for current implementation status.
 
 **Key Insight**: The `elements` field IS the pattern - it contains the sequence that defines the pattern. The `value` field provides decoration about what kind of pattern it is. For example, the pattern "A B B A" with decoration "Enclosed rhyme" represents a specific sequence pattern (A B B A) that is classified as an "Enclosed rhyme".
 

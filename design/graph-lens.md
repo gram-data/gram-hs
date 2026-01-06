@@ -1,5 +1,9 @@
 # Graph Lens Design Document
 
+**Status**: ✅ Implemented (Feature 23)  
+**Implementation**: `libs/pattern/src/Pattern/Graph.hs`  
+**Reference**: See `docs/reference/features/graph-lens.md` for current specification
+
 ## Overview
 
 A **Graph Lens** provides an interpretive view of a Pattern as a graph structure. Rather than defining graph concepts (nodes, relationships, walks) as intrinsic properties of Pattern, they emerge through the lens's interpretation. This design enables multiple graph views of the same Pattern and supports higher-order graphs where relationships or entire graphs become nodes.

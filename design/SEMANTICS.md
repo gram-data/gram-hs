@@ -1,5 +1,9 @@
 # Gram Pattern Semantics
 
+**Status**: ✅ Implemented  
+**Implementation**: Gram serialization and parsing  
+**Reference**: See `docs/reference/semantics/gram-semantics.md` for current specification
+
 ## Core Concepts
 
 Gram notation uses **patterns** as its fundamental building blocks. Patterns are containers that can hold elements (other patterns), labels, and properties.

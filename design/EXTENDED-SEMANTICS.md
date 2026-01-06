@@ -1,5 +1,9 @@
 # Gram Extended Semantics: Pattern and Path Notation
 
+**Status**: ✅ Implemented  
+**Implementation**: Gram serialization and parsing support both pattern and path notation  
+**Reference**: See `docs/reference/semantics/gram-semantics.md` for current specification
+
 ## Overview
 
 Gram notation supports two complementary syntaxes:

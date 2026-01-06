@@ -1,5 +1,9 @@
 # gramref CLI Implementation Plan
 
+**Status**: ✅ Implemented  
+**Implementation**: `apps/gram-hs-cli/`  
+**Reference**: See `apps/gram-hs-cli/README.md` for current documentation
+
 ## Overview
 
 The `gramref` CLI serves as the reference implementation and conformance testing tool for the gram/pattern ecosystem. It provides canonical outputs for pattern operations, generates test suites, and enables validation of ports to other languages.
