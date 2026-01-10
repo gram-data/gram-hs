@@ -96,29 +96,29 @@ generatePatternSchema = object
 
 -- | Generate JSON Schema definition for Pattern
 --
--- Pattern is recursive: it contains a Subject value and an array of nested Patterns.
+-- Pattern is recursive: it contains a Subject and an array of nested Patterns.
 --
 -- @since 0.1.0
 generatePatternDefinition :: Value
 generatePatternDefinition = object
   [ "type" .= ("object" :: T.Text)
-  , "description" .= ("A pattern with a subject value and optional nested pattern elements" :: T.Text)
+  , "description" .= ("A pattern with a subject and optional nested pattern elements" :: T.Text)
   , "properties" .= object
-      [ "value" .= object ["$ref" .= ("#/$defs/Subject" :: T.Text)]
+      [ "subject" .= object ["$ref" .= ("#/$defs/Subject" :: T.Text)]
       , "elements" .= object
           [ "type" .= ("array" :: T.Text)
           , "items" .= object ["$ref" .= ("#/$defs/Pattern" :: T.Text)]
           , "default" .= ([] :: [Value])
           ]
       ]
-  , "required" .= (["value", "elements"] :: [T.Text])
+  , "required" .= (["subject", "elements"] :: [T.Text])
   , "additionalProperties" .= False
   ]
 
 -- | Generate JSON Schema definition for Subject
 --
 -- Subject contains:
--- - symbol: string identifier
+-- - identity: string identifier
 -- - labels: array of strings
 -- - properties: map of string keys to Value types
 --
@@ -126,9 +126,9 @@ generatePatternDefinition = object
 generateSubjectDefinition :: Value
 generateSubjectDefinition = object
   [ "type" .= ("object" :: T.Text)
-  , "description" .= ("A subject with identity (symbol), labels, and properties" :: T.Text)
+  , "description" .= ("A subject with identity, labels, and properties" :: T.Text)
   , "properties" .= object
-      [ "symbol" .= object
+      [ "identity" .= object
           [ "type" .= ("string" :: T.Text)
           , "description" .= ("Identity symbol for the subject" :: T.Text)
           ]
@@ -146,7 +146,7 @@ generateSubjectDefinition = object
           , "description" .= ("Map of property names to values" :: T.Text)
           ]
       ]
-  , "required" .= (["symbol", "labels", "properties"] :: [T.Text])
+  , "required" .= (["identity", "labels", "properties"] :: [T.Text])
   , "additionalProperties" .= False
   ]
 

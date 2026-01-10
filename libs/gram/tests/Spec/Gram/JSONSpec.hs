@@ -232,6 +232,6 @@ spec = do
       result `shouldSatisfy` (\case Left _ -> True; Right _ -> False)
     
     it "fails to parse JSON missing required fields" $ do
-      let missingValue = "{\"elements\": []}" :: String
-      let result = eitherDecode (BSL.pack $ map (fromIntegral . fromEnum) missingValue) :: Either String (Pattern.Pattern Subject.Subject)
+      let missingSubject = "{\"elements\": []}" :: String
+      let result = eitherDecode (BSL.pack $ map (fromIntegral . fromEnum) missingSubject) :: Either String (Pattern.Pattern Subject.Subject)
       result `shouldSatisfy` (\case Left _ -> True; Right _ -> False)

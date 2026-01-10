@@ -26,27 +26,27 @@ The canonical JSON format provides a standardized, deterministic JSON representa
 
 ```json
 {
-  "value": <Subject>,
+  "subject": <Subject>,
   "elements": [<Pattern>, ...]
 }
 ```
 
 **Fields**:
-- `value`: Subject (required)
+- `subject`: Subject (required)
 - `elements`: Array of nested Pattern objects (required, may be empty)
 
 ### Subject Structure
 
 ```json
 {
-  "symbol": <string>,
+  "identity": <string>,
   "labels": [<string>, ...],
   "properties": {<string>: <Value>, ...}
 }
 ```
 
 **Fields**:
-- `symbol`: Identity string (required, may be empty for anonymous subjects)
+- `identity`: Identity string (required, may be empty for anonymous subjects)
 - `labels`: Array of label strings (required, sorted alphabetically in canonical form)
 - `properties`: Map of property names to values (required, keys sorted alphabetically in canonical form)
 
@@ -141,8 +141,8 @@ true
 **JSON**:
 ```json
 {
-  "value": {
-    "symbol": "person",
+  "subject": {
+    "identity": "person",
     "labels": [],
     "properties": {
       "age": 30,
@@ -163,8 +163,8 @@ true
 **JSON**:
 ```json
 {
-  "value": {
-    "symbol": "alice",
+  "subject": {
+    "identity": "alice",
     "labels": ["Person", "User"],
     "properties": {
       "active": true
@@ -184,22 +184,22 @@ true
 **JSON**:
 ```json
 {
-  "value": {
-    "symbol": "parent",
+  "subject": {
+    "identity": "parent",
     "labels": [],
     "properties": {}
   },
   "elements": [
     {
-      "value": {
-        "symbol": "child",
+      "subject": {
+        "identity": "child",
         "labels": [],
         "properties": {}
       },
       "elements": [
         {
-          "value": {
-            "symbol": "grandchild",
+          "subject": {
+            "identity": "grandchild",
             "labels": [],
             "properties": {}
           },
@@ -216,8 +216,8 @@ true
 **Symbol Value**:
 ```json
 {
-  "value": {
-    "symbol": "node",
+  "subject": {
+    "identity": "node",
     "labels": [],
     "properties": {
       "type": {
@@ -233,8 +233,8 @@ true
 **Range Value**:
 ```json
 {
-  "value": {
-    "symbol": "sensor",
+  "subject": {
+    "identity": "sensor",
     "labels": [],
     "properties": {
       "range": {
@@ -251,8 +251,8 @@ true
 **Measurement Value**:
 ```json
 {
-  "value": {
-    "symbol": "reading",
+  "subject": {
+    "identity": "reading",
     "labels": [],
     "properties": {
       "temperature": {
@@ -269,8 +269,8 @@ true
 **Array Value**:
 ```json
 {
-  "value": {
-    "symbol": "data",
+  "subject": {
+    "identity": "data",
     "labels": [],
     "properties": {
       "numbers": [1, 2, 3, 4, 5],
@@ -284,8 +284,8 @@ true
 **Map Value**:
 ```json
 {
-  "value": {
-    "symbol": "config",
+  "subject": {
+    "identity": "config",
     "labels": [],
     "properties": {
       "settings": {
@@ -367,7 +367,7 @@ Implementations should handle this by:
 - Empty objects: `{}`
 - Empty labels: `[]`
 - Empty properties: `{}`
-- Anonymous subject: `{"symbol": "", ...}`
+- Anonymous subject: `{"identity": "", ...}`
 
 ### Special Characters
 

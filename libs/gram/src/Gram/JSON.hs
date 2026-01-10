@@ -50,14 +50,14 @@ import Control.Applicative ((<|>))
 -- | Convert a Pattern to aeson Value (for serialization)
 patternToValue :: Pattern.Pattern Subject.Subject -> Value
 patternToValue (Pattern.Pattern v es) = object
-  [ "value" .= subjectToValue v
+  [ "subject" .= subjectToValue v
   , "elements" .= map patternToValue es
   ]
 
 -- | Convert a Subject to aeson Value (for serialization)
 subjectToValue :: Subject.Subject -> Value
-subjectToValue (Subject.Subject sym labels props) = object
-  [ "symbol" .= symbolToValue sym
+subjectToValue (Subject.Subject ident labels props) = object
+  [ "identity" .= symbolToValue ident
   , "labels" .= toJSON (Set.toList labels)
   , "properties" .= propsToValue props
   ]
@@ -94,22 +94,22 @@ rangeValueToJSON (SubjectValue.RangeValue lower upper) = object
 -- | Parse a Pattern from aeson Value (for deserialization)
 patternFromValue :: Value -> Parser (Pattern.Pattern Subject.Subject)
 patternFromValue = withObject "Pattern" $ \obj -> do
-  val <- obj .: "value"
+  subj <- obj .: "subject"
   elems <- obj .: "elements"
-  v <- subjectFromValue val
+  v <- subjectFromValue subj
   es <- mapM patternFromValue elems
   return $ Pattern.Pattern v es
 
 -- | Parse a Subject from aeson Value (for deserialization)
 subjectFromValue :: Value -> Parser Subject.Subject
 subjectFromValue = withObject "Subject" $ \obj -> do
-  symStr <- obj .: "symbol"
+  identStr <- obj .: "identity"
   labels <- obj .: "labels"
   props <- obj .: "properties"
-  let sym = Subject.Symbol symStr
+  let ident = Subject.Symbol identStr
   let labelSet = Set.fromList labels
   propsMap <- parseProperties props
-  return $ Subject.Subject sym labelSet propsMap
+  return $ Subject.Subject ident labelSet propsMap
 
 -- | Parse properties map from aeson Value
 parseProperties :: Value -> Parser Subject.PropertyRecord

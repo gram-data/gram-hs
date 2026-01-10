@@ -27,7 +27,7 @@ spec = do
             T.isInfixOf (T.pack "Meta") output `shouldBe` False
             T.isInfixOf (T.pack "Result") output `shouldBe` False
             -- Should contain pattern structure
-            T.isInfixOf (T.pack "value") output `shouldBe` True
+            T.isInfixOf (T.pack "subject") output `shouldBe` True
       
       it "produces error object only (no metadata) for error output" $ do
         let opts = Types.defaultOutputOptions { Types.valueOnly = True }
