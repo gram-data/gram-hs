@@ -48,12 +48,33 @@ atomB = pattern "B"
 relationship = patternWith "knows" [atomA, atomB]
 ```
 
+### JSON and Schema Generation
+
+```bash
+# Convert Gram notation to canonical JSON
+gramref parse pattern.gram --format json --value-only --canonical
+
+# Bidirectional conversion: Gram ↔ JSON
+gramref convert pattern.json --from json --to gram
+
+# Generate JSON Schema
+gramref schema --format json-schema > pattern-schema.json
+
+# Generate TypeScript types
+gramref schema --format typescript > pattern.ts
+
+# Generate Rust types
+gramref schema --format rust > pattern.rs
+```
+
 ## Documentation
 
 - **[User Documentation](docs/guide/01-introduction.md)** - Complete user guide with examples
 - **[Reference Documentation](docs/reference/PORTING-GUIDE.md)** - For language porters
+- **[Canonical JSON Format](docs/reference/features/canonical-json-format.md)** - JSON format specification with examples
 - **User Documentation**: `docs/` - User-facing guides and API documentation
   - [Pattern Construction Functions](docs/reference/features/pattern-construction.md) - Guide to `point`, `pattern`, and `pure` with porting guidance
+  - [Gram Serialization](docs/reference/features/gram-serialization.md) - Serialization, JSON, and schema generation
 - **Design Documentation**: `design/DESIGN.md` - Category-theoretic framework and design principles
 - **Implementation Roadmap**: `TODO.md` - Planned features and implementation phases
 - **Feature Specifications**: `specs/` - Detailed specifications for each feature
@@ -77,6 +98,10 @@ cabal test all
 - **`pattern`**: Core pattern data structure library (recursive, decorated sequences)
 - **`subject`**: Special data structure with index, labels, and property record
 - **`gram`**: Serialization/deserialization for "Subject Patterns"
+  - Gram notation (text) serialization
+  - **Canonical JSON** with bidirectional conversion
+  - **JSON Schema** generation (Draft 2020-12)
+  - **TypeScript** and **Rust** type generation for downstream ports
 
 ## Project Structure
 

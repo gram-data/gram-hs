@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               gramref-cli
-version:            1.0.0.0
+version:            1.1.0
 
 synopsis:           CLI tool for gram/pattern reference implementation
 description:        

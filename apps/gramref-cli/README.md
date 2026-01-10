@@ -125,6 +125,46 @@ gramref convert <input-file> --from <format> --to <format>
 
 Supported formats: `gram`, `json`, `cypher`, `dot`, `mermaid`
 
+**Examples:**
+```bash
+# Gram → JSON
+gramref convert pattern.gram --from gram --to json
+
+# JSON → Gram (roundtrip)
+gramref convert pattern.json --from json --to gram
+```
+
+### Schema
+
+Generate JSON Schema or type definitions for Pattern<Subject>:
+
+```bash
+gramref schema [--format json-schema|typescript|rust]
+```
+
+**Formats:**
+- `json-schema`: JSON Schema Draft 2020-12 (default)
+- `typescript`: TypeScript type definitions with interfaces and type guards
+- `rust`: Rust struct definitions with serde annotations
+
+**Examples:**
+```bash
+# Generate JSON Schema
+gramref schema --format json-schema > pattern-schema.json
+
+# Generate TypeScript types
+gramref schema --format typescript > pattern.ts
+
+# Generate Rust types
+gramref schema --format rust > pattern.rs
+```
+
+**Use Cases:**
+- **Validation**: Validate JSON output from implementations against the schema
+- **Type Safety**: Generate type-safe code for TypeScript/Rust ports
+- **Documentation**: Formal specification of the canonical JSON format
+- **Interoperability**: Share schema with downstream projects
+
 ## Output Formats
 
 ### JSON (Canonical)

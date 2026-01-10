@@ -92,7 +92,7 @@ spec = do
               KeyMap.member "Measurement" defsObj `shouldBe` True
             _ -> expectationFailure "$defs is not an object"
         _ -> expectationFailure "Schema is not an object"
-
+  
   describe "TypeScript Type Generation" $ do
     
     it "generates valid TypeScript syntax (basic check)" $ do
@@ -103,8 +103,10 @@ spec = do
     
     it "includes all expected interfaces" $ do
       let tsCode = TypeScript.generateTypeScriptTypes
+      -- Check for Pattern and Subject interfaces
       tsCode `shouldSatisfy` T.isInfixOf "interface Pattern"
       tsCode `shouldSatisfy` T.isInfixOf "interface Subject"
+      -- Check for value type interfaces
       tsCode `shouldSatisfy` T.isInfixOf "interface ValueSymbol"
       tsCode `shouldSatisfy` T.isInfixOf "interface ValueTaggedString"
       tsCode `shouldSatisfy` T.isInfixOf "interface ValueRange"
@@ -113,11 +115,14 @@ spec = do
     it "includes type guards" $ do
       let tsCode = TypeScript.generateTypeScriptTypes
       tsCode `shouldSatisfy` T.isInfixOf "isValueSymbol"
+      tsCode `shouldSatisfy` T.isInfixOf "isValueTaggedString"
       tsCode `shouldSatisfy` T.isInfixOf "isValueRange"
+      tsCode `shouldSatisfy` T.isInfixOf "isValueMeasurement"
     
     it "includes JSDoc comments" $ do
       let tsCode = TypeScript.generateTypeScriptTypes
       tsCode `shouldSatisfy` T.isInfixOf "/**"
+      tsCode `shouldSatisfy` T.isInfixOf " * A pattern with"
   
   describe "Rust Type Generation" $ do
     
@@ -129,9 +134,15 @@ spec = do
     
     it "includes all expected structs and enums" $ do
       let rustCode = Rust.generateRustTypes
+      -- Check for Pattern and Subject structs
       rustCode `shouldSatisfy` T.isInfixOf "struct Pattern"
       rustCode `shouldSatisfy` T.isInfixOf "struct Subject"
+      -- Check for value type structs
       rustCode `shouldSatisfy` T.isInfixOf "struct ValueSymbol"
+      rustCode `shouldSatisfy` T.isInfixOf "struct ValueTaggedString"
+      rustCode `shouldSatisfy` T.isInfixOf "struct ValueRange"
+      rustCode `shouldSatisfy` T.isInfixOf "struct ValueMeasurement"
+      -- Check for Value enum
       rustCode `shouldSatisfy` T.isInfixOf "enum Value"
     
     it "includes serde derives" $ do
@@ -143,7 +154,9 @@ spec = do
       let rustCode = Rust.generateRustTypes
       rustCode `shouldSatisfy` T.isInfixOf "impl Pattern"
       rustCode `shouldSatisfy` T.isInfixOf "pub fn new"
+      rustCode `shouldSatisfy` T.isInfixOf "impl Subject"
     
     it "includes doc comments" $ do
       let rustCode = Rust.generateRustTypes
       rustCode `shouldSatisfy` T.isInfixOf "///"
+      rustCode `shouldSatisfy` T.isInfixOf "/// A pattern with"

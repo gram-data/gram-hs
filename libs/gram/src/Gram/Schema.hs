@@ -10,6 +10,10 @@
 module Gram.Schema
   ( -- * Re-exports
     module Gram.Schema.JSONSchema
+  , module Gram.Schema.TypeScript
+  , module Gram.Schema.Rust
   ) where
 
 import Gram.Schema.JSONSchema
+import Gram.Schema.TypeScript
+import Gram.Schema.Rust
