@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Gramref.CLI.Commands.Convert
   ( ConvertOptions(..)
+  , ConvertFormat(..)
   , convertOptions
   , runConvert
   ) where
@@ -10,6 +11,8 @@ import Gramref.CLI.Types (OutputFormat(..), OutputOptions(..), outputOptionsPars
 import qualified Gramref.CLI.Output as Output
 import qualified Gram.Parse as Gram
 import qualified Gram.Serialize as Gram
+import Data.Aeson (eitherDecode)
+import qualified Data.ByteString.Lazy as BSL
 import System.Exit (ExitCode(..))
 
 data ConvertFormat
@@ -60,24 +63,43 @@ parseFormat _ = Nothing
 
 runConvert :: ConvertOptions -> IO ExitCode
 runConvert opts = do
-  input <- readFile (convertInputFile opts)
   let outputOpts = enforceDeterministicCanonical (convertOutputOptions opts)
   
   case convertFrom opts of
-    ConvertGram -> case Gram.fromGram input of
-      Left err -> do
-        Output.formatError FormatJSON outputOpts (show err)
-        return (ExitFailure 1)
-      Right pattern -> case convertTo opts of
-        ConvertGram -> do
-          putStrLn (Gram.toGram pattern)
-          return ExitSuccess
-        ConvertJSON -> do
-          Output.formatOutput FormatJSON outputOpts pattern
-          return ExitSuccess
-        _ -> do
-          Output.formatError FormatJSON outputOpts ("Conversion to " ++ show (convertTo opts) ++ " not yet implemented")
-          return (ExitFailure 3)
+    ConvertGram -> do
+      input <- readFile (convertInputFile opts)
+      case Gram.fromGram input of
+        Left err -> do
+          Output.formatError FormatJSON outputOpts (show err)
+          return (ExitFailure 1)
+        Right pattern -> case convertTo opts of
+          ConvertGram -> do
+            putStrLn (Gram.toGram pattern)
+            return ExitSuccess
+          ConvertJSON -> do
+            Output.formatOutput FormatJSON outputOpts pattern
+            return ExitSuccess
+          _ -> do
+            Output.formatError FormatJSON outputOpts ("Conversion to " ++ show (convertTo opts) ++ " not yet implemented")
+            return (ExitFailure 3)
+    
+    ConvertJSON -> do
+      jsonInput <- BSL.readFile (convertInputFile opts)
+      case eitherDecode jsonInput of
+        Left err -> do
+          Output.formatError FormatJSON outputOpts ("JSON parse error: " ++ err)
+          return (ExitFailure 1)
+        Right pattern -> case convertTo opts of
+          ConvertGram -> do
+            putStrLn (Gram.toGram pattern)
+            return ExitSuccess
+          ConvertJSON -> do
+            Output.formatOutput FormatJSON outputOpts pattern
+            return ExitSuccess
+          _ -> do
+            Output.formatError FormatJSON outputOpts ("Conversion to " ++ show (convertTo opts) ++ " not yet implemented")
+            return (ExitFailure 3)
+    
     _ -> do
       Output.formatError FormatJSON outputOpts ("Conversion from " ++ show (convertFrom opts) ++ " not yet implemented")
       return (ExitFailure 3)

@@ -27,11 +27,11 @@ Based on plan.md structure:
 
 **Purpose**: Project initialization and directory structure
 
-- [ ] T001 Create directory `libs/gram/src/Gram/Schema/` for schema generation modules
-- [ ] T002 Create directory `libs/gram/test-data/roundtrip/custom/` for custom roundtrip test cases
-- [ ] T003 Create symbolic link `libs/gram/test-data/roundtrip/corpus` → `libs/gram/test-data/` (tree-sitter-gram corpus)
-- [ ] T004 [P] Create test spec directory `libs/gram/tests/Spec/Gram/` if not exists
-- [ ] T005 [P] Create CLI test directory `apps/gramref-cli/tests/Spec/Gramref/CLI/` if not exists
+- [x] T001 Create directory `libs/gram/src/Gram/Schema/` for schema generation modules
+- [x] T002 Create directory `libs/gram/test-data/roundtrip/custom/` for custom roundtrip test cases
+- [x] T003 Create symbolic link `libs/gram/test-data/roundtrip/corpus` → `libs/gram/test-data/` (tree-sitter-gram corpus)
+- [x] T004 [P] Create test spec directory `libs/gram/tests/Spec/Gram/` if not exists
+- [x] T005 [P] Create CLI test directory `apps/gramref-cli/tests/Spec/Gramref/CLI/` if not exists
 
 ---
 
@@ -41,16 +41,16 @@ Based on plan.md structure:
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Move `apps/gramref-cli/src/Gramref/CLI/JSON.hs` to `libs/gram/src/Gram/JSON.hs` (refactor for library-level access)
-- [ ] T007 Update `libs/gram/gram.cabal` to expose `Gram.JSON` module
-- [ ] T008 Add `FromJSON` instance for `Pattern Subject` in `libs/gram/src/Gram/JSON.hs` (deserialization support)
-- [ ] T009 Add `FromJSON` instance for `Subject` in `libs/gram/src/Gram/JSON.hs`
-- [ ] T010 Add `FromJSON` instance for all `Value` types in `libs/gram/src/Gram/JSON.hs` (VInteger, VDecimal, VBoolean, VString, VSymbol, VTaggedString, VArray, VMap, VRange, VMeasurement)
-- [ ] T011 Update `apps/gramref-cli/src/Gramref/CLI/Output.hs` to import from `Gram.JSON` instead of `Gramref.CLI.JSON`
-- [ ] T012 Update `apps/gramref-cli/src/Gramref/CLI/Commands/Parse.hs` to import from `Gram.JSON`
-- [ ] T013 Remove old `apps/gramref-cli/src/Gramref/CLI/JSON.hs` file
-- [ ] T014 Run `timeout 60 cabal build all` to verify refactoring compiles without errors
-- [ ] T015 Run `timeout 60 cabal test gramref-cli` to verify existing CLI tests still pass after refactoring
+- [x] T006 Move `apps/gramref-cli/src/Gramref/CLI/JSON.hs` to `libs/gram/src/Gram/JSON.hs` (refactor for library-level access)
+- [x] T007 Update `libs/gram/gram.cabal` to expose `Gram.JSON` module
+- [x] T008 Add `FromJSON` instance for `Pattern Subject` in `libs/gram/src/Gram/JSON.hs` (deserialization support)
+- [x] T009 Add `FromJSON` instance for `Subject` in `libs/gram/src/Gram/JSON.hs`
+- [x] T010 Add `FromJSON` instance for all `Value` types in `libs/gram/src/Gram/JSON.hs` (VInteger, VDecimal, VBoolean, VString, VSymbol, VTaggedString, VArray, VMap, VRange, VMeasurement)
+- [x] T011 Update `apps/gramref-cli/src/Gramref/CLI/Output.hs` to import from `Gram.JSON` instead of `Gramref.CLI.JSON`
+- [x] T012 Update `apps/gramref-cli/src/Gramref/CLI/Commands/Parse.hs` to import from `Gram.JSON`
+- [x] T013 Remove old `apps/gramref-cli/src/Gramref/CLI/JSON.hs` file
+- [x] T014 Run `timeout 60 cabal build all` to verify refactoring compiles without errors
+- [x] T015 Run `timeout 60 cabal test gramref-cli` to verify existing CLI tests still pass after refactoring
 
 **Checkpoint**: JSON serialization/deserialization available at library level - user story implementation can now begin
 

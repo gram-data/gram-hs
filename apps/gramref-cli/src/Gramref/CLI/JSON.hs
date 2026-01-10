@@ -12,8 +12,6 @@ module Gramref.CLI.JSON
 
 import Data.Aeson
 import Data.Aeson.Encode.Pretty
-import Data.Aeson.Key (fromString)
-import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (getCurrentTime)
@@ -24,11 +22,8 @@ import qualified Crypto.Hash.SHA256 as SHA256
 import qualified Data.ByteString.Lazy as BSL
 import qualified Pattern.Core as Pattern
 import qualified Subject.Core as Subject
-import qualified Subject.Value as SubjectValue
 import qualified Gramref.CLI.Types as Types
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import qualified Data.List as List
+import qualified Gram.JSON as GramJSON
 import GHC.Generics (Generic)
 
 data Meta = Meta
@@ -97,12 +92,12 @@ instance ToJSON ErrorWrapper where
 patternToJSON :: Types.OutputOptions -> Pattern.Pattern Subject.Subject -> T.Text
 patternToJSON opts pat = unsafePerformIO $ do
   let opts' = Types.enforceDeterministicCanonical opts
-  let patternVal = patternToValue pat
+  let patternVal = toJSON pat  -- Use the ToJSON instance from Gram.JSON
   
   -- Handle value-only output
   if Types.valueOnly opts' 
     then do
-      let jsonVal = if Types.canonical opts' then canonicalizeJSON patternVal else patternVal
+      let jsonVal = if Types.canonical opts' then GramJSON.canonicalizeJSON patternVal else patternVal
       let jsonBytes = encode jsonVal
       return $ TE.decodeUtf8 $ BSL.toStrict jsonBytes
     else do
@@ -129,7 +124,7 @@ patternToJSON opts pat = unsafePerformIO $ do
       -- Convert to JSON Value first, then canonicalize if needed before computing hash
       let responseJson = toJSON response
       let jsonForHash = if Types.canonical opts'
-            then canonicalizeJSON responseJson
+            then GramJSON.canonicalizeJSON responseJson
             else responseJson
       let jsonBytesForHash = encodePretty jsonForHash
       let hash' = if Types.deterministic opts'
@@ -138,48 +133,10 @@ patternToJSON opts pat = unsafePerformIO $ do
       let responseWithHash = response { successMeta = (successMeta response) { metaHash = hash' } }
       -- Now canonicalize the final output (with hash included) if needed
       let finalJson = if Types.canonical opts' 
-            then canonicalizeJSON $ toJSON responseWithHash
+            then GramJSON.canonicalizeJSON $ toJSON responseWithHash
             else toJSON responseWithHash
       let finalJsonBytes = encodePretty finalJson
       return $ TE.decodeUtf8 $ BSL.toStrict finalJsonBytes
-
-patternToValue :: Pattern.Pattern Subject.Subject -> Value
-patternToValue (Pattern.Pattern v es) = object
-  [ "value" .= subjectToValue v
-  , "elements" .= map patternToValue es
-  ]
-
-subjectToValue :: Subject.Subject -> Value
-subjectToValue (Subject.Subject sym labels props) = object
-  [ "symbol" .= symbolToValue sym
-  , "labels" .= toJSON (Set.toList labels)
-  , "properties" .= propsToValue props
-  ]
-
-symbolToValue :: Subject.Symbol -> Value
-symbolToValue (Subject.Symbol s) = toJSON s
-
-propsToValue :: Subject.PropertyRecord -> Value
-propsToValue props = object $ map (\(k, v) -> fromString k .= valueToJSON v) (Map.toList props)
-
-valueToJSON :: SubjectValue.Value -> Value
-valueToJSON (SubjectValue.VInteger i) = toJSON i
-valueToJSON (SubjectValue.VDecimal d) = toJSON d
-valueToJSON (SubjectValue.VBoolean b) = toJSON b
-valueToJSON (SubjectValue.VString s) = toJSON s
-valueToJSON (SubjectValue.VSymbol s) = object ["type" .= ("symbol" :: T.Text), "value" .= s]
-valueToJSON (SubjectValue.VTaggedString tag content) = object ["type" .= ("tagged" :: T.Text), "tag" .= tag, "content" .= content]
-valueToJSON (SubjectValue.VArray vs) = toJSON (map valueToJSON vs)
-valueToJSON (SubjectValue.VMap m) = toJSON (Map.map valueToJSON m)
-valueToJSON (SubjectValue.VRange rv) = rangeValueToJSON rv
-valueToJSON (SubjectValue.VMeasurement unit val) = object ["type" .= ("measurement" :: T.Text), "unit" .= unit, "value" .= val]
-
-rangeValueToJSON :: SubjectValue.RangeValue -> Value
-rangeValueToJSON (SubjectValue.RangeValue lower upper) = object
-  [ "type" .= ("range" :: T.Text)
-  , "lower" .= toJSON lower
-  , "upper" .= toJSON upper
-  ]
 
 errorToJSON :: Types.OutputOptions -> String -> T.Text
 errorToJSON opts msg = 
@@ -193,20 +150,11 @@ errorToJSON opts msg =
       jsonVal = if Types.valueOnly opts'
         then toJSON errorResp
         else toJSON $ ErrorWrapper { errorError = errorResp }
-      jsonVal' = if Types.canonical opts' then canonicalizeJSON jsonVal else jsonVal
+      jsonVal' = if Types.canonical opts' then GramJSON.canonicalizeJSON jsonVal else jsonVal
       jsonBytes = encodePretty jsonVal'
   in TE.decodeUtf8 $ BSL.toStrict jsonBytes
 
--- | Recursively sort all object keys alphabetically in a JSON Value
---
--- This function ensures that equivalent data structures produce byte-for-byte
--- identical JSON strings, enabling reliable automated comparison.
---
--- @since 0.1.0
+-- | Re-export canonicalizeJSON from Gram.JSON for backward compatibility
 canonicalizeJSON :: Value -> Value
-canonicalizeJSON (Object obj) = Object $ KeyMap.fromList $ List.sort $ map canonicalizePair $ KeyMap.toList obj
-  where
-    canonicalizePair (k, v) = (k, canonicalizeJSON v)
-canonicalizeJSON (Array arr) = Array $ fmap canonicalizeJSON arr
-canonicalizeJSON v = v
+canonicalizeJSON = GramJSON.canonicalizeJSON
 
