@@ -28,6 +28,8 @@ Auto-generated from all feature plans. Last updated: 2025-11-04
 - Git repository (markdown files in `docs/` directory structure) (022-documentation-reorganization)
 - Markdown documentation files + Git (for `git mv` to preserve history) (027-docs-reorganization)
 - File system (documentation files) (027-docs-reorganization)
+- Haskell with GHC 9.10.3 + aeson (JSON), aeson-pretty (formatting), optparse-applicative (CLI), pattern (core), subject (values), gram (serialization) (029-canonical-json-pattern)
+- N/A (serialization library feature) (029-canonical-json-pattern)
 
 - (001-pattern-data-structure)
 
@@ -47,9 +49,9 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 029-canonical-json-pattern: Added Haskell with GHC 9.10.3 + aeson (JSON), aeson-pretty (formatting), optparse-applicative (CLI), pattern (core), subject (values), gram (serialization)
 - 027-docs-reorganization: Added Markdown documentation files + Git (for `git mv` to preserve history)
 - 022-documentation-reorganization: Added Markdown documentation (CommonMark/GitHub Flavored Markdown) + Git (version control), Markdown renderers (GitHub, local viewers)
-- 024-codefence-strings: Added Haskell (GHC 9.10.3) + Megaparsec (parser combinators), pattern library, subject library
 
 
 <!-- MANUAL ADDITIONS START -->

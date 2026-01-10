@@ -1,0 +1,174 @@
+{
+  "$schema": "http://json-schema.org/draft/2020-12/schema#",
+  "$id": "https://gram.data/schemas/pattern/v0.1.0/pattern.json",
+  "title": "Pattern<Subject>",
+  "description": "Canonical JSON representation of Pattern with Subject for the gram ecosystem",
+  "version": "0.1.0",
+  "definitions": {
+    "Pattern": {
+      "type": "object",
+      "description": "A pattern with a subject value and nested elements",
+      "required": ["value", "elements"],
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/Subject"
+        },
+        "elements": {
+          "type": "array",
+          "description": "Nested pattern elements",
+          "items": {
+            "$ref": "#/definitions/Pattern"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Subject": {
+      "type": "object",
+      "description": "A subject with identity, labels, and properties",
+      "required": ["symbol", "labels", "properties"],
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "Identifier for the subject (may be empty for anonymous subjects)"
+        },
+        "labels": {
+          "type": "array",
+          "description": "Type labels for the subject",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "properties": {
+          "type": "object",
+          "description": "Property map with string keys and value types",
+          "additionalProperties": {
+            "$ref": "#/definitions/Value"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Value": {
+      "description": "A property value supporting multiple types",
+      "oneOf": [
+        {
+          "type": "integer",
+          "description": "Integer value"
+        },
+        {
+          "type": "number",
+          "description": "Decimal number value"
+        },
+        {
+          "type": "boolean",
+          "description": "Boolean value"
+        },
+        {
+          "type": "string",
+          "description": "String value"
+        },
+        {
+          "$ref": "#/definitions/ValueSymbol"
+        },
+        {
+          "$ref": "#/definitions/ValueTaggedString"
+        },
+        {
+          "$ref": "#/definitions/ValueRange"
+        },
+        {
+          "$ref": "#/definitions/ValueMeasurement"
+        },
+        {
+          "type": "array",
+          "description": "Array of values",
+          "items": {
+            "$ref": "#/definitions/Value"
+          }
+        },
+        {
+          "type": "object",
+          "description": "Map of string keys to values",
+          "additionalProperties": {
+            "$ref": "#/definitions/Value"
+          }
+        }
+      ]
+    },
+    "ValueSymbol": {
+      "type": "object",
+      "description": "A symbol value",
+      "required": ["type", "value"],
+      "properties": {
+        "type": {
+          "const": "symbol"
+        },
+        "value": {
+          "type": "string",
+          "description": "The symbol identifier"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ValueTaggedString": {
+      "type": "object",
+      "description": "A tagged string value with metadata",
+      "required": ["type", "tag", "content"],
+      "properties": {
+        "type": {
+          "const": "tagged"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Tag identifying the string format (e.g., 'json', 'html')"
+        },
+        "content": {
+          "type": "string",
+          "description": "The string content"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ValueRange": {
+      "type": "object",
+      "description": "A numeric range value",
+      "required": ["type", "lower", "upper"],
+      "properties": {
+        "type": {
+          "const": "range"
+        },
+        "lower": {
+          "type": "number",
+          "description": "Lower bound of the range (inclusive)"
+        },
+        "upper": {
+          "type": "number",
+          "description": "Upper bound of the range (inclusive)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ValueMeasurement": {
+      "type": "object",
+      "description": "A measurement value with unit",
+      "required": ["type", "unit", "value"],
+      "properties": {
+        "type": {
+          "const": "measurement"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit of measurement (e.g., 'kg', '°C', 'm/s')"
+        },
+        "value": {
+          "type": "number",
+          "description": "Numeric measurement value"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$ref": "#/definitions/Pattern"
+}
