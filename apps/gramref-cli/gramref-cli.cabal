@@ -36,6 +36,7 @@ library
         Gramref.CLI.Commands.Generate
         Gramref.CLI.Commands.Validate
         Gramref.CLI.Commands.Convert
+        Gramref.CLI.Commands.Schema
         Gramref.CLI.Output
         Gramref.CLI.JSON
 

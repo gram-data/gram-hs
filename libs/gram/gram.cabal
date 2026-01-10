@@ -29,6 +29,8 @@ library
         Gram.Transform
         Gram.Validate
         Gram.JSON
+        Gram.Schema
+        Gram.Schema.JSONSchema
 
     build-depends:
         base >=4.17.0.0 && <5,
@@ -56,6 +58,7 @@ test-suite gram-test
         Spec.Gram.CorpusSpec
         Spec.Gram.JSONSpec
         Spec.Gram.RoundtripSpec
+        Spec.Gram.SchemaSpec
         SemanticsSpec
 
     build-depends:
