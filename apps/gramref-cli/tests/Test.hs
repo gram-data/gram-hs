@@ -5,6 +5,7 @@ import Test.Hspec
 import qualified Spec.CLI.OutputSpec as OutputSpec
 import qualified Spec.CLI.JSONSpec as JSONSpec
 import qualified Spec.CLI.GenerateSuiteSpec as GenerateSuiteSpec
+import qualified Spec.CLI.ConvertSpec as ConvertSpec
 import qualified Spec.Properties.DeterministicSpec as DeterministicSpec
 
 main :: IO ()
@@ -16,5 +17,6 @@ testSpec = do
     OutputSpec.spec
     JSONSpec.spec
     GenerateSuiteSpec.spec
+    ConvertSpec.spec
     DeterministicSpec.spec
 

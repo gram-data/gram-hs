@@ -12,6 +12,7 @@ import qualified Gramref.CLI.Commands.Transform as Transform
 import qualified Gramref.CLI.Commands.Generate as Generate
 import qualified Gramref.CLI.Commands.Validate as Validate
 import qualified Gramref.CLI.Commands.Convert as Convert
+import qualified Gramref.CLI.Commands.Schema as Schema
 import System.Exit (ExitCode(..))
 
 data CLICommand
@@ -21,6 +22,7 @@ data CLICommand
   | Generate Generate.GenerateOptions
   | Validate Validate.ValidateOptions
   | Convert Convert.ConvertOptions
+  | Schema Schema.SchemaOptions
   deriving (Show)
 
 runCLI :: IO ExitCode
@@ -33,6 +35,7 @@ runCLI = do
     Generate opts -> Generate.runGenerate opts
     Validate opts -> Validate.runValidate opts
     Convert opts -> Convert.runConvert opts
+    Schema opts -> Schema.runSchema opts
 
 cliInfo :: ParserInfo CLICommand
 cliInfo = info (helper <*> commandParser) fullDesc
@@ -45,5 +48,6 @@ commandParser = hsubparser
   <> command "generate" (info (Generate <$> Generate.generateOptions) (progDesc "Generate test data and patterns"))
   <> command "validate" (info (Validate <$> Validate.validateOptions) (progDesc "Run conformance test suites"))
   <> command "convert" (info (Convert <$> Convert.convertOptions) (progDesc "Convert between different representations"))
+  <> command "schema" (info (Schema <$> Schema.schemaOptions) (progDesc "Generate JSON Schema or type definitions"))
   )
 

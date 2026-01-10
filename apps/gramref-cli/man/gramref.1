@@ -23,6 +23,9 @@ gramref \- Reference implementation CLI for gram/pattern ecosystem
 .br
 .B gramref convert
 \fIINPUT-FILE\fR \fB\-\-from\fR \fIFORMAT\fR \fB\-\-to\fR \fIFORMAT\fR [\fB\-\-value-only\fR] [\fB\-\-deterministic\fR] [\fB\-\-canonical\fR]
+.br
+.B gramref schema
+[\fB\-\-format\fR \fIFORMAT\fR]
 .SH DESCRIPTION
 .B gramref
 is the reference implementation and conformance testing tool for the
@@ -137,6 +140,23 @@ Input format: gram (default), json, cypher, dot, or mermaid
 .RS 4
 Output format: json (default), gram, cypher, dot, or mermaid
 .RE
+.SS schema
+Generate JSON Schema or type definitions for Pattern<Subject>.
+.PP
+Outputs a formal schema document that specifies the structure of Pattern<Subject>
+for validation and documentation purposes. Useful for downstream language ports
+to validate their implementations.
+.PP
+\fB\-\-format\fR \fIFORMAT\fR
+.RS 4
+Output format: json-schema (default), typescript, or rust
+.PP
+json-schema: JSON Schema Draft 2020-12 specification
+.br
+typescript: TypeScript type definitions with interfaces and type guards
+.br
+rust: Rust struct definitions with serde annotations and convenience constructors
+.RE
 .SH OUTPUT FORMATS
 .SS json
 Canonical JSON format with metadata including version, command, timestamp,
@@ -235,6 +255,30 @@ Convert from gram to JSON:
 .RS 4
 .nf
 gramref convert input.gram --from gram --to json
+.fi
+.RE
+.PP
+Generate JSON Schema for Pattern<Subject>:
+.PP
+.RS 4
+.nf
+gramref schema --format json-schema > pattern-schema.json
+.fi
+.RE
+.PP
+Generate TypeScript type definitions:
+.PP
+.RS 4
+.nf
+gramref schema --format typescript > pattern.ts
+.fi
+.RE
+.PP
+Generate Rust type definitions:
+.PP
+.RS 4
+.nf
+gramref schema --format rust > pattern.rs
 .fi
 .RE
 .SH SEE ALSO

@@ -4,6 +4,9 @@ import qualified Spec.Gram.ParseSpec as ParseSpec
 import qualified Spec.Gram.ParseMinimalRepro as ParseMinimalRepro
 import qualified Spec.Gram.ParseRangeRepro as ParseRangeRepro
 import qualified Spec.Gram.CorpusSpec as CorpusSpec
+import qualified Spec.Gram.JSONSpec as JSONSpec
+import qualified Spec.Gram.RoundtripSpec as RoundtripSpec
+import qualified Spec.Gram.SchemaSpec as SchemaSpec
 import qualified SemanticsSpec
 
 main :: IO ()
@@ -18,5 +21,8 @@ testSpec = do
     ParseMinimalRepro.spec
     ParseRangeRepro.spec
     CorpusSpec.spec
+    JSONSpec.spec
+    RoundtripSpec.spec
+    SchemaSpec.spec
     SemanticsSpec.spec
 
