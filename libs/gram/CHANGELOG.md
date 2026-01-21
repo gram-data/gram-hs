@@ -5,6 +5,20 @@ All notable changes to the gram library will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-01-21
+
+### Breaking
+- **fromGram**: Now returns `Either ParseError [Pattern Subject]` instead of `Either ParseError (Pattern Subject)`.
+- **toGram**: Now takes `[Pattern Subject]` instead of `Pattern Subject`.
+- **Gram.CST**: `Gram` renamed to `GramDoc`.
+- **Gram**: Re-exports are now explicit; some previously re-exported symbols may need to be imported from submodules.
+- **Leading bare record**: In `fromGram`, a leading bare record is no longer dropped; it is represented as an anonymous, no-elements pattern and placed first in the result. In `toGram`, when the first pattern is anonymous, has no labels, and has no elements, it is serialized as a bare root record `{k:v}` or `{}`; only the first pattern is considered.
+
+### Added
+- **fromGramWithHeader**: `String -> Either ParseError (Maybe PropertyRecord, [Pattern Subject])`; header kept separate from the pattern list.
+- **toGramWithHeader**: `PropertyRecord -> [Pattern Subject] -> String`; serializes an explicit header and then the patterns.
+- **serializePattern**: `Pattern Subject -> String`; serializes a single pattern (useful when you already have one pattern).
+
 ## [0.2.0] - 2026-01-10
 
 ### Added

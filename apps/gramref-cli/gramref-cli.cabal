@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               gramref-cli
-version:            1.1.0
+version:            1.2.0
 
 synopsis:           CLI tool for gram/pattern reference implementation
 description:        
@@ -17,6 +17,7 @@ category:           CLI
 build-type:         Custom
 
 extra-source-files:
+    CHANGELOG.md
     man/gramref.1
 
 custom-setup
@@ -42,7 +43,7 @@ library
 
     build-depends:
         base >=4.17.0.0 && <5,
-        gram,
+        gram >=0.3.0,
         pattern,
         subject,
         optparse-applicative ^>=0.18,
@@ -86,7 +87,7 @@ test-suite gramref-test
     build-depends:
         base >=4.17.0.0 && <5,
         gramref-cli,
-        gram,
+        gram >=0.3.0,
         pattern,
         subject,
         aeson ^>=2.2,
