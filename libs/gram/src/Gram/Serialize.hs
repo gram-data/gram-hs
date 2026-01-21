@@ -55,8 +55,8 @@
 -- "(n:Person {name:\"Alice\"})"
 module Gram.Serialize
   ( toGram
-  , toGramList
   , toGramWithHeader
+  , serializePattern
   , codefenceThreshold
   ) where
 
@@ -345,18 +345,51 @@ serializePatternElements elems
       -- If it's a named reference (just identity, no labels/properties/elements), serialize as just the symbol
       | Set.null lbls && Map.null props && null nested && ident /= Symbol "" =
           quoteSymbol ident
-      -- Otherwise serialize as a full pattern (recursive call to toGram)
-      | otherwise = toGram (Pattern (Subject ident lbls props) nested)
+      -- Otherwise serialize as a full pattern (recursive call)
+      | otherwise = serializePattern (Pattern (Subject ident lbls props) nested)
 
--- | Serialize a list of Patterns to gram notation.
-toGramList :: [Pattern Subject] -> String
-toGramList = intercalate "\n" . map toGram
+-- | True when the pattern represents a root/header record: anonymous identity
+-- (@Symbol \"\"@), no labels, and no elements. Only the /first/ pattern in a
+-- list is considered for bare-record serialization in 'toGram'.
+isHeaderLikePattern :: Pattern Subject -> Bool
+isHeaderLikePattern (Pattern (Subject ident lbls _) elems) =
+  ident == Symbol "" && Set.null lbls && null elems
+
+-- | Serialize a header-like pattern as a bare record @{k:v}@ or @{}@.
+bareRecordForHeaderLike :: Pattern Subject -> String
+bareRecordForHeaderLike (Pattern (Subject _ _ props) _) =
+  if Map.null props then "{}" else trimLeadingSpace (serializePropertyRecord props)
+
+-- | Serialize a list of Patterns to gram notation (newline-separated).
+--
+-- __First-pattern rule__: If the first pattern is anonymous (@identity == Symbol \"\"@),
+-- has no labels, and has no elements, it is serialized as a bare root record
+-- @{k:v}@ or @{}@. Only the first pattern is considered; the same shape in
+-- any other position is serialized with 'serializePattern'.
+--
+-- Round-trip: @fromGram s >>= toGram@ preserves a leading bare record as the
+-- first element. With 'fromGramWithIds', the header pattern gets an assigned
+-- identity and is no longer header-like, so it will serialize as a normal
+-- pattern (e.g. @(#1 {...})@).
+toGram :: [Pattern Subject] -> String
+toGram [] = ""
+toGram (p : ps)
+  | isHeaderLikePattern p =
+      let firstLine = bareRecordForHeaderLike p
+          rest = if null ps then "" else "\n" ++ intercalate "\n" (map serializePattern ps)
+      in firstLine ++ rest
+  | otherwise = intercalate "\n" (map serializePattern (p : ps))
 
 -- | Serialize a header record and a list of Patterns to gram notation.
+--
+-- The header is always emitted as a bare record @{k:v}@ or @{}@, then a newline,
+-- then 'toGram' of the patterns. The header is explicit; the first-pattern rule
+-- of 'toGram' still applies to the pattern list (so a header-like first pattern
+-- would also serialize as a bare record on the next line).
 toGramWithHeader :: Map String Value -> [Pattern Subject] -> String
 toGramWithHeader header patterns =
   let headerStr = serializePropertyRecord header
-      patternsStr = toGramList patterns
+      patternsStr = toGram patterns
   in case (null headerStr, null patternsStr) of
        (True, True) -> "{}"
        (False, True) -> trimLeadingSpace headerStr
@@ -380,7 +413,7 @@ toGramWithHeader header patterns =
 -- >>> import qualified Data.Set as Set
 -- >>> let s = Subject (Symbol "n") (Set.fromList ["Person"]) empty
 -- >>> let p = Pattern { value = s, elements = [] }
--- >>> toGram p
+-- >>> serializePattern p
 -- "(n:Person)"
 --
 -- Node with properties (no elements):
@@ -389,7 +422,7 @@ toGramWithHeader header patterns =
 -- >>> import Subject.Value (VString)
 -- >>> let s = Subject (Symbol "n") (Set.fromList ["Person"]) (fromList [("name", VString "Alice")])
 -- >>> let p = Pattern { value = s, elements = [] }
--- >>> toGram p
+-- >>> serializePattern p
 -- "(n:Person {name:\"Alice\"})"
 --
 -- Subject with nested elements:
@@ -397,10 +430,10 @@ toGramWithHeader header patterns =
 -- >>> let inner1 = Pattern (Subject (Symbol "a") Set.empty empty) []
 -- >>> let inner2 = Pattern (Subject (Symbol "b") Set.empty empty) []
 -- >>> let outer = Pattern (Subject (Symbol "g") Set.empty empty) [inner1, inner2]
--- >>> toGram outer
+-- >>> serializePattern outer
 -- "[g | a, b]"
-toGram :: Pattern Subject -> String
-toGram p@(Pattern subj elems)
+serializePattern :: Pattern Subject -> String
+serializePattern p@(Pattern subj elems)
   | isImplicitRoot subj = serializeImplicitElements (properties subj) elems -- Implicit root -> record + elements
   | null elems = serializeSubjectAsNode subj  -- No elements -> node syntax
   | Just edges <- isWalkPattern p = serializeWalkPattern edges
@@ -418,7 +451,7 @@ isImplicitRoot _ = False
 serializeImplicitElements :: Map String Value -> [Pattern Subject] -> String
 serializeImplicitElements props' elems' = 
   let propsStr = if Map.null props' then "" else serializePropertyRecord props'
-      elemsStr = intercalate "\n" (map toGram elems')
+      elemsStr = intercalate "\n" (map serializePattern elems')
   in case (null propsStr, null elemsStr) of
        (True, True) -> "{}" -- Empty graph/root
        (False, True) -> trimLeadingSpace propsStr -- Remove leading space from serializePropertyRecord
@@ -442,9 +475,9 @@ isWalkPattern (Pattern (Subject _ lbls _) edges)
 -- Then for subsequent edges, we only serialize the relationship and right node: ->(c)
 serializeWalkPattern :: [Pattern Subject] -> String
 serializeWalkPattern [] = ""
-serializeWalkPattern [e] = toGram e -- Fallback to normal serialization for single edge
+serializeWalkPattern [e] = serializePattern e -- Fallback to normal serialization for single edge
 serializeWalkPattern (first:rest) = 
-  toGram first ++ concatMap serializeConnectedEdge rest
+  serializePattern first ++ concatMap serializeConnectedEdge rest
 
 -- | Helper to serialize subsequent edges in a walk: -[rel]->(right)
 -- We assume the left node of this edge matches the right node of the previous one,
@@ -452,8 +485,8 @@ serializeWalkPattern (first:rest) =
 serializeConnectedEdge :: Pattern Subject -> String
 serializeConnectedEdge p' = 
   case isEdgePattern p' of
-    Just (rel, _, right) -> "-" ++ serializeRelationship rel ++ "->" ++ toGram right
-    Nothing -> " | " ++ toGram p' -- Fallback if walk contains non-edge (shouldn't happen in valid walks)
+    Just (rel, _, right) -> "-" ++ serializeRelationship rel ++ "->" ++ serializePattern right
+    Nothing -> " | " ++ serializePattern p' -- Fallback if walk contains non-edge (shouldn't happen in valid walks)
 
 -- | Check if pattern is an Edge Pattern: [rel | left, right]
 -- Note: This assumes the parser's convention where an edge is a pattern
@@ -467,7 +500,7 @@ isEdgePattern _ = Nothing
 -- | Serialize an Edge Pattern as path syntax: (left)-[rel]->(right)
 serializeEdgePattern :: Subject -> Pattern Subject -> Pattern Subject -> String
 serializeEdgePattern rel left right =
-  toGram left ++ "-" ++ serializeRelationship rel ++ "->" ++ toGram right
+  serializePattern left ++ "-" ++ serializeRelationship rel ++ "->" ++ serializePattern right
 
 -- | Serialize relationship part: [rel] or just - if anonymous/empty
 serializeRelationship :: Subject -> String
