@@ -83,6 +83,33 @@ spec = do
             Right reconciled -> reconciled `shouldBe` pattern
             Left err -> expectationFailure $ "Reconciliation failed: " ++ show err
 
+      describe "Nested duplicates" $ do
+        it "handles deeply nested duplicate identities correctly" $ do
+          -- Regression test: ensure that when rebuilding, visited IDs from
+          -- nested descendants are properly tracked so siblings don't re-emit them
+          let b1 = Subject (Symbol "b") (Set.singleton "Entity") (Map.singleton "age" (VInteger 30))
+              b2 = Subject (Symbol "b") Set.empty Map.empty
+              node3 = Subject (Symbol "node3") Set.empty Map.empty
+              bob = Subject (Symbol "bob") Set.empty Map.empty
+              alice = Subject (Symbol "alice") Set.empty Map.empty
+
+              collectAllIds (Pattern subj elems) =
+                identity subj : concatMap collectAllIds elems
+
+              pattern = Pattern alice
+                [ Pattern bob
+                  [ Pattern b1 [Pattern node3 [Pattern b2 []]]
+                  ]
+                ]
+
+          case reconcile LastWriteWins pattern of
+            Right reconciled -> do
+              let ids = collectAllIds reconciled
+              -- Each ID should appear exactly once
+              length ids `shouldBe` length (Set.fromList ids)
+              Set.fromList ids `shouldBe` Set.fromList [Symbol "alice", Symbol "bob", Symbol "b", Symbol "node3"]
+            Left err -> expectationFailure $ "Reconciliation failed: " ++ show err
+
     describe "User Story 2: Merge Patterns from Multiple Sources (P2)" $ do
       it "placeholder - tests will be added during implementation" $
         pendingWith "US2 implementation pending"

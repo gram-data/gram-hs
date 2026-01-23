@@ -400,7 +400,7 @@ reconcileNonStrict :: ReconciliationPolicy -> Pattern Subject -> Pattern Subject
 reconcileNonStrict policy pattern =
   let occurrenceMap = collectByIdentity pattern
       canonicalMap = Map.map (reconcileOccurrences policy) occurrenceMap
-  in rebuildPattern Set.empty canonicalMap pattern
+  in fst $ rebuildPattern Set.empty canonicalMap pattern
 
 -- | Reconcile occurrences of a single identity according to policy.
 reconcileOccurrences :: ReconciliationPolicy -> [(Subject, Path)] -> Subject
@@ -428,22 +428,24 @@ reconcileStrict pattern =
 -- Traverses the pattern in the same order as original, but replaces each
 -- subject with its canonical version from the map. Skips elements whose
 -- identity has already been visited (deduplication).
-rebuildPattern :: Set Symbol -> Map Symbol Subject -> Pattern Subject -> Pattern Subject
+--
+-- Returns both the rebuilt pattern and the updated set of visited identities
+-- (including all IDs emitted in the entire subtree).
+rebuildPattern :: Set Symbol -> Map Symbol Subject -> Pattern Subject -> (Pattern Subject, Set Symbol)
 rebuildPattern visited canonicalMap (Pattern subj elems) =
   let subjId = identity subj
       canonical = Map.findWithDefault subj subjId canonicalMap
       visited' = Set.insert subjId visited
-      -- Rebuild child elements, accumulating visited set across siblings
-      (rebuiltElems, _) = foldl rebuildElem ([], visited') elems
-  in Pattern canonical (reverse rebuiltElems)  -- reverse because we built backwards
+      -- Rebuild child elements, accumulating visited set across siblings and their descendants
+      (rebuiltElems, finalVisited) = foldl rebuildElem ([], visited') elems
+  in (Pattern canonical (reverse rebuiltElems), finalVisited)  -- reverse because we built backwards
   where
     rebuildElem :: ([Pattern Subject], Set Symbol) -> Pattern Subject -> ([Pattern Subject], Set Symbol)
     rebuildElem (acc, vis) elem =
       let elemId = identity (value elem)
       in if Set.member elemId vis
            then (acc, vis)  -- Skip if already visited
-           else let rebuilt = rebuildPattern vis canonicalMap elem
-                    vis' = Set.insert elemId vis
+           else let (rebuilt, vis') = rebuildPattern vis canonicalMap elem
                 in (rebuilt : acc, vis')
 
 -- | Reconcile with detailed report of actions taken.
