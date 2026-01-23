@@ -516,10 +516,14 @@ reconcileWithReport policy pattern =
   let occurrenceMap = collectByIdentity pattern
       subjectCounts = Map.map length occurrenceMap
       duplicatesFound = Map.size $ Map.filter (> 1) subjectCounts
+
+      -- Count references: atomic patterns that have fuller definitions
+      referencesResolved = sum $ map countReferences (Map.elems occurrenceMap)
+
       result = reconcile policy pattern
       report = ReconcileReport
         { reportDuplicatesFound = duplicatesFound
-        , reportReferencesResolved = 0  -- TODO: implement reference resolution
+        , reportReferencesResolved = referencesResolved
         , reportMergesPerformed = if isMergePolicy policy then duplicatesFound else 0
         , reportSubjectCounts = subjectCounts
         }
@@ -527,6 +531,22 @@ reconcileWithReport policy pattern =
   where
     isMergePolicy (Merge _) = True
     isMergePolicy _ = False
+
+    -- Count atomic patterns when fuller definitions exist
+    countReferences :: [(Pattern Subject, Path)] -> Int
+    countReferences occurrences =
+      let hasFuller = any isFullPattern (map fst occurrences)
+          atomicCount = length $ filter (isAtomicPattern . fst) occurrences
+      in if hasFuller && atomicCount > 0
+         then atomicCount  -- All atomic occurrences are references
+         else 0  -- No references if no fuller definition exists
+
+    isAtomicPattern :: Pattern Subject -> Bool
+    isAtomicPattern (Pattern subj elems) =
+      null elems && Set.null (labels subj) && Map.null (properties subj)
+
+    isFullPattern :: Pattern Subject -> Bool
+    isFullPattern p = not (isAtomicPattern p)
 
 -- | Check if a pattern needs reconciliation (has duplicate identities).
 --

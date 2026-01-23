@@ -444,5 +444,78 @@ spec = do
             Left err -> expectationFailure $ "Reconciliation failed: " ++ show err
 
     describe "User Story 5: Track Reconciliation Actions (P4)" $ do
-      it "placeholder - tests will be added during implementation" $
-        pendingWith "US5 implementation pending"
+      describe "reconcileWithReport" $ do
+        it "returns correct duplicatesFound count" $ do
+          let alice1 = Subject (Symbol "alice") (Set.singleton "Person") Map.empty
+              alice2 = Subject (Symbol "alice") (Set.singleton "Employee") Map.empty
+              bob1 = Subject (Symbol "bob") Set.empty Map.empty
+              bob2 = Subject (Symbol "bob") Set.empty Map.empty
+              charlie = Subject (Symbol "charlie") Set.empty Map.empty
+              root = Subject (Symbol "root") Set.empty Map.empty
+              pattern = Pattern root
+                [ Pattern alice1 []
+                , Pattern alice2 []
+                , Pattern bob1 []
+                , Pattern bob2 []
+                , Pattern charlie []  -- Only appears once
+                ]
+
+          let (result, report) = reconcileWithReport LastWriteWins pattern
+          reportDuplicatesFound report `shouldBe` 2  -- alice and bob
+
+        it "returns correct referencesResolved count" $ do
+          let atomic1 = Subject (Symbol "alice") Set.empty Map.empty
+              atomic2 = Subject (Symbol "alice") Set.empty Map.empty
+              full = Subject (Symbol "alice") (Set.singleton "Person") (Map.singleton "age" (VInteger 30))
+              bob = Subject (Symbol "bob") Set.empty Map.empty  -- Orphan atomic (no fuller version)
+              root = Subject (Symbol "root") Set.empty Map.empty
+              pattern = Pattern root
+                [ Pattern atomic1 []  -- Reference
+                , Pattern atomic2 []  -- Reference
+                , Pattern full []  -- Full definition
+                , Pattern bob []  -- Not a reference (no fuller version)
+                ]
+
+          let (result, report) = reconcileWithReport LastWriteWins pattern
+          reportReferencesResolved report `shouldBe` 2  -- Two atomic alices resolved
+
+        it "returns correct mergesPerformed count" $ do
+          let alice1 = Subject (Symbol "alice") (Set.singleton "A") Map.empty
+              alice2 = Subject (Symbol "alice") (Set.singleton "B") Map.empty
+              bob1 = Subject (Symbol "bob") Set.empty (Map.singleton "k" (VInteger 1))
+              bob2 = Subject (Symbol "bob") Set.empty (Map.singleton "k" (VInteger 2))
+              root = Subject (Symbol "root") Set.empty Map.empty
+              pattern = Pattern root
+                [ Pattern alice1 []
+                , Pattern alice2 []
+                , Pattern bob1 []
+                , Pattern bob2 []
+                ]
+
+          let (result, report) = reconcileWithReport (Merge defaultMergeStrategy) pattern
+          reportMergesPerformed report `shouldBe` 2  -- alice and bob merged
+
+        it "returns correct subjectCounts map" $ do
+          let alice1 = Subject (Symbol "alice") Set.empty Map.empty
+              alice2 = Subject (Symbol "alice") Set.empty Map.empty
+              alice3 = Subject (Symbol "alice") Set.empty Map.empty
+              bob1 = Subject (Symbol "bob") Set.empty Map.empty
+              bob2 = Subject (Symbol "bob") Set.empty Map.empty
+              charlie = Subject (Symbol "charlie") Set.empty Map.empty
+              root = Subject (Symbol "root") Set.empty Map.empty
+              pattern = Pattern root
+                [ Pattern alice1 []
+                , Pattern alice2 []
+                , Pattern alice3 []
+                , Pattern bob1 []
+                , Pattern bob2 []
+                , Pattern charlie []
+                ]
+
+          let (result, report) = reconcileWithReport LastWriteWins pattern
+          let counts = reportSubjectCounts report
+          Map.lookup (Symbol "alice") counts `shouldBe` Just 3
+          Map.lookup (Symbol "bob") counts `shouldBe` Just 2
+          Map.lookup (Symbol "charlie") counts `shouldBe` Just 1
+          Map.lookup (Symbol "root") counts `shouldBe` Just 1
+          Map.size counts `shouldBe` 4  -- alice, bob, charlie, root

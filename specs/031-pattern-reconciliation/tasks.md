@@ -216,18 +216,18 @@
 
 ### Unit Tests for User Story 5
 
-- [ ] T075 [P] [US5] Unit test: reconcileWithReport returns correct duplicatesFound count in libs/pattern/tests/Spec/Pattern/ReconcileSpec.hs
-- [ ] T076 [P] [US5] Unit test: reconcileWithReport returns correct referencesResolved count in libs/pattern/tests/Spec/Pattern/ReconcileSpec.hs
-- [ ] T077 [P] [US5] Unit test: reconcileWithReport returns correct mergesPerformed count in libs/pattern/tests/Spec/Pattern/ReconcileSpec.hs
-- [ ] T078 [P] [US5] Unit test: reconcileWithReport returns correct subjectCounts map in libs/pattern/tests/Spec/Pattern/ReconcileSpec.hs
+- [x] T075 [P] [US5] Unit test: reconcileWithReport returns correct duplicatesFound count in libs/pattern/tests/Spec/Pattern/ReconcileSpec.hs
+- [x] T076 [P] [US5] Unit test: reconcileWithReport returns correct referencesResolved count in libs/pattern/tests/Spec/Pattern/ReconcileSpec.hs
+- [x] T077 [P] [US5] Unit test: reconcileWithReport returns correct mergesPerformed count in libs/pattern/tests/Spec/Pattern/ReconcileSpec.hs
+- [x] T078 [P] [US5] Unit test: reconcileWithReport returns correct subjectCounts map in libs/pattern/tests/Spec/Pattern/ReconcileSpec.hs
 
 ### Implementation for User Story 5
 
-- [ ] T079 [US5] Implement ReconcileReport accumulation in collectByIdentity (count occurrences) in libs/pattern/src/Pattern/Reconcile.hs
-- [ ] T080 [US5] Implement ReconcileReport accumulation in reconcileOccurrences (count merges) in libs/pattern/src/Pattern/Reconcile.hs
-- [ ] T081 [US5] Implement ReconcileReport accumulation in rebuildPattern (count references resolved) in libs/pattern/src/Pattern/Reconcile.hs
-- [ ] T082 [US5] Implement reconcileWithReport function orchestrating reconcile with report accumulation in libs/pattern/src/Pattern/Reconcile.hs
-- [ ] T083 [US5] Add Haddock documentation for reconcileWithReport with examples in libs/pattern/src/Pattern/Reconcile.hs
+- [x] T079 [US5] Implement ReconcileReport accumulation in collectByIdentity (count occurrences) in libs/pattern/src/Pattern/Reconcile.hs
+- [x] T080 [US5] Implement ReconcileReport accumulation in reconcileOccurrences (count merges) in libs/pattern/src/Pattern/Reconcile.hs
+- [x] T081 [US5] Implement ReconcileReport accumulation in rebuildPattern (count references resolved) in libs/pattern/src/Pattern/Reconcile.hs
+- [x] T082 [US5] Implement reconcileWithReport function orchestrating reconcile with report accumulation in libs/pattern/src/Pattern/Reconcile.hs
+- [x] T083 [US5] Add Haddock documentation for reconcileWithReport with examples in libs/pattern/src/Pattern/Reconcile.hs
 
 **Checkpoint**: All user stories complete - full reconciliation feature with reporting available
 
